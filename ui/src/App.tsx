@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,10 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import CompanyProfile from "./pages/CompanyProfile";
-import Clients from "./pages/Clients";
 import Products from "./pages/Products";
 import ShippingTerms from "./pages/ShippingTerms";
 import InvoiceGenerator from "./pages/InvoiceGenerator";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -67,6 +66,14 @@ const App = () => (
             element={
               <AdminLayout>
                 <InvoiceGenerator />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <AdminLayout>
+                <AdminPanel />
               </AdminLayout>
             }
           />

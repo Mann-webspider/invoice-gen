@@ -101,3 +101,18 @@ export interface InvoicePrintProps {
   invoice: Invoice;
   companyProfile: CompanyProfile;
 }
+
+export interface DropdownOption {
+  id: string;
+  value: string;
+}
+
+export interface DropdownCategory {
+  id: string;
+  name: string;
+  options: DropdownOption[];
+}
+
+export interface DropdownOptionsState {
+  categories: DropdownCategory[];
+}

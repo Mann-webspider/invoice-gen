@@ -2,7 +2,7 @@ import React from "react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getInvoices, getProducts, getClients, getShippingTerms } from "@/lib/dataService";
-import { FileText, Users, Package, Ship } from "lucide-react";
+import { FileText, Users, Package, Ship, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -50,7 +50,7 @@ const Dashboard = () => {
         description="Welcome to Invoice Forge Admin Panel"
         action={
           <Button asChild>
-            <Link to="/invoice">Generate New Invoice</Link>
+            <Link to="/admin">Admin Panel</Link>
           </Button>
         }
       />
@@ -83,9 +83,15 @@ const Dashboard = () => {
         ))}
       </div>
 
-      <Card className="w-full">
-        <CardHeader>
+      <Card className="w-full relative">
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Invoices</CardTitle>
+          <Button size="sm" className="rounded-full w-10 h-10 p-0" asChild>
+            <Link to="/invoice">
+              <Plus className="h-5 w-5" />
+              <span className="sr-only">Add Invoice</span>
+            </Link>
+          </Button>
         </CardHeader>
         <CardContent>
           {invoices.length > 0 ? (
@@ -120,7 +126,7 @@ const Dashboard = () => {
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-20" />
               <p>No invoices created yet</p>
               <Button asChild className="mt-4">
-                <Link to="/invoice">Create First Invoice</Link>
+                <Link to="/invoice">Add Invoice</Link>
               </Button>
             </div>
           )}

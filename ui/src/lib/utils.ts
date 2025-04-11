@@ -1,4 +1,3 @@
-
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -94,6 +93,7 @@ const LOCAL_STORAGE_KEYS = {
   PRODUCTS: 'invoice-forge-products',
   SHIPPING: 'invoice-forge-shipping',
   INVOICES: 'invoice-forge-invoices',
+  DROPDOWN_OPTIONS: 'invoice-forge-dropdown-options',
 };
 
 // Helper function to generate unique IDs

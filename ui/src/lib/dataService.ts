@@ -1,10 +1,12 @@
-
 import { 
   CompanyProfile, 
   Client, 
   Product, 
   ShippingTerm, 
-  Invoice 
+  Invoice,
+  DropdownOptionsState,
+  DropdownCategory,
+  DropdownOption
 } from "./types";
 import { 
   generateId, 
@@ -119,4 +121,248 @@ export const deleteInvoice = (id: string): void => {
   const invoices = getInvoices();
   const updatedInvoices = invoices.filter((invoice) => invoice.id !== id);
   setStorageItem(LOCAL_STORAGE_KEYS.INVOICES, updatedInvoices);
+};
+
+// Dropdown Options
+export const getDropdownOptions = (): DropdownOptionsState => {
+  return getStorageItem<DropdownOptionsState>(LOCAL_STORAGE_KEYS.DROPDOWN_OPTIONS, {
+    categories: [
+      // Exporter Section
+      {
+        id: "exporter",
+        name: "EXPORTER",
+        options: []
+      },
+      {
+        id: "ieCode",
+        name: "I.E. Code #",
+        options: []
+      },
+      {
+        id: "panNo",
+        name: "PAN NO.",
+        options: []
+      },
+      {
+        id: "gstinNo",
+        name: "GSTIN NO.",
+        options: []
+      },
+      {
+        id: "stateCode",
+        name: "STATE CODE",
+        options: []
+      },
+      {
+        id: "buyersOrderNoFormat",
+        name: "Buyer's Order No. Format",
+        options: []
+      },
+      {
+        id: "poNo",
+        name: "PO No.",
+        options: []
+      },
+      
+      // Shipping Details
+      {
+        id: "preCarriageBy",
+        name: "Pre-Carriage By",
+        options: []
+      },
+      {
+        id: "placeOfReceipt",
+        name: "Place of Receipt by Pre-Carrier",
+        options: []
+      },
+      {
+        id: "countryOfOrigin",
+        name: "Country of Origin",
+        options: []
+      },
+      {
+        id: "countryOfFinalDestination",
+        name: "Country of Final Destination",
+        options: []
+      },
+      {
+        id: "vesselFlightNo",
+        name: "Vessel Flight No.",
+        options: []
+      },
+      {
+        id: "portOfLoading",
+        name: "Port of Loading",
+        options: []
+      },
+      {
+        id: "portOfDischarge",
+        name: "Port of Discharge",
+        options: []
+      },
+      {
+        id: "finalDestination",
+        name: "Final Destination",
+        options: []
+      },
+      {
+        id: "termsOfDelivery",
+        name: "Terms of Delivery & Payment",
+        options: []
+      },
+      {
+        id: "shippingMethod",
+        name: "SHIPPING - THROUGH SEA/AIR",
+        options: []
+      },
+      {
+        id: "euroRate",
+        name: "EURO RATE",
+        options: []
+      },
+      
+      // Table Information
+      {
+        id: "marksAndNos",
+        name: "Marks & Nos.(10X20 FCL/LCL)",
+        options: []
+      },
+      {
+        id: "size",
+        name: "Size(600 X 1200)",
+        options: []
+      },
+      {
+        id: "sanitaryTilesMix",
+        name: "Sanitary/Tiles/Mix",
+        options: []
+      },
+      {
+        id: "unit",
+        name: "Unit (Box)",
+        options: []
+      },
+      {
+        id: "hsnCode",
+        name: "HSN Code",
+        options: []
+      },
+      
+      // Supplier Details
+      {
+        id: "supplierName",
+        name: "Supplier Name",
+        options: []
+      },
+      {
+        id: "supplierGstin",
+        name: "Supplier GSTIN",
+        options: []
+      },
+      {
+        id: "taxInvoiceFormat",
+        name: "Tax Invoice No. & Date Format",
+        options: []
+      },
+      
+      // ARN & Declaration
+      {
+        id: "exportUnderGstCircular",
+        name: "Export Under GST Circular No.",
+        options: []
+      },
+      {
+        id: "lutFormat",
+        name: "LUT Application Reference Format",
+        options: []
+      }
+    ]
+  });
+};
+
+export const saveDropdownOptions = (options: DropdownOptionsState): DropdownOptionsState => {
+  setStorageItem(LOCAL_STORAGE_KEYS.DROPDOWN_OPTIONS, options);
+  return options;
+};
+
+export const addDropdownCategory = (category: DropdownCategory): DropdownOptionsState => {
+  const options = getDropdownOptions();
+  const updatedOptions = {
+    ...options,
+    categories: [...options.categories, { ...category, id: category.id || generateId() }]
+  };
+  return saveDropdownOptions(updatedOptions);
+};
+
+export const updateDropdownCategory = (categoryId: string, updatedCategory: Partial<DropdownCategory>): DropdownOptionsState => {
+  const options = getDropdownOptions();
+  const updatedOptions = {
+    ...options,
+    categories: options.categories.map(category => 
+      category.id === categoryId ? { ...category, ...updatedCategory } : category
+    )
+  };
+  return saveDropdownOptions(updatedOptions);
+};
+
+export const deleteDropdownCategory = (categoryId: string): DropdownOptionsState => {
+  const options = getDropdownOptions();
+  const updatedOptions = {
+    ...options,
+    categories: options.categories.filter(category => category.id !== categoryId)
+  };
+  return saveDropdownOptions(updatedOptions);
+};
+
+export const addDropdownOption = (categoryId: string, option: DropdownOption): DropdownOptionsState => {
+  const options = getDropdownOptions();
+  const updatedOptions = {
+    ...options,
+    categories: options.categories.map(category => {
+      if (category.id === categoryId) {
+        return {
+          ...category,
+          options: [...category.options, { ...option, id: option.id || generateId() }]
+        };
+      }
+      return category;
+    })
+  };
+  return saveDropdownOptions(updatedOptions);
+};
+
+export const updateDropdownOption = (categoryId: string, optionId: string, updatedOption: Partial<DropdownOption>): DropdownOptionsState => {
+  const options = getDropdownOptions();
+  const updatedOptions = {
+    ...options,
+    categories: options.categories.map(category => {
+      if (category.id === categoryId) {
+        return {
+          ...category,
+          options: category.options.map(option => 
+            option.id === optionId ? { ...option, ...updatedOption } : option
+          )
+        };
+      }
+      return category;
+    })
+  };
+  return saveDropdownOptions(updatedOptions);
+};
+
+export const deleteDropdownOption = (categoryId: string, optionId: string): DropdownOptionsState => {
+  const options = getDropdownOptions();
+  const updatedOptions = {
+    ...options,
+    categories: options.categories.map(category => {
+      if (category.id === categoryId) {
+        return {
+          ...category,
+          options: category.options.filter(option => option.id !== optionId)
+        };
+      }
+      return category;
+    })
+  };
+  return saveDropdownOptions(updatedOptions);
 };
