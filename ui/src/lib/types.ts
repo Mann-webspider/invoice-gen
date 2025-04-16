@@ -24,6 +24,8 @@ export interface Product {
   price: number;
   sqmPerBox: number;
   marksAndNos?: string;
+  netWeight?: string;
+  grossWeight?: string;
 }
 
 export interface ShippingTerm {

@@ -13,9 +13,9 @@ import { cn } from "@/lib/utils";
 export const Sidebar: React.FC = () => {
   const navItems = [
     { name: "Dashboard", icon: Home, path: "/" },
-    { name: "Company Profile", icon: Building, path: "/company" },
+    // { name: "Company Profile", icon: Building, path: "/company" },
     { name: "Products", icon: Package, path: "/products" },
-    { name: "Shipping Terms", icon: Ship, path: "/shipping" },
+    // { name: "Shipping Terms", icon: Ship, path: "/shipping" },
     { name: "Settings", icon: Settings, path: "/settings" },
   ];
 

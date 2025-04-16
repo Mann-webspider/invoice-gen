@@ -32,11 +32,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus, Pencil, Trash2, Save } from "lucide-react";
-import {
-  getDropdownOptions,
-  addDropdownOption,
-  updateDropdownOption,
-  deleteDropdownOption
+import { 
+  getDropdownOptions, 
+  addDropdownOption, 
+  updateDropdownOption, 
+  deleteDropdownOption 
 } from "@/lib/dataService";
 import { DropdownCategory, DropdownOption } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
@@ -117,7 +117,7 @@ const AdminPanel = () => {
   const [editOptionValue, setEditOptionValue] = useState("");
   const [editingField, setEditingField] = useState<string | null>(null);
   const [newFieldValue, setNewFieldValue] = useState("");
-
+  
   // Add state for form data
   const [exporterData, setExporterData] = useState({
     exporterName: "",
@@ -127,52 +127,20 @@ const AdminPanel = () => {
     ieCode: "",
     panNo: "",
     gstinNo: "",
-    stateCode: "",
-    invoiceNumber: ""
+    stateCode: ""
   });
-
-  // Add state for multiple exporters
-  const [exporters, setExporters] = useState<Array<{
-    id: string;
-    exporterName: string;
-    companyAddress: string;
-    email: string;
-    taxId: string;
-    ieCode: string;
-    panNo: string;
-    gstinNo: string;
-    stateCode: string;
-    invoiceNumber: string;
-  }>>([
-    // Default exporter
-    {
-      id: "default-exporter",
-      exporterName: "Zeric Ceramic",
-      companyAddress: "SECOND FLOOR, OFFICE NO 7,\nISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI,\nGujarat, 363642\nINDIA",
-      email: "info@zericceramic.com",
-      taxId: "24AACF*********",
-      ieCode: "AACFZ6****",
-      panNo: "AACFZ6****",
-      gstinNo: "24AACF*********",
-      stateCode: "24",
-      invoiceNumber: "EXP/001/2024"
-    }
-  ]);
-
-  // Add state for selected exporter in dropdown
-  const [selectedExporterId, setSelectedExporterId] = useState<string>("default-exporter");
-
+  
   const [supplierData, setSupplierData] = useState({
     supplierName: "",
     gstinNo: "",
     taxInvoiceNo: ""
   });
-
+  
   const [arnData, setArnData] = useState({
     gstCircular: "",
     applicationReferenceNumber: ""
   });
-
+  
   // Add state for shipping details
   const [shippingData, setShippingData] = useState({
     placeOfReceipt: "",
@@ -180,7 +148,7 @@ const AdminPanel = () => {
     portOfDischarge: "",
     finalDestination: ""
   });
-
+  
   // Add state for table information
   const [tableData, setTableData] = useState({
     marksNos1: "",
@@ -190,17 +158,17 @@ const AdminPanel = () => {
     size: "",
     unitType: ""
   });
-
+  
   // Add handlers for saving each section
   const handleSaveExporterSection = () => {
     // Here you would typically save the data to your backend
     // For now, we'll just show a success toast
     toast({
       title: "Success",
-      description: "All exporter fields (except invoice number) saved successfully",
+      description: "Exporter section saved successfully",
     });
   };
-
+  
   const handleSaveSupplierSection = () => {
     // Here you would typically save the data to your backend
     // For now, we'll just show a success toast
@@ -209,7 +177,7 @@ const AdminPanel = () => {
       description: "Supplier details saved successfully",
     });
   };
-
+  
   const handleSaveARNSection = () => {
     // Here you would typically save the data to your backend
     // For now, we'll just show a success toast
@@ -222,7 +190,7 @@ const AdminPanel = () => {
   // Get categories for the active section
   const activeSectionData = sections.find(section => section.id === activeSection);
   const categoriesInSection = activeSectionData?.categories || [];
-
+  
   // Filter dropdown categories to only show those in the active section
   const filteredCategories = dropdownOptions.categories.filter(
     category => categoriesInSection.includes(category.id)
@@ -257,7 +225,7 @@ const AdminPanel = () => {
     setDropdownOptions(updatedOptions);
     setNewOptionValue("");
     setIsAddDialogOpen(false);
-
+    
     toast({
       title: "Success",
       description: "Option added successfully",
@@ -284,7 +252,7 @@ const AdminPanel = () => {
     setEditOption(null);
     setEditOptionValue("");
     setIsEditDialogOpen(false);
-
+    
     toast({
       title: "Success",
       description: "Option updated successfully",
@@ -295,7 +263,7 @@ const AdminPanel = () => {
     if (confirm("Are you sure you want to delete this option?")) {
       const updatedOptions = deleteDropdownOption(selectedCategory, optionId);
       setDropdownOptions(updatedOptions);
-
+      
       toast({
         title: "Success",
         description: "Option deleted successfully",
@@ -344,7 +312,7 @@ const AdminPanel = () => {
     // Refresh dropdown options
     setDropdownOptions(getDropdownOptions());
     setEditingField(null);
-
+    
     toast({
       title: "Success",
       description: "Field value saved successfully",
@@ -358,21 +326,21 @@ const AdminPanel = () => {
       description: "Place of Receipt saved successfully",
     });
   };
-
+  
   const handleSavePortOfLoading = () => {
     toast({
       title: "Success",
       description: "Port of Loading saved successfully",
     });
   };
-
+  
   const handleSavePortOfDischarge = () => {
     toast({
       title: "Success",
       description: "Port of Discharge saved successfully",
     });
   };
-
+  
   const handleSaveFinalDestination = () => {
     toast({
       title: "Success",
@@ -387,151 +355,34 @@ const AdminPanel = () => {
       description: "Marks & Nos. (1) saved successfully",
     });
   };
-
+  
   const handleSaveMarksNos2 = () => {
     toast({
       title: "Success",
       description: "Marks & Nos. (2) saved successfully",
     });
   };
-
+  
   const handleSaveDescriptionAndHsnCode = () => {
     toast({
       title: "Success",
       description: "Description and HSN Code saved successfully",
     });
   };
-
+  
   const handleSaveSize = () => {
     toast({
       title: "Success",
       description: "Size saved successfully",
     });
   };
-
+  
   const handleSaveUnitType = () => {
     toast({
       title: "Success",
       description: "Unit Type saved successfully",
     });
   };
-
-  // Add handlers for saving individual exporter fields
-  const handleSaveExporterName = () => {
-    toast({
-      title: "Success",
-      description: "Exporter Name saved successfully",
-    });
-  };
-
-  const handleSaveCompanyAddress = () => {
-    toast({
-      title: "Success",
-      description: "Company Address saved successfully",
-    });
-  };
-
-  const handleSaveEmail = () => {
-    toast({
-      title: "Success",
-      description: "Email saved successfully",
-    });
-  };
-
-  const handleSaveTaxId = () => {
-    toast({
-      title: "Success",
-      description: "Tax ID saved successfully",
-    });
-  };
-
-  const handleSaveIECode = () => {
-    toast({
-      title: "Success",
-      description: "I.E. Code saved successfully",
-    });
-  };
-
-  const handleSavePANNo = () => {
-    toast({
-      title: "Success",
-      description: "PAN No. saved successfully",
-    });
-  };
-
-  const handleSaveGSTINNo = () => {
-    toast({
-      title: "Success",
-      description: "GSTIN No. saved successfully",
-    });
-  };
-
-  const handleSaveStateCode = () => {
-    toast({
-      title: "Success",
-      description: "State Code saved successfully",
-    });
-  };
-
-  const handleSaveInvoiceNumber = () => {
-    toast({
-      title: "Success",
-      description: "Invoice Number saved successfully",
-    });
-  };
-
-  // Function to add a new exporter
-  const handleAddExporter = () => {
-    // Validate required fields
-    if (!exporterData.exporterName.trim()) {
-      toast({
-        title: "Error",
-        description: "Exporter Name is required",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Create new exporter with current form data
-    const newExporter = {
-      id: Date.now().toString(),
-      ...exporterData
-    };
-
-    // Add to exporters array
-    setExporters([...exporters, newExporter]);
-
-    // Set the newly added exporter as selected
-    setSelectedExporterId(newExporter.id);
-
-    // Clear the form for next entry
-    setExporterData({
-      exporterName: "",
-      companyAddress: "",
-      email: "",
-      taxId: "",
-      ieCode: "",
-      panNo: "",
-      gstinNo: "",
-      stateCode: "",
-      invoiceNumber: ""
-    });
-
-    toast({
-      title: "Success",
-      description: "Exporter added successfully",
-    });
-  };
-
-  // Function to handle exporter selection from dropdown
-  const handleExporterSelect = (exporterId: string) => {
-    setSelectedExporterId(exporterId);
-  };
-
-  // Get the selected exporter data for display in the table
-  const selectedExporter = selectedExporterId
-    ? exporters.find(exp => exp.id === selectedExporterId)
-    : exporters.length > 0 ? exporters[0] : null;
 
   // Render the Exporter section with a form layout similar to the invoice form
   const renderExporterSection = () => {
@@ -552,239 +403,117 @@ const AdminPanel = () => {
             <div className="bg-blue-100 p-3 -m-4 mb-4 border-b">
               <h3 className="font-bold uppercase text-sm">EXPORTER</h3>
             </div>
-
+            
             <div>
               <Label htmlFor="exporter-select" className="uppercase text-xs font-bold">Exporter Name</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="email"
-                  placeholder="Company Name"
-                  className="mt-1"
-                  value={exporterData.exporterName}
-                  onChange={(e) => setExporterData({ ...exporterData, exporterName: e.target.value })}
-                />
-              </div>
+              <Input 
+                id="email" 
+                placeholder="Company Name"
+                className="mt-1"
+                value={exporterData.exporterName}
+                onChange={(e) => setExporterData({...exporterData, exporterName: e.target.value})}
+              />
             </div>
-
+            
             <div>
               <Label htmlFor="company-address" className="uppercase text-xs font-bold">Company Address</Label>
-              <div className="flex items-start gap-2">
-                <Textarea
-                  id="company-address"
-                  className="mt-1 h-24"
-                  placeholder="Enter company address"
-                  value={exporterData.companyAddress}
-                  onChange={(e) => setExporterData({ ...exporterData, companyAddress: e.target.value })}
-                />
-              </div>
+              <Textarea 
+                id="company-address" 
+                className="mt-1 h-24" 
+                placeholder="Enter company address"
+                value={exporterData.companyAddress}
+                onChange={(e) => setExporterData({...exporterData, companyAddress: e.target.value})}
+              />
             </div>
-
+            
             <div>
               <Label htmlFor="email" className="uppercase text-xs font-bold">Email</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="email"
-                  placeholder="e.g., yourmail@gmail.com"
-                  className="mt-1"
-                  value={exporterData.email}
-                  onChange={(e) => setExporterData({ ...exporterData, email: e.target.value })}
-                />
-              </div>
+              <Input 
+                id="email" 
+                placeholder="e.g., yourmail@gmail.com" 
+                className="mt-1"
+                value={exporterData.email}
+                onChange={(e) => setExporterData({...exporterData, email: e.target.value})}
+              />
             </div>
-
+            
             <div>
               <Label htmlFor="tax-id" className="uppercase text-xs font-bold">Tax ID</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="tax-id"
-                  placeholder="e.g., 24AACF********"
-                  className="mt-1"
-                  value={exporterData.taxId}
-                  onChange={(e) => setExporterData({ ...exporterData, taxId: e.target.value })}
-                />
-              </div>
+              <Input 
+                id="tax-id" 
+                placeholder="e.g., 24AACF********" 
+                className="mt-1"
+                value={exporterData.taxId}
+                onChange={(e) => setExporterData({...exporterData, taxId: e.target.value})}
+              />
             </div>
           </div>
-
+          
           {/* Right Column */}
           <div className="space-y-4 border rounded-md p-4 bg-white">
             <div className="bg-blue-100 p-3 -m-4 mb-4 border-b">
               <h3 className="font-bold uppercase text-sm">EXPORTER DETAILS</h3>
             </div>
-
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="ie-code" className="uppercase text-xs font-bold">I.E. Code #</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="ie-code"
-                    placeholder="1234567890"
-                    className="mt-1"
-                    value={exporterData.ieCode}
-                    onChange={(e) => setExporterData({ ...exporterData, ieCode: e.target.value })}
-                  />
-                </div>
+                <Input 
+                  id="ie-code" 
+                  placeholder="1234567890" 
+                  className="mt-1"
+                  value={exporterData.ieCode}
+                  onChange={(e) => setExporterData({...exporterData, ieCode: e.target.value})}
+                />
               </div>
-
+              
               <div>
                 <Label htmlFor="pan-no" className="uppercase text-xs font-bold">PAN NO. #</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="pan-no"
-                    placeholder="Enter PAN number"
-                    className="mt-1"
-                    value={exporterData.panNo}
-                    onChange={(e) => setExporterData({ ...exporterData, panNo: e.target.value })}
-                  />
-                </div>
+                <Input 
+                  id="pan-no" 
+                  placeholder="Enter PAN number" 
+                  className="mt-1"
+                  value={exporterData.panNo}
+                  onChange={(e) => setExporterData({...exporterData, panNo: e.target.value})}
+                />
               </div>
             </div>
-
+            
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="gstin-no" className="uppercase text-xs font-bold">GSTIN NO. #</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="gstin-no"
-                    placeholder="Enter GSTIN number"
-                    className="mt-1"
-                    value={exporterData.gstinNo}
-                    onChange={(e) => setExporterData({ ...exporterData, gstinNo: e.target.value })}
-                  />
-                </div>
+                <Input 
+                  id="gstin-no" 
+                  placeholder="Enter GSTIN number" 
+                  className="mt-1"
+                  value={exporterData.gstinNo}
+                  onChange={(e) => setExporterData({...exporterData, gstinNo: e.target.value})}
+                />
               </div>
-
+              
               <div>
                 <Label htmlFor="state-code" className="uppercase text-xs font-bold">STATE CODE</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="state-code"
-                    placeholder="24"
-                    className="mt-1"
-                    value={exporterData.stateCode}
-                    onChange={(e) => setExporterData({ ...exporterData, stateCode: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invoiceNo">INVOICE NUMBER</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="invoiceNo"
-                  value={exporterData.invoiceNumber}
-                  onChange={(e) => setExporterData({ ...exporterData, invoiceNumber: e.target.value })}
-                  placeholder="e.g., EXP/001/2024"
-                  required
+                <Input 
+                  id="state-code" 
+                  placeholder="24" 
+                  className="mt-1"
+                  value={exporterData.stateCode}
+                  onChange={(e) => setExporterData({...exporterData, stateCode: e.target.value})}
                 />
-                <Button
-                  onClick={handleSaveInvoiceNumber}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
               </div>
             </div>
-
           </div>
         </div>
-
+        
         {/* Save button for Exporter section */}
-        <div className="flex justify-end mt-4 space-x-4">
-          <Button onClick={handleAddExporter} className="bg-blue-600 hover:bg-blue-700">
+        <div className="flex justify-end mt-4">
+          <Button onClick={() => toast({
+            title: "Success",
+            description: "Exporter section saved successfully",
+          })} className="bg-blue-600 hover:bg-blue-700">
             <Save className="h-4 w-4 mr-2" />
-            Save All Exporter Fields
+            Save Exporter Section
           </Button>
-          {/* <Button onClick={handleSaveExporterSection} className="bg-blue-600 hover:bg-blue-700">
-            <Save className="h-4 w-4 mr-2" />
-            Save All Exporter Fields
-          </Button> */}
-        </div>
-
-        {/* Table to display saved exporter data */}
-        <div className="mt-8 border rounded-md p-4 bg-white">
-          <div className="bg-blue-100 p-3 -m-4 mb-4 border-b">
-            <h3 className="font-bold uppercase text-sm">Saved Exporter Information</h3>
-          </div>
-
-          {exporters.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
-              No additional exporters saved yet. Fill the form above and click "Save All Exporter Fields".
-            </div>
-          ) : (
-            <>
-              <div className="mb-4">
-                <Label htmlFor="exporter-selector" className="mb-2 block">Select Exporter:</Label>
-                <Select
-                  value={selectedExporterId || exporters[0]?.id || ""}
-                  onValueChange={handleExporterSelect}
-                >
-                  <SelectTrigger id="exporter-selector" className="w-full">
-                    <SelectValue placeholder="Select an exporter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {exporters.map(exporter => (
-                      <SelectItem key={exporter.id} value={exporter.id}>
-                        {exporter.exporterName || "Unnamed Exporter"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Field</TableHead>
-                    <TableHead>Value</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {selectedExporter && (
-                    <>
-                      <TableRow>
-                        <TableCell className="font-medium">Exporter Name</TableCell>
-                        <TableCell>{selectedExporter.exporterName || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Company Address</TableCell>
-                        <TableCell>{selectedExporter.companyAddress || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Email</TableCell>
-                        <TableCell>{selectedExporter.email || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Tax ID</TableCell>
-                        <TableCell>{selectedExporter.taxId || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">I.E. Code #</TableCell>
-                        <TableCell>{selectedExporter.ieCode || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">PAN NO. #</TableCell>
-                        <TableCell>{selectedExporter.panNo || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">GSTIN NO. #</TableCell>
-                        <TableCell>{selectedExporter.gstinNo || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">State Code</TableCell>
-                        <TableCell>{selectedExporter.stateCode || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Invoice Number</TableCell>
-                        <TableCell>{selectedExporter.invoiceNumber || "-"}</TableCell>
-                      </TableRow>
-                    </>
-                  )}
-                </TableBody>
-              </Table>
-            </>
-          )}
         </div>
       </div>
     );
@@ -794,94 +523,94 @@ const AdminPanel = () => {
   const renderShippingSection = () => {
     return (
       <div className="space-y-6">
-        <div className="space-y-4 border rounded-md p-4 bg-white">
-          <div className="bg-orange-100 p-3 -m-4 mb-4 border-b">
-            <h3 className="font-bold uppercase text-sm">Shipping Details</h3>
-          </div>
+          <div className="space-y-4 border rounded-md p-4 bg-white">
+            <div className="bg-orange-100 p-3 -m-4 mb-4 border-b">
+              <h3 className="font-bold uppercase text-sm">Shipping Details</h3>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="place-receipt" className="uppercase text-xs font-bold">Place of Receipt</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    id="place-receipt" 
+                    placeholder="MORBI" 
+                    className="mt-1"
+                    value={shippingData.placeOfReceipt}
+                    onChange={(e) => setShippingData({...shippingData, placeOfReceipt: e.target.value})}
+                  />
+                  <Button 
+                    onClick={handleSavePlaceOfReceipt} 
+                    size="sm" 
+                    className="mt-1 bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Save className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="place-receipt" className="uppercase text-xs font-bold">Place of Receipt</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="place-receipt"
-                  placeholder="MORBI"
-                  className="mt-1"
-                  value={shippingData.placeOfReceipt}
-                  onChange={(e) => setShippingData({ ...shippingData, placeOfReceipt: e.target.value })}
-                />
-                <Button
-                  onClick={handleSavePlaceOfReceipt}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
+              <div>
+                <Label htmlFor="port-loading" className="uppercase text-xs font-bold">Port of Loading</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    id="port-loading" 
+                    placeholder="MUNDRA" 
+                    className="mt-1"
+                    value={shippingData.portOfLoading}
+                    onChange={(e) => setShippingData({...shippingData, portOfLoading: e.target.value})}
+                  />
+                  <Button 
+                    onClick={handleSavePortOfLoading} 
+                    size="sm" 
+                    className="mt-1 bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Save className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </div>
-
-            <div>
-              <Label htmlFor="port-loading" className="uppercase text-xs font-bold">Port of Loading</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="port-loading"
-                  placeholder="MUNDRA"
-                  className="mt-1"
-                  value={shippingData.portOfLoading}
-                  onChange={(e) => setShippingData({ ...shippingData, portOfLoading: e.target.value })}
-                />
-                <Button
-                  onClick={handleSavePortOfLoading}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="port-discharge" className="uppercase text-xs font-bold">Port of Discharge</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    id="port-discharge" 
+                    placeholder="NEW YORK" 
+                    className="mt-1"
+                    value={shippingData.portOfDischarge}
+                    onChange={(e) => setShippingData({...shippingData, portOfDischarge: e.target.value})}
+                  />
+                  <Button 
+                    onClick={handleSavePortOfDischarge} 
+                    size="sm" 
+                    className="mt-1 bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Save className="h-3 w-3" />
+                  </Button>
+                </div>
+              </div>
+              
+              <div>
+                <Label htmlFor="final-destination" className="uppercase text-xs font-bold">Final Destination</Label>
+                <div className="flex items-center gap-2">
+                  <Input 
+                    id="final-destination" 
+                    placeholder="USA" 
+                    className="mt-1"
+                    value={shippingData.finalDestination}
+                    onChange={(e) => setShippingData({...shippingData, finalDestination: e.target.value})}
+                  />
+                  <Button 
+                    onClick={handleSaveFinalDestination} 
+                    size="sm" 
+                    className="mt-1 bg-orange-600 hover:bg-orange-700"
+                  >
+                    <Save className="h-3 w-3" />
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="port-discharge" className="uppercase text-xs font-bold">Port of Discharge</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="port-discharge"
-                  placeholder="NEW YORK"
-                  className="mt-1"
-                  value={shippingData.portOfDischarge}
-                  onChange={(e) => setShippingData({ ...shippingData, portOfDischarge: e.target.value })}
-                />
-                <Button
-                  onClick={handleSavePortOfDischarge}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="final-destination" className="uppercase text-xs font-bold">Final Destination</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="final-destination"
-                  placeholder="USA"
-                  className="mt-1"
-                  value={shippingData.finalDestination}
-                  onChange={(e) => setShippingData({ ...shippingData, finalDestination: e.target.value })}
-                />
-                <Button
-                  onClick={handleSaveFinalDestination}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -895,23 +624,23 @@ const AdminPanel = () => {
           <div className="bg-green-100 p-3 -m-4 mb-4 border-b flex items-center">
             <h3 className="font-bold uppercase text-sm">Table Information</h3>
           </div>
-
+          
           <div className="space-y-8">
             {/* Marks & Nos. section with individual save buttons */}
-            {/* <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
+            <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
               <Label htmlFor="marks-nos" className="block text-sm font-medium mb-2">Marks & Nos.</Label>
               <div className="flex items-center space-x-3">
                 <div className="flex items-center gap-2">
-                  <Input
-                    id="marks-nos-1"
-                    placeholder="10"
+                  <Input 
+                    id="marks-nos-1" 
+                    placeholder="10" 
                     className="w-24 h-9"
                     value={tableData.marksNos1}
-                    onChange={(e) => setTableData({ ...tableData, marksNos1: e.target.value })}
+                    onChange={(e) => setTableData({...tableData, marksNos1: e.target.value})}
                   />
-                  <Button
-                    onClick={handleSaveMarksNos1}
-                    size="sm"
+                  <Button 
+                    onClick={handleSaveMarksNos1} 
+                    size="sm" 
                     className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center"
                     title="Save Marks & Nos. (1)"
                   >
@@ -920,16 +649,16 @@ const AdminPanel = () => {
                 </div>
                 <span className="flex items-center text-gray-500 font-medium">X</span>
                 <div className="flex items-center gap-2">
-                  <Input
-                    id="marks-nos-2"
-                    placeholder="20"
+                  <Input 
+                    id="marks-nos-2" 
+                    placeholder="20" 
                     className="w-24 h-9"
                     value={tableData.marksNos2}
-                    onChange={(e) => setTableData({ ...tableData, marksNos2: e.target.value })}
+                    onChange={(e) => setTableData({...tableData, marksNos2: e.target.value})}
                   />
-                  <Button
-                    onClick={handleSaveMarksNos2}
-                    size="sm"
+                  <Button 
+                    onClick={handleSaveMarksNos2} 
+                    size="sm" 
                     className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center"
                     title="Save Marks & Nos. (2)"
                   >
@@ -937,36 +666,36 @@ const AdminPanel = () => {
                   </Button>
                 </div>
               </div>
-            </div> */}
-
+            </div>
+            
             {/* Description and HSN Code with a single save button between them */}
             <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label htmlFor="description" className="block text-sm font-medium mb-2">Description</Label>
-                  <Input
-                    id="description"
-                    placeholder="Glazed porcelain Floor Tiles"
+                  <Input 
+                    id="description" 
+                    placeholder="Glazed porcelain Floor Tiles" 
                     className="h-9"
                     value={tableData.description}
-                    onChange={(e) => setTableData({ ...tableData, description: e.target.value })}
+                    onChange={(e) => setTableData({...tableData, description: e.target.value})}
                   />
                 </div>
-
+                
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
                     <Label htmlFor="hsn-code" className="block text-sm font-medium mb-2">HSN Code</Label>
-                    <Input
-                      id="hsn-code"
-                      placeholder="69072100"
+                    <Input 
+                      id="hsn-code" 
+                      placeholder="69072100" 
                       className="h-9"
                       value={tableData.hsnCode}
-                      onChange={(e) => setTableData({ ...tableData, hsnCode: e.target.value })}
+                      onChange={(e) => setTableData({...tableData, hsnCode: e.target.value})}
                     />
                   </div>
-                  <Button
-                    onClick={handleSaveDescriptionAndHsnCode}
-                    size="sm"
+                  <Button 
+                    onClick={handleSaveDescriptionAndHsnCode} 
+                    size="sm" 
                     className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center mb-1"
                     title="Save Description and HSN Code"
                   >
@@ -975,45 +704,45 @@ const AdminPanel = () => {
                 </div>
               </div>
             </div>
-
+            
             {/* Size and Unit Type with individual save buttons */}
             <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
               <div className="grid grid-cols-2 gap-6">
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     <Label htmlFor="size" className="block text-sm font-medium mb-2">Size</Label>
-                    <Input
-                      id="size"
-                      placeholder="600 X 1200"
+                    <Input 
+                      id="size" 
+                      placeholder="600 X 1200" 
                       className="h-9"
                       value={tableData.size}
-                      onChange={(e) => setTableData({ ...tableData, size: e.target.value })}
+                      onChange={(e) => setTableData({...tableData, size: e.target.value})}
                     />
                   </div>
-                  <Button
-                    onClick={handleSaveSize}
-                    size="sm"
+                  <Button 
+                    onClick={handleSaveSize} 
+                    size="sm" 
                     className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center mt-6"
                     title="Save Size"
                   >
                     <Save className="h-4 w-4" />
                   </Button>
                 </div>
-
+                
                 <div className="flex items-center gap-2">
                   <div className="flex-1">
                     <Label htmlFor="unit-type" className="block text-sm font-medium mb-2">Unit Type</Label>
-                    <Input
-                      id="unit-type"
-                      placeholder="Box"
+                    <Input 
+                      id="unit-type" 
+                      placeholder="Box" 
                       className="h-9"
                       value={tableData.unitType}
-                      onChange={(e) => setTableData({ ...tableData, unitType: e.target.value })}
+                      onChange={(e) => setTableData({...tableData, unitType: e.target.value})}
                     />
                   </div>
-                  <Button
-                    onClick={handleSaveUnitType}
-                    size="sm"
+                  <Button 
+                    onClick={handleSaveUnitType} 
+                    size="sm" 
                     className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center mt-6"
                     title="Save Unit Type"
                   >
@@ -1036,57 +765,57 @@ const AdminPanel = () => {
           <div className="bg-purple-100 p-3 -m-4 mb-4 border-b">
             <h3 className="font-bold uppercase text-sm">Supplier Details</h3>
           </div>
-
+          
           <div className="space-y-6">
             <div className="border-b pb-4">
               <div className="flex items-start">
                 <Label htmlFor="supplier-name" className="uppercase text-xs font-bold w-20 pt-2">NAME :</Label>
                 <div className="flex-1">
-                  <Input
-                    id="supplier-name"
-                    placeholder="ABC"
+                  <Input 
+                    id="supplier-name" 
+                    placeholder="ABC" 
                     className="mt-1"
                     value={supplierData.supplierName}
-                    onChange={(e) => setSupplierData({ ...supplierData, supplierName: e.target.value })}
+                    onChange={(e) => setSupplierData({...supplierData, supplierName: e.target.value})}
                   />
                 </div>
               </div>
             </div>
-
+            
             <div className="border-b pb-4">
               <div className="flex items-start">
                 <Label htmlFor="gstin-no" className="uppercase text-xs font-bold w-20 pt-2">GSTIN NO. :</Label>
                 <div className="flex-1">
-                  <Input
-                    id="gstin-no"
-                    placeholder="XXXXXXXXXXX"
+                  <Input 
+                    id="gstin-no" 
+                    placeholder="XXXXXXXXXXX" 
                     className="mt-1"
                     value={supplierData.gstinNo}
-                    onChange={(e) => setSupplierData({ ...supplierData, gstinNo: e.target.value })}
+                    onChange={(e) => setSupplierData({...supplierData, gstinNo: e.target.value})}
                   />
                 </div>
               </div>
             </div>
-
-
-            {/* <div className="border-b pb-4">
-              <div className="flex items-start">
-                <Label htmlFor="tax-invoice-no" className="uppercase text-xs font-bold w-32 pt-2">TAX INVOICE NO :</Label>
-                <div className="flex-1">
-                  <Input
-                    id="tax-invoice-no"
-                    placeholder="GST/XXX"
-                    className="mt-1"
-                    value={supplierData.taxInvoiceNo}
-                    onChange={(e) => setSupplierData({ ...supplierData, taxInvoiceNo: e.target.value })}
-                  />
+            
+            
+              <div className="border-b pb-4">
+                <div className="flex items-start">
+                  <Label htmlFor="tax-invoice-no" className="uppercase text-xs font-bold w-32 pt-2">TAX INVOICE NO :</Label>
+                  <div className="flex-1">
+                    <Input 
+                      id="tax-invoice-no" 
+                      placeholder="GST/XXX" 
+                      className="mt-1"
+                      value={supplierData.taxInvoiceNo}
+                      onChange={(e) => setSupplierData({...supplierData, taxInvoiceNo: e.target.value})}
+                    />
+                  </div>
                 </div>
-              </div>
-
-
-            </div> */}
+              
+              
+            </div>
           </div>
-
+          
           {/* Save button for Supplier Details section */}
           <div className="flex justify-end mt-4">
             <Button onClick={() => toast({
@@ -1110,31 +839,31 @@ const AdminPanel = () => {
           <div className="bg-amber-100 p-3 -m-4 mb-4 border-b">
             <h3 className="font-bold uppercase text-sm">ARN & Declaration</h3>
           </div>
-
+          
           <div className="space-y-6">
             <div>
               <h4 className="font-medium mb-3">Export Under GST Circular</h4>
               <div className="border-b pb-4">
-                <Input
-                  id="gst-circular"
-                  placeholder="EXPORT UNDER GST CIRCULAR NO. XX/20XX Customs DT.XX/XX/20XX"
+                <Input 
+                  id="gst-circular" 
+                  placeholder="EXPORT UNDER GST CIRCULAR NO. XX/20XX Customs DT.XX/XX/20XX" 
                   className="mt-1"
                 />
               </div>
             </div>
-
+            
             <div>
               <h4 className="font-medium mb-3">Application Reference Number</h4>
               <div className="border-b pb-4">
-                <Input
-                  id="application-reference-number"
-                  placeholder="ACXXXXXXXXXXXXXXX"
+                <Input 
+                  id="application-reference-number" 
+                  placeholder="ACXXXXXXXXXXXXXXX" 
                   className="mt-1"
                 />
               </div>
             </div>
           </div>
-
+          
           {/* Save button for ARN & Declaration section */}
           <div className="flex justify-end mt-4">
             <Button onClick={() => toast({
@@ -1335,7 +1064,7 @@ const AdminPanel = () => {
         </CardHeader>
         <CardContent>
           <p className="text-muted-foreground">
-            Use this panel to manage dropdown options that will appear in the invoice form.
+            Use this panel to manage dropdown options that will appear in the invoice form. 
             Select a section tab, then choose a field from the dropdown to edit its options.
           </p>
           <ul className="list-disc list-inside mt-2 text-muted-foreground">

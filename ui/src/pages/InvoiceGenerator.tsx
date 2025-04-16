@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from 'react-router-dom'; // Use react-router-dom for navigation
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,7 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Trash, Plus, FileText, Save } from "lucide-react";
+import { Trash, Plus, FileText, Save, ArrowRight } from "lucide-react";
 import {
   getClients,
   getProducts,
@@ -132,6 +133,7 @@ function numberToWords(num: number) {
 }
 
 const InvoiceGenerator = () => {
+  const navigate = useNavigate(); // Use useNavigate from react-router-dom
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [shippingTerms, setShippingTerms] = useState<ShippingTerm[]>([]);
@@ -182,8 +184,8 @@ const InvoiceGenerator = () => {
   const [preCarriageBy, setPreCarriageBy] = useState("");
   const [placeOfReceipt, setPlaceOfReceipt] = useState("MORBI");
   const [vesselFlightNo, setVesselFlightNo] = useState("");
-  const [portOfLoading, setPortOfLoading] = useState("MUNDRA");
-  const [portOfDischarge, setPortOfDischarge] = useState("Mundra");
+  const [portOfLoading, setPortOfLoading] = useState("Mundra");
+  const [portOfDischarge, setPortOfDischarge] = useState("NEW YORK");
   const [finalDestination, setFinalDestination] = useState("USA");
   const [countryOfOrigin, setCountryOfOrigin] = useState("INDIA");
   const [originDetails, setOriginDetails] = useState("DISTRICT MORBI, STATE GUJARAT");
@@ -191,7 +193,7 @@ const InvoiceGenerator = () => {
   const [termsOfDelivery, setTermsOfDelivery] = useState("FOB AT MUNDRA PORT");
   const [paymentTerms, setPaymentTerms] = useState("FOB");
   const [shippingMethod, setShippingMethod] = useState("SHIPPING - THROUGH SEA");
-  const [selectedCurrency, setSelectedCurrency] = useState("EUR");
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [currencyRate, setCurrencyRate] = useState("88.95");
 
   // Dropdown options
@@ -199,13 +201,13 @@ const InvoiceGenerator = () => {
     "Zeric Ceramic", "Nexa International", "Friend Company"
   ]);
   const [placesOfReceipt, setPlacesOfReceipt] = useState<string[]>([
-    "MORBI", "AHMEDABAD", "MUMBAI", "DELHI", "CHENNAI"
+    "MORBI", "THANGADH", "RAJKOT", "DHORAJI", "BHAVNAGAR"
   ]);
   const [portsOfLoading, setPortsOfLoading] = useState<string[]>([
-    "MUNDRA", "NHAVA SHEVA", "CHENNAI", "KOLKATA", "VIZAG"
+    "Mundra", "Kandla", "PIPAVAV", "Jawaharlal Nehru Port", "SINGAPORE", "SHANGHAI"
   ]);
   const [portsOfDischarge, setPortsOfDischarge] = useState<string[]>([
-    "Mundra", "Kandla", "Jawaharlal Nehru Port", "DUBAI", "SINGAPORE", "SHANGHAI"
+    "NEW YORK", "NHAVA SHEVA", "CHENNAI", "KOLKATA", "VIZAG"
   ]);
   const [finalDestinations, setFinalDestinations] = useState<string[]>([
     "USA", "GERMANY", "NETHERLANDS", "UAE", "SINGAPORE", "CHINA"
@@ -217,7 +219,7 @@ const InvoiceGenerator = () => {
     "SHIPPING - THROUGH SEA", "SHIPPING - THROUGH AIR"
   ]);
   const [currencies, setCurrencies] = useState<string[]>([
-    "EUR", "USD", "GBP", "INR", "AED"
+    "USD", "EUR", "GBP", "INR", "AED"
   ]);
   const [sizes, setSizes] = useState<string[]>([
     "600 X 1200", "600 X 600", "800 X 800", "300 X 600", "300 X 300"
@@ -226,11 +228,15 @@ const InvoiceGenerator = () => {
     "Box", "Pallet", "Carton", "Piece"
   ]);
   const [hsnCodes] = useState<{ [key: string]: string }>({
-    "Sanitary": "69072100",
-    "Tiles": "69072200",
-    "Mix": "69073000",
-    "Ceramic": "69074000",
-    "Porcelain": "69072100"
+    // "Sanitary": "69072100",
+    // "Tiles": "69072200",
+    // "Mix": "69073000",
+    // "Ceramic": "69074000",
+    // "Porcelain": "69072100",
+    "Glazed porcelain Floor Tiles": "69072100",
+    "Polished Vitrified Tiles": "69072200",
+    "Ceramic Wall Tiles": "69072300",
+    "Digital Floor Tiles": "69072100"
   });
   const [sectionOptions, setSectionOptions] = useState<string[]>([
     "Glazed porcelain Floor Tiles",
@@ -242,7 +248,6 @@ const InvoiceGenerator = () => {
     "FOB",
     "CIF",
     "CNF",
-    
   ]);
 
   const [productType, setProductType] = useState<string>("Sanitary");
@@ -286,14 +291,19 @@ const InvoiceGenerator = () => {
   const [marksAndNosConfig, setMarksAndNosConfig] = useState({
     first: "10",
     second: "X",
-    third: "10"
+    third: "20"
   });
   const [containerType, setContainerType] = useState("FCL");
 
   // Add these options
-  const containerTypes = ["FCL", "LCL", "FCL/LCL"];
-  const numberOptions1 = ["10", "20", "30", "40", "50", "60", "70", "80", "90", "100"];
+  const containerTypes = ["FCL", "LCL"];
+  const numberOptions1 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100"];
   const numberOptions2 = ["20", "40"];
+
+  // Add additional state variables for insurance and freight
+  const [insuranceAmount, setInsuranceAmount] = useState<number>(0);
+  const [freightAmount, setFreightAmount] = useState<number>(0);
+  const [showInsuranceFreight, setShowInsuranceFreight] = useState<boolean>(false);
 
   useEffect(() => {
     // Show the tax option dialog
@@ -332,9 +342,18 @@ const InvoiceGenerator = () => {
     });
 
     setTotalSQM(sqmTotal);
-    setTotalFOBEuro(fobTotal);
-    setAmountInWords(numberToWords(Math.round(fobTotal)));
-  }, [sections]);
+    
+    // Add insurance and freight if CIF or CNF is selected
+    let finalTotal = fobTotal;
+    if (paymentTerms === "CIF") {
+      finalTotal += insuranceAmount + freightAmount;
+    } else if (paymentTerms === "CNF") {
+      finalTotal += freightAmount;
+    }
+    
+    setTotalFOBEuro(finalTotal);
+    setAmountInWords(numberToWords(Math.round(finalTotal)));
+  }, [sections, insuranceAmount, freightAmount, paymentTerms]);
 
   // Add effect to update marks and nos for all items when configuration changes
   useEffect(() => {
@@ -351,12 +370,19 @@ const InvoiceGenerator = () => {
   }, [marksAndNosConfig, containerType, sections]);
 
   const addNewRow = (sectionId: string) => {
+    // Find the section to get its title
+    const section = sections.find(s => s.id === sectionId);
+    if (!section) return;
+    
+    // Get the HSN code based on the section title
+    const hsnCode = hsnCodes[section.title] || "69072100";
+    
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
       product: {
         id: "",
         description: "",
-        hsnCode: "69072100",
+        hsnCode: hsnCode,
         size: sizes[0] || "600 X 1200",
         price: 10,
         sqmPerBox: 1.44,
@@ -379,12 +405,16 @@ const InvoiceGenerator = () => {
   };
 
   const addNewSection = () => {
+    // Use the first option from sectionOptions as the default title
+    const defaultTitle = sectionOptions[0] || 'Glazed porcelain Floor Tiles';
+    
     const newSection: ProductSection = {
       id: Date.now().toString(),
-      title: 'New Section',
+      title: defaultTitle,
       items: []
     };
     setSections([...sections, newSection]);
+    
     // Add an empty row to the new section
     addNewRow(newSection.id);
   };
@@ -474,6 +504,28 @@ const InvoiceGenerator = () => {
 
   const handleExporterSelect = (exporter: string) => {
     setSelectedExporter(exporter);
+    
+    // Auto-fill invoice number based on exporter
+    let prefix = "";
+    switch(exporter) {
+      case "Zeric Ceramic":
+        prefix = "ZC";
+        break;
+      case "Nexa International":
+        prefix = "NI";
+        break;
+      case "Friend Company":
+        prefix = "FC";
+        break;
+      default:
+        prefix = "INV";
+    }
+    
+    // Create invoice number: prefix/001/YYYY
+    const currentYear = new Date().getFullYear();
+    const invoiceNum = `${prefix}/001/${currentYear}`;
+    setInvoiceNo(invoiceNum);
+
     if (exporter === "Zeric Ceramic") {
       setCompanyAddress("SECOND FLOOR, OFFICE NO 7,\nISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI,\nGujarat, 363642\nINDIA");
       setIeCode("AACFZ6****");
@@ -699,6 +751,72 @@ const InvoiceGenerator = () => {
     toast.success("CSV exported successfully");
   };
 
+  // Update the handleNext function to pass data to NextForm
+  const handleNext = () => {
+    // Save the current state before navigating
+    const formData = {
+      sections: sections,
+      markNumber: `${ieCode}`,
+      readOnly: true,
+      // Add invoice header information
+      invoiceHeader: {
+        invoiceNo,
+        invoiceDate,
+        email,
+        taxid,
+        ieCode,
+        panNo,
+        gstinNo,
+        stateCode,
+        selectedExporter,
+        companyAddress
+      },
+      // Add buyer information
+      buyerInfo: {
+        consignee,
+        notifyParty,
+        buyersOrderNo,
+        buyersOrderDate,
+        poNo
+      },
+      // Add shipping information
+      shippingInfo: {
+        preCarriageBy,
+        placeOfReceipt,
+        vesselFlightNo,
+        portOfLoading,
+        portOfDischarge,
+        finalDestination,
+        countryOfOrigin,
+        originDetails,
+        countryOfFinalDestination,
+        termsOfDelivery,
+        paymentTerms,
+        shippingMethod,
+        selectedCurrency,
+        currencyRate
+      }
+    };
+    
+    // Store the data in localStorage or state management
+    localStorage.setItem('invoiceFormData', JSON.stringify(formData));
+    
+    // Navigate to the next form
+    navigate('/next-form');
+  };
+
+  // Update the paymentTerms handler to show/hide insurance and freight fields
+  const handlePaymentTermsChange = (value: string) => {
+    setPaymentTerms(value);
+    
+    // Show insurance and freight fields for CIF and CNF
+    if (value === "CIF" || value === "CNF") {
+      setShowInsuranceFreight(true);
+    } else {
+      setShowInsuranceFreight(false);
+    }
+  };
+
   return (
     <div>
       <PageHeader
@@ -779,7 +897,6 @@ const InvoiceGenerator = () => {
                     required
                   />
                 </div>
-
               </div>
 
               <div className="space-y-4">
@@ -788,10 +905,11 @@ const InvoiceGenerator = () => {
                     <Label htmlFor="invoiceNo">INVOICE NUMBER</Label>
                     <Input
                       id="invoiceNo"
+                      className="w-full"
+                      placeholder="e.g., EXP/001/2024"
                       value={invoiceNo}
                       onChange={(e) => setInvoiceNo(e.target.value)}
-                      placeholder="e.g., EXP/001/2024"
-                      required
+                      readOnly
                     />
                   </div>
 
@@ -833,6 +951,7 @@ const InvoiceGenerator = () => {
                         value={ieCode}
                         onChange={(e) => setIeCode(e.target.value)}
                         placeholder="Enter IE code"
+                        readOnly
                       />
                     </div>
 
@@ -843,6 +962,7 @@ const InvoiceGenerator = () => {
                         value={panNo}
                         onChange={(e) => setPanNo(e.target.value)}
                         placeholder="Enter PAN number"
+                        readOnly
                       />
                     </div>
                   </div>
@@ -855,6 +975,7 @@ const InvoiceGenerator = () => {
                         value={gstinNo}
                         onChange={(e) => setGstinNo(e.target.value)}
                         placeholder="Enter GSTIN number"
+                        readOnly
                       />
                     </div>
 
@@ -865,6 +986,7 @@ const InvoiceGenerator = () => {
                         value={stateCode}
                         onChange={(e) => setStateCode(e.target.value)}
                         placeholder="Enter state code"
+                        readOnly
                       />
                     </div>
                   </div>
@@ -965,7 +1087,7 @@ const InvoiceGenerator = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="placeOfReceipt">Place of Receipt</Label>
+                <Label htmlFor="placeOfReceipt">Place of Receipt by Pre-Carrier</Label>
                 <Select
                   value={placeOfReceipt}
                   onValueChange={(value) => setPlaceOfReceipt(value)}
@@ -984,12 +1106,12 @@ const InvoiceGenerator = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="countryOfOrigin">Country of Origin</Label>
+                <Label htmlFor="originDetails">Origin Details</Label>
                 <Input
-                  id="countryOfOrigin"
-                  value={countryOfOrigin}
-                  onChange={(e) => setCountryOfOrigin(e.target.value)}
-                  placeholder="Enter country of origin"
+                  id="originDetails"
+                  value={originDetails}
+                  onChange={(e) => setOriginDetails(e.target.value)}
+                  placeholder="Enter origin details"
                 />
               </div>
 
@@ -1081,25 +1203,6 @@ const InvoiceGenerator = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* <div className="space-y-2">
-                <Label htmlFor="shippingTerm">Shipping Terms</Label>
-                <Select
-                  value={selectedShippingTerm}
-                  onValueChange={handleShippingTermSelect}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select shipping terms" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {shippingTerms.map((term) => (
-                      <SelectItem key={term.id} value={term.id || ""}>
-                        {term.fob} - {term.port}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div> */}
-
               <div className="space-y-2">
                 <Label htmlFor="termsOfDelivery">Terms of Delivery</Label>
                 <Input
@@ -1130,14 +1233,16 @@ const InvoiceGenerator = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="originDetails">Origin Details</Label>
+                <Label htmlFor="countryOfOrigin">Country of Origin of Goods</Label>
                 <Input
-                  id="originDetails"
-                  value={originDetails}
-                  onChange={(e) => setOriginDetails(e.target.value)}
-                  placeholder="Enter origin details"
+                  id="countryOfOrigin"
+                  value={countryOfOrigin}
+                  onChange={(e) => setCountryOfOrigin(e.target.value)}
+                  placeholder="Enter country of origin"
+                  readOnly
                 />
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="selectedCurrency">Currency</Label>
@@ -1183,7 +1288,7 @@ const InvoiceGenerator = () => {
 
               <div className="rounded-lg">
                 <div className="space-y-4">
-                  <h4 className="font-medium">Marsks & Nos.</h4>
+                  <h4 className="font-medium">Marks & Nos.</h4>
                   <div className="flex flex-row w-96 gap-1">
                     {/* Group 1: First Dropdown and X */}
                     <div className="flex flex-row gap-3 w-36">
@@ -1246,7 +1351,6 @@ const InvoiceGenerator = () => {
                       </Select>
                     </div>
                   </div>
-
                 </div>
               </div>
 
@@ -1258,15 +1362,31 @@ const InvoiceGenerator = () => {
                         title="Section Title"
                         value={section.title}
                         onChange={(e) => {
+                          const newTitle = e.target.value;
+                          // Get HSN code for the selected title
+                          const hsnCode = hsnCodes[newTitle] || "69072100";
+                          
                           setSections(currentSections =>
-                            currentSections.map(s =>
-                              s.id === section.id
-                                ? { ...s, title: e.target.value }
-                                : s
-                            )
+                            currentSections.map(s => {
+                              if (s.id === section.id) {
+                                // Update section title and all items' HSN codes
+                                return {
+                                  ...s,
+                                  title: newTitle,
+                                  items: s.items.map(item => ({
+                                    ...item,
+                                    product: {
+                                      ...item.product,
+                                      hsnCode: hsnCode
+                                    }
+                                  }))
+                                };
+                              }
+                              return s;
+                            })
                           );
                         }}
-                        className="w-96 font-medium  border rounded px-2 py-2"
+                        className="w-96 font-medium border rounded px-2 py-2"
                       >
                         {sectionOptions.map((option, index) => (
                           <option key={index} value={option}>
@@ -1301,8 +1421,8 @@ const InvoiceGenerator = () => {
                           <TableHead>Unit Type</TableHead>
                           <TableHead>SQM/BOX</TableHead>
                           <TableHead>Total SQM</TableHead>
-                          <TableHead>Price (EUR)</TableHead>
-                          <TableHead>Total FOB (EUR)</TableHead>
+                          <TableHead>Price</TableHead>
+                          <TableHead>Total FOB</TableHead>
                           <TableHead className="w-[70px]">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -1489,14 +1609,47 @@ const InvoiceGenerator = () => {
 
                 {/* Total row at the bottom */}
                 <div className="w-full border-t border-gray-300">
-  <div className="flex justify-end p-4">
-    <div className="text-right">
-      <div className="text-sm font-medium text-gray-500">Total</div>
-      <div className="text-lg font-semibold text-black">{totalFOBEuro.toFixed(2)}</div>
-    </div>
-  </div>
-</div>
-
+                  {showInsuranceFreight && (
+                    <>
+                      <div className="flex justify-end border-b border-gray-200">
+                        <div className="w-1/3 text-right p-3 font-medium">
+                          {paymentTerms === "CIF" && "Insurance"}
+                        </div>
+                        <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
+                          {paymentTerms === "CIF" && (
+                            <Input
+                              type="number"
+                              value={insuranceAmount}
+                              onChange={(e) => setInsuranceAmount(Number(e.target.value) || 0)}
+                              className="text-right border-0 p-0 h-6"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex justify-end border-b border-gray-200">
+                        <div className="w-1/3 text-right p-3 font-medium">
+                          Frieght
+                        </div>
+                        <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
+                          <Input
+                            type="number"
+                            value={freightAmount}
+                            onChange={(e) => setFreightAmount(Number(e.target.value) || 0)}
+                            className="text-right border-0 p-0 h-6"
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+                  <div className="flex justify-end">
+                    <div className="w-1/3 text-right p-4 font-medium">
+                      <div className="text-sm font-medium text-gray-500">Total</div>
+                    </div>
+                    <div className="w-1/6 text-right p-4 font-semibold text-lg border-l border-gray-200">
+                      {totalFOBEuro.toFixed(2)}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -1540,26 +1693,6 @@ const InvoiceGenerator = () => {
             </div>
 
             <div className="space-y-4">
-              {/* <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="exportUnderDutyDrawback"
-                  checked={exportUnderDutyDrawback}
-                  onCheckedChange={(checked) => setExportUnderDutyDrawback(!!checked)}
-                />
-                <Label htmlFor="exportUnderDutyDrawback">Export Under Duty Drawback Scheme</Label>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="ftpIncentiveDeclaration">FTP Incentive Declaration</Label>
-                <Textarea
-                  id="ftpIncentiveDeclaration"
-                  value={ftpIncentiveDeclaration}
-                  onChange={(e) => setFtpIncentiveDeclaration(e.target.value)}
-                  placeholder="Enter FTP incentive declaration"
-                  rows={2}
-                />
-              </div> */}
-
               <div className="space-y-2">
                 <Label htmlFor="exportUnderGstCircular">Export Under GST Circular</Label>
                 <Input
@@ -1569,22 +1702,6 @@ const InvoiceGenerator = () => {
                   placeholder="Enter GST circular details"
                 />
               </div>
-
-              {/* <div className="space-y-2">
-                <Label htmlFor="integratedTaxOption">Integrated Tax Option</Label>
-                <Select
-                  value={integratedTaxOption}
-                  onValueChange={(value: "WITH" | "WITHOUT") => setIntegratedTaxOption(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select integrated tax option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="WITHOUT">WITHOUT PAYMENT OF INTEGRATED TAX</SelectItem>
-                    <SelectItem value="WITH">WITH PAYMENT OF INTEGRATED TAX</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div> */}
 
               {integratedTaxOption === "WITHOUT" && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1765,6 +1882,10 @@ const InvoiceGenerator = () => {
               <Save className="mr-2 h-4 w-4" />
               Save Invoice
             </Button>
+            <Button onClick={handleNext}>
+              <ArrowRight className="mr-2 h-4 w-4" />
+              Next
+            </Button>
             {/* <Button onClick={() => {
               setFormSubmitted(true);
               generatePDF();
@@ -1925,7 +2046,7 @@ const InvoiceGenerator = () => {
                 <Label htmlFor="paymentTerms">Payment Terms</Label>
                 <Select
                   value={paymentTerms}
-                  onValueChange={(value: string) => setPaymentTerms(value)}
+                  onValueChange={handlePaymentTermsChange}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select payment terms" />
