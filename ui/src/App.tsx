@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import CompanyProfile from "./pages/CompanyProfile";
@@ -12,12 +12,17 @@ import ShippingTerms from "./pages/ShippingTerms";
 import InvoiceGenerator from "./pages/InvoiceGenerator";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
-import NextForm from "./pages/NextForm"; // Import the new component
+import PackagingList from "./pages/PackagingList";
+import InvoiceEditor from "./pages/InvoiceEditor";
+import AddClient from "./pages/AddClient";
+import ClientList from "./pages/ClientList";
+import AddExporter from "./pages/AddExporter";
+import ExporterList from "./pages/ExporterList";
 
 const queryClient = new QueryClient();
 
-// Create a wrapper for NextForm that loads data from localStorage
-const NextFormWrapper = () => {
+// Create a wrapper for PackagingList that loads data from localStorage
+const PackagingListWrapper = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<any>(null);
 
@@ -43,8 +48,8 @@ const NextFormWrapper = () => {
   }
 
   return (
-    <NextForm 
-      onBack={() => navigate('/')}
+    <PackagingList 
+      onBack={() => navigate('/invoice')}
       importedSections={formData.sections}
       markNumber={formData.markNumber}
       readOnly={formData.readOnly}
@@ -111,10 +116,54 @@ const App = () => (
             }
           />
           <Route
-            path="/next-form" // Updated path to match the navigate call in InvoiceGenerator
+            path="/next-form"
+            element={<Navigate to="/packaging-list" replace />}
+          />
+          <Route
+            path="/packaging-list"
             element={
               <AdminLayout>
-                <NextFormWrapper />
+                <PackagingListWrapper />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/invoice-editor/:id"
+            element={
+              <AdminLayout>
+                <InvoiceEditor />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/add-client"
+            element={
+              <AdminLayout>
+                <AddClient />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/client-list"
+            element={
+              <AdminLayout>
+                <ClientList />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/add-exporter"
+            element={
+              <AdminLayout>
+                <AddExporter />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/exporter-list"
+            element={
+              <AdminLayout>
+                <ExporterList />
               </AdminLayout>
             }
           />

@@ -263,6 +263,11 @@ const InvoiceGenerator = () => {
       id: '1',
       title: 'Glazed porcelain Floor Tiles',
       items: []
+    },
+    {
+      id: '2',
+      title: 'Ceramic Wall Tiles',
+      items: []
     }
   ]);
 
@@ -496,9 +501,21 @@ const InvoiceGenerator = () => {
 
     if (term) {
       setSelectedShippingTerm(termId);
-      setTermsOfDelivery(`FOB AT ${term.port}`);
       setPortOfLoading(term.port);
       setCurrencyRate(term.euroRate.toString());
+      
+      // Update Terms of Delivery based on current payment terms
+      if (paymentTerms === "CIF" || paymentTerms === "CNF") {
+        // For CIF/CNF, keep using the port of discharge
+        if (paymentTerms === "CIF") {
+          setTermsOfDelivery(`CIF AT ${portOfDischarge}`);
+        } else {
+          setTermsOfDelivery(`CNF AT ${portOfDischarge}`);
+        }
+      } else {
+        // For FOB, use the newly selected port of loading
+        setTermsOfDelivery(`FOB AT ${term.port}`);
+      }
     }
   };
 
@@ -751,7 +768,7 @@ const InvoiceGenerator = () => {
     toast.success("CSV exported successfully");
   };
 
-  // Update the handleNext function to pass data to NextForm
+  // Update the handleNext function to pass data to PackagingList
   const handleNext = () => {
     // Save the current state before navigating
     const formData = {
@@ -801,8 +818,8 @@ const InvoiceGenerator = () => {
     // Store the data in localStorage or state management
     localStorage.setItem('invoiceFormData', JSON.stringify(formData));
     
-    // Navigate to the next form
-    navigate('/next-form');
+    // Navigate to the packaging list page
+    navigate('/packaging-list');
   };
 
   // Update the paymentTerms handler to show/hide insurance and freight fields
@@ -812,8 +829,17 @@ const InvoiceGenerator = () => {
     // Show insurance and freight fields for CIF and CNF
     if (value === "CIF" || value === "CNF") {
       setShowInsuranceFreight(true);
+      
+      // Update Terms of Delivery based on payment terms
+      if (value === "CIF") {
+        setTermsOfDelivery(`CIF AT ${portOfDischarge}`);
+      } else {
+        setTermsOfDelivery(`CNF AT ${portOfDischarge}`);
+      }
     } else {
       setShowInsuranceFreight(false);
+      // For FOB, use port of loading
+      setTermsOfDelivery(`FOB AT ${portOfLoading}`);
     }
   };
 
@@ -844,8 +870,14 @@ const InvoiceGenerator = () => {
               SUPPLY MEANT FOR EXPORT UNDER BOND & LUT- LETTER OF UNDERTAKING {integratedTaxOption} PAYMENT OF INTEGRATED TAX
             </p>
           </CardHeader>
+        </Card>
+
+        {/* Exporter Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Exporter Information</CardTitle>
+          </CardHeader>
           <CardContent className="space-y-6">
-            {/* Exporter and Invoice Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div className="space-y-2">
@@ -885,6 +917,7 @@ const InvoiceGenerator = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="e.g., yourmail@gmail.com"
                     required
+                    readOnly
                   />
                 </div>
                 <div className="space-y-2">
@@ -895,6 +928,7 @@ const InvoiceGenerator = () => {
                     onChange={(e) => setTaxid(e.target.value)}
                     placeholder="e.g., 24AACF*********"
                     required
+                    readOnly
                   />
                 </div>
               </div>
@@ -993,63 +1027,59 @@ const InvoiceGenerator = () => {
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Buyer Information */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Buyer Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Buyer Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 gap-6">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="consignee">CONSIGNEE</Label>
-                  <Input
-                    id="consignee"
-                    value={consignee}
-                    onChange={(e) => setConsignee(e.target.value)}
-                    placeholder="Enter consignee details"
-                  />
+                  <h3 className="font-medium">Buyer's Order No. & Date</h3>
                 </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="buyersOrderNo">ORDER NO.</Label>
+                    <Input
+                      id="buyersOrderNo"
+                      value={buyersOrderNo}
+                      onChange={(e) => setBuyersOrderNo(e.target.value)}
+                      placeholder="Enter buyer's order number"
+                    />
+                  </div>
 
-                <div className="space-y-4">
-                  <h3 className="font-medium">BUYER'S ORDER NO. & DATE</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="buyersOrderNo">ORDER NO.</Label>
-                      <Input
-                        id="buyersOrderNo"
-                        value={buyersOrderNo}
-                        onChange={(e) => setBuyersOrderNo(e.target.value)}
-                        placeholder="Enter buyer's order number"
-                      />
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>ORDER DATE</Label>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            id="buyersOrderDate"
-                            variant="outline"
-                            className={cn(
-                              "w-full justify-start text-left font-normal",
-                              !buyersOrderDate && "text-muted-foreground"
-                            )}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {buyersOrderDate ? format(buyersOrderDate, "PPP") : <span>Pick a date</span>}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={buyersOrderDate}
-                            onSelect={(date) => date && setBuyersOrderDate(date)}
-                            initialFocus
-                            className={cn("p-3 pointer-events-auto")}
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
+                  <div className="space-y-2">
+                    <Label>ORDER DATE</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          id="buyersOrderDate"
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !buyersOrderDate && "text-muted-foreground"
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {buyersOrderDate ? format(buyersOrderDate, "PPP") : <span>Pick a date</span>}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={buyersOrderDate}
+                          onSelect={(date) => date && setBuyersOrderDate(date)}
+                          initialFocus
+                          className={cn("p-3 pointer-events-auto")}
+                        />
+                      </PopoverContent>
+                    </Popover>
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <Label htmlFor="poNo">PO NO.</Label>
                   <Input
@@ -1059,22 +1089,39 @@ const InvoiceGenerator = () => {
                     placeholder="Enter PO number"
                   />
                 </div>
-              </div>
-
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="notifyParty">NOTIFY PARTY</Label>
-                  <Input
-                    id="notifyParty"
-                    value={notifyParty}
-                    onChange={(e) => setNotifyParty(e.target.value)}
-                    placeholder="Enter notify party details"
-                  />
+                
+                <div className="grid grid-cols-2 gap-4 mt-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="consignee">CONSIGNEE</Label>
+                    <Input
+                      id="consignee"
+                      value={consignee}
+                      onChange={(e) => setConsignee(e.target.value)}
+                      placeholder="Enter consignee details"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="notifyParty">NOTIFY PARTY</Label>
+                    <Input
+                      id="notifyParty"
+                      value={notifyParty}
+                      onChange={(e) => setNotifyParty(e.target.value)}
+                      placeholder="Enter notify party details"
+                    />
+                  </div>
                 </div>
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {/* Shipping Information */}
+        {/* Shipping Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Shipping Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* First row of fields - yellow highlighted in the image */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="preCarriageBy">Pre-Carriage By</Label>
@@ -1106,16 +1153,6 @@ const InvoiceGenerator = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="originDetails">Origin Details</Label>
-                <Input
-                  id="originDetails"
-                  value={originDetails}
-                  onChange={(e) => setOriginDetails(e.target.value)}
-                  placeholder="Enter origin details"
-                />
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="vesselFlightNo">Vessel/Flight No.</Label>
                 <Input
                   id="vesselFlightNo"
@@ -1129,7 +1166,14 @@ const InvoiceGenerator = () => {
                 <Label htmlFor="portOfLoading">Port of Loading</Label>
                 <Select
                   value={portOfLoading}
-                  onValueChange={(value) => setPortOfLoading(value)}
+                  onValueChange={(value) => {
+                    setPortOfLoading(value);
+                    
+                    // Update Terms of Delivery if payment terms are FOB
+                    if (paymentTerms === "FOB") {
+                      setTermsOfDelivery(`FOB AT ${value}`);
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select port of loading" />
@@ -1148,7 +1192,16 @@ const InvoiceGenerator = () => {
                 <Label htmlFor="portOfDischarge">Port of Discharge</Label>
                 <Select
                   value={portOfDischarge}
-                  onValueChange={(value) => setPortOfDischarge(value)}
+                  onValueChange={(value) => {
+                    setPortOfDischarge(value);
+                    
+                    // Update Terms of Delivery if payment terms are CIF or CNF
+                    if (paymentTerms === "CIF") {
+                      setTermsOfDelivery(`CIF AT ${value}`);
+                    } else if (paymentTerms === "CNF") {
+                      setTermsOfDelivery(`CNF AT ${value}`);
+                    }
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select port of discharge" />
@@ -1181,7 +1234,31 @@ const InvoiceGenerator = () => {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
 
+            {/* Second row of fields - green highlighted in the image */}
+            
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="countryOfOrigin">Country of Origin of Goods</Label>
+                <Input
+                  id="countryOfOrigin"
+                  value={countryOfOrigin}
+                  onChange={(e) => setCountryOfOrigin(e.target.value)}
+                  placeholder="Enter country of origin"
+                  readOnly
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="originDetails">Origin Details</Label>
+                <Input
+                  id="originDetails"
+                  value={originDetails}
+                  onChange={(e) => setOriginDetails(e.target.value)}
+                  placeholder="Enter origin details"
+                />
+              </div>
               <div className="space-y-2">
                 <Label htmlFor="countryOfFinalDestination">Country of Final Destination</Label>
                 <Select
@@ -1200,19 +1277,37 @@ const InvoiceGenerator = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
+              </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+             
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="termsOfDelivery">Terms of Delivery</Label>
                 <Input
                   id="termsOfDelivery"
                   value={termsOfDelivery}
-                  onChange={(e) => setTermsOfDelivery(e.target.value)}
-                  placeholder="Enter terms of delivery"
+                  readOnly
+                  className="bg-gray-50"
+                  placeholder="Terms of Delivery"
                 />
               </div>
 
+              <div>
+              <Label htmlFor="payment" className="uppercase text-xs">Payment :</Label>
+              <div className="flex items-start gap-2">
+                <Textarea
+                  id="payment"
+                  className="mt-1 h-24"
+                  placeholder="Enter Payment Details"
+                  
+                  
+                />
+              </div>
+            </div>
+
+             
+              
+              <div className="grid flex-row grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="shippingMethod">Shipping Method</Label>
                 <Select
@@ -1231,19 +1326,6 @@ const InvoiceGenerator = () => {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="countryOfOrigin">Country of Origin of Goods</Label>
-                <Input
-                  id="countryOfOrigin"
-                  value={countryOfOrigin}
-                  onChange={(e) => setCountryOfOrigin(e.target.value)}
-                  placeholder="Enter country of origin"
-                  readOnly
-                />
-              </div>
-
-
               <div className="space-y-2">
                 <Label htmlFor="selectedCurrency">Currency</Label>
                 <Select
@@ -1275,385 +1357,394 @@ const InvoiceGenerator = () => {
                 />
               </div>
             </div>
+            </div>
+          </CardContent>
+        </Card>
 
-            {/* Product Information */}
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-medium">Product Information</h3>
-                <Button onClick={addNewSection}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Section
-                </Button>
-              </div>
-
-              <div className="rounded-lg">
-                <div className="space-y-4">
-                  <h4 className="font-medium">Marks & Nos.</h4>
-                  <div className="flex flex-row w-96 gap-1">
-                    {/* Group 1: First Dropdown and X */}
-                    <div className="flex flex-row gap-3 w-36">
-                      <Select
-                        value={marksAndNosConfig.first}
-                        onValueChange={(value) => setMarksAndNosConfig(prev => ({ ...prev, first: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select number" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {numberOptions1.map((num) => (
-                            <SelectItem key={num} value={num}>
-                              {num}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <div className="flex items-center w-8 justify-center">
-                        <span className="text-md font-medium">X</span>
-                      </div>
-                    </div>
-
-                    {/* Small gap between "X" and 2nd dropdown */}
-                    <div className="w-1" />
-
-                    {/* Group 2: Third Dropdown and Container Type */}
-                    <div className="flex flex-row gap-10 w-64">
-                      <Select
-                        value={marksAndNosConfig.third}
-                        onValueChange={(value) => setMarksAndNosConfig(prev => ({ ...prev, third: value }))}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select number" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {numberOptions2.map((num) => (
-                            <SelectItem key={num} value={num}>
-                              {num}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-
-                      <Select
-                        value={containerType}
-                        onValueChange={setContainerType}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {containerTypes.map((type) => (
-                            <SelectItem key={type} value={type}>
-                              {type}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto">
-                {sections.map((section, sectionIndex) => (
-                  <div key={section.id} className="mb-6">
-                    <div className="flex items-center gap-4 mb-2">
-                      <select
-                        title="Section Title"
-                        value={section.title}
-                        onChange={(e) => {
-                          const newTitle = e.target.value;
-                          // Get HSN code for the selected title
-                          const hsnCode = hsnCodes[newTitle] || "69072100";
-                          
-                          setSections(currentSections =>
-                            currentSections.map(s => {
-                              if (s.id === section.id) {
-                                // Update section title and all items' HSN codes
-                                return {
-                                  ...s,
-                                  title: newTitle,
-                                  items: s.items.map(item => ({
-                                    ...item,
-                                    product: {
-                                      ...item.product,
-                                      hsnCode: hsnCode
-                                    }
-                                  }))
-                                };
-                              }
-                              return s;
-                            })
-                          );
-                        }}
-                        className="w-96 font-medium border rounded px-2 py-2"
-                      >
-                        {sectionOptions.map((option, index) => (
-                          <option key={index} value={option}>
-                            {option}
-                          </option>
+        {/* Product Information */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Product Information</CardTitle>
+            <Button onClick={addNewSection}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Section
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="rounded-lg">
+              <div className="space-y-4">
+                <h4 className="font-medium">Marks & Nos.</h4>
+                <div className="flex flex-row w-96 gap-1">
+                  {/* Group 1: First Dropdown and X */}
+                  <div className="flex flex-row gap-3 w-36">
+                    <Select
+                      value={marksAndNosConfig.first}
+                      onValueChange={(value) => setMarksAndNosConfig(prev => ({ ...prev, first: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select number" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {numberOptions1.map((num) => (
+                          <SelectItem key={num} value={num}>
+                            {num}
+                          </SelectItem>
                         ))}
-                      </select>
+                      </SelectContent>
+                    </Select>
 
-                      {sections.length > 1 && section.items.length === 0 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSections(currentSections =>
-                              currentSections.filter(s => s.id !== section.id)
-                            );
-                          }}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      )}
+                    <div className="flex items-center w-8 justify-center">
+                      <span className="text-md font-medium">X</span>
                     </div>
-
-                    <Table className="invoice-table">
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead className="w-[50px]">SR NO</TableHead>
-                          <TableHead>Description</TableHead>
-                          <TableHead>HSN Code</TableHead>
-                          <TableHead>Size</TableHead>
-                          <TableHead className="w-[100px]">Quantity</TableHead>
-                          <TableHead>Unit Type</TableHead>
-                          <TableHead>SQM/BOX</TableHead>
-                          <TableHead>Total SQM</TableHead>
-                          <TableHead>Price</TableHead>
-                          <TableHead>Total FOB</TableHead>
-                          <TableHead className="w-[70px]">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {section.items.map((item, itemIndex) => {
-                          // Calculate the absolute index for SR NO
-                          let absoluteIndex = 1;
-                          for (let i = 0; i < sectionIndex; i++) {
-                            absoluteIndex += sections[i].items.length;
-                          }
-                          absoluteIndex += itemIndex;
-
-                          return (
-                            <TableRow key={item.id}>
-                              <TableCell>{absoluteIndex}</TableCell>
-                              <TableCell>
-                                <Input
-                                  value={item.product.description}
-                                  onChange={(e) => {
-                                    setSections(currentSections =>
-                                      currentSections.map(s =>
-                                        s.id === section.id
-                                          ? {
-                                            ...s,
-                                            items: s.items.map(i =>
-                                              i.id === item.id
-                                                ? {
-                                                  ...i,
-                                                  product: {
-                                                    ...i.product,
-                                                    description: e.target.value,
-                                                    hsnCode: hsnCodes[e.target.value] || hsnCodes["Sanitary"]
-                                                  }
-                                                }
-                                                : i
-                                            )
-                                          }
-                                          : s
-                                      )
-                                    );
-                                  }}
-                                  className="h-8"
-                                  placeholder="Enter description"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  value={item.product.hsnCode}
-                                  readOnly
-                                  className="h-8 bg-gray-50 w-24"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Select
-                                  value={item.product.size}
-                                  onValueChange={(value) => {
-                                    setSections(currentSections =>
-                                      currentSections.map(s =>
-                                        s.id === section.id
-                                          ? {
-                                            ...s,
-                                            items: s.items.map(i =>
-                                              i.id === item.id
-                                                ? {
-                                                  ...i,
-                                                  product: {
-                                                    ...i.product,
-                                                    size: value
-                                                  }
-                                                }
-                                                : i
-                                            )
-                                          }
-                                          : s
-                                      )
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger className="h-8">
-                                    <SelectValue placeholder="Select size" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sizes.map((size) => (
-                                      <SelectItem key={size} value={size}>
-                                        {size}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell>
-                                <Input
-                                  type="number"
-                                  min="0"
-                                  value={item.quantity}
-                                  onChange={(e) => {
-                                    const quantity = parseInt(e.target.value) || 0;
-                                    setSections(currentSections =>
-                                      currentSections.map(s =>
-                                        s.id === section.id
-                                          ? {
-                                            ...s,
-                                            items: s.items.map(i =>
-                                              i.id === item.id
-                                                ? {
-                                                  ...i,
-                                                  quantity,
-                                                  totalSQM: quantity * i.product.sqmPerBox,
-                                                  totalFOB: quantity * i.product.price
-                                                }
-                                                : i
-                                            )
-                                          }
-                                          : s
-                                      )
-                                    );
-                                  }}
-                                  className="h-8"
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <Select
-                                  value={item.unitType}
-                                  onValueChange={(value) => {
-                                    setSections(currentSections =>
-                                      currentSections.map(s =>
-                                        s.id === section.id
-                                          ? {
-                                            ...s,
-                                            items: s.items.map(i =>
-                                              i.id === item.id
-                                                ? { ...i, unitType: value }
-                                                : i
-                                            )
-                                          }
-                                          : s
-                                      )
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger className="h-8">
-                                    <SelectValue placeholder="Select unit" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {units.map((unit) => (
-                                      <SelectItem key={unit} value={unit}>
-                                        {unit}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </TableCell>
-                              <TableCell>{item.product.sqmPerBox.toFixed(2)}</TableCell>
-                              <TableCell>{item.totalSQM.toFixed(2)}</TableCell>
-                              <TableCell>{item.product.price.toFixed(2)}</TableCell>
-                              <TableCell>{item.totalFOB.toFixed(2)}</TableCell>
-                              <TableCell>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => removeRow(section.id, item.id)}
-                                >
-                                  <Trash className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                        <TableRow>
-                          <TableCell colSpan={11}>
-                            <Button
-                              variant="ghost"
-                              onClick={() => addNewRow(section.id)}
-                              className="h-8"
-                            >
-                              <Plus className="h-4 w-4 mr-1" /> Add Row
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
                   </div>
-                ))}
 
-                {/* Total row at the bottom */}
-                <div className="w-full border-t border-gray-300">
-                  {showInsuranceFreight && (
-                    <>
-                      <div className="flex justify-end border-b border-gray-200">
-                        <div className="w-1/3 text-right p-3 font-medium">
-                          {paymentTerms === "CIF" && "Insurance"}
-                        </div>
-                        <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
-                          {paymentTerms === "CIF" && (
-                            <Input
-                              type="number"
-                              value={insuranceAmount}
-                              onChange={(e) => setInsuranceAmount(Number(e.target.value) || 0)}
-                              className="text-right border-0 p-0 h-6"
-                            />
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex justify-end border-b border-gray-200">
-                        <div className="w-1/3 text-right p-3 font-medium">
-                          Frieght
-                        </div>
-                        <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
-                          <Input
-                            type="number"
-                            value={freightAmount}
-                            onChange={(e) => setFreightAmount(Number(e.target.value) || 0)}
-                            className="text-right border-0 p-0 h-6"
-                          />
-                        </div>
-                      </div>
-                    </>
-                  )}
-                  <div className="flex justify-end">
-                    <div className="w-1/3 text-right p-4 font-medium">
-                      <div className="text-sm font-medium text-gray-500">Total</div>
-                    </div>
-                    <div className="w-1/6 text-right p-4 font-semibold text-lg border-l border-gray-200">
-                      {totalFOBEuro.toFixed(2)}
-                    </div>
+                  {/* Small gap between "X" and 2nd dropdown */}
+                  <div className="w-1" />
+
+                  {/* Group 2: Third Dropdown and Container Type */}
+                  <div className="flex flex-row gap-10 w-64">
+                    <Select
+                      value={marksAndNosConfig.third}
+                      onValueChange={(value) => setMarksAndNosConfig(prev => ({ ...prev, third: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select number" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {numberOptions2.map((num) => (
+                          <SelectItem key={num} value={num}>
+                            {num}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+
+                    <Select
+                      value={containerType}
+                      onValueChange={setContainerType}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {containerTypes.map((type) => (
+                          <SelectItem key={type} value={type}>
+                            {type}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Package Information */}
+            <div className="overflow-x-auto">
+              {sections.map((section, sectionIndex) => (
+                <div key={section.id} className="mb-6">
+                  <div className="flex items-center gap-4 mb-2">
+                    <select
+                      title="Section Title"
+                      value={section.title}
+                      onChange={(e) => {
+                        const newTitle = e.target.value;
+                        // Get HSN code for the selected title
+                        const hsnCode = hsnCodes[newTitle] || "69072100";
+                        
+                        setSections(currentSections =>
+                          currentSections.map(s => {
+                            if (s.id === section.id) {
+                              // Update section title and all items' HSN codes
+                              return {
+                                ...s,
+                                title: newTitle,
+                                items: s.items.map(item => ({
+                                  ...item,
+                                  product: {
+                                    ...item.product,
+                                    hsnCode: hsnCode
+                                  }
+                                }))
+                              };
+                            }
+                            return s;
+                          })
+                        );
+                      }}
+                      className="w-96 font-medium border rounded px-2 py-2"
+                    >
+                      {sectionOptions.map((option, index) => (
+                        <option key={index} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+
+                    {sections.length > 1 && section.items.length === 0 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSections(currentSections =>
+                            currentSections.filter(s => s.id !== section.id)
+                          );
+                        }}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  <Table className="invoice-table">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[50px]">SR NO</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>HSN Code</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead className="w-[100px]">Quantity</TableHead>
+                        <TableHead>Unit Type</TableHead>
+                        <TableHead>SQM/BOX</TableHead>
+                        <TableHead>Total SQM</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Total FOB</TableHead>
+                        <TableHead className="w-[70px]">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {section.items.map((item, itemIndex) => {
+                        // Calculate the absolute index for SR NO
+                        let absoluteIndex = 1;
+                        for (let i = 0; i < sectionIndex; i++) {
+                          absoluteIndex += sections[i].items.length;
+                        }
+                        absoluteIndex += itemIndex;
+
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell>{absoluteIndex}</TableCell>
+                            <TableCell>
+                              <Input
+                                value={item.product.description}
+                                onChange={(e) => {
+                                  setSections(currentSections =>
+                                    currentSections.map(s =>
+                                      s.id === section.id
+                                        ? {
+                                          ...s,
+                                          items: s.items.map(i =>
+                                            i.id === item.id
+                                              ? {
+                                                ...i,
+                                                product: {
+                                                  ...i.product,
+                                                  description: e.target.value,
+                                                  hsnCode: hsnCodes[e.target.value] || hsnCodes["Sanitary"]
+                                                }
+                                              }
+                                              : i
+                                          )
+                                        }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="h-8"
+                                placeholder="Enter description"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={item.product.hsnCode}
+                                readOnly
+                                className="h-8 bg-gray-50 w-24"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={item.product.size}
+                                onValueChange={(value) => {
+                                  setSections(currentSections =>
+                                    currentSections.map(s =>
+                                      s.id === section.id
+                                        ? {
+                                          ...s,
+                                          items: s.items.map(i =>
+                                            i.id === item.id
+                                              ? {
+                                                ...i,
+                                                product: {
+                                                  ...i.product,
+                                                  size: value
+                                                }
+                                              }
+                                              : i
+                                          )
+                                        }
+                                        : s
+                                    )
+                                  );
+                                }}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Select size" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {sizes.map((size) => (
+                                    <SelectItem key={size} value={size}>
+                                      {size}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const quantity = parseInt(e.target.value) || 0;
+                                  setSections(currentSections =>
+                                    currentSections.map(s =>
+                                      s.id === section.id
+                                        ? {
+                                          ...s,
+                                          items: s.items.map(i =>
+                                            i.id === item.id
+                                              ? {
+                                                ...i,
+                                                quantity,
+                                                totalSQM: quantity * i.product.sqmPerBox,
+                                                totalFOB: quantity * i.product.price
+                                              }
+                                              : i
+                                          )
+                                        }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="h-8"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Select
+                                value={item.unitType}
+                                onValueChange={(value) => {
+                                  setSections(currentSections =>
+                                    currentSections.map(s =>
+                                      s.id === section.id
+                                        ? {
+                                          ...s,
+                                          items: s.items.map(i =>
+                                            i.id === item.id
+                                              ? { ...i, unitType: value }
+                                              : i
+                                          )
+                                        }
+                                        : s
+                                    )
+                                  );
+                                }}
+                              >
+                                <SelectTrigger className="h-8">
+                                  <SelectValue placeholder="Select unit" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {units.map((unit) => (
+                                    <SelectItem key={unit} value={unit}>
+                                      {unit}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
+                            <TableCell>{item.product.sqmPerBox.toFixed(2)}</TableCell>
+                            <TableCell>{item.totalSQM.toFixed(2)}</TableCell>
+                            <TableCell>{item.product.price.toFixed(2)}</TableCell>
+                            <TableCell>{item.totalFOB.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeRow(section.id, item.id)}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                      <TableRow>
+                        <TableCell colSpan={11}>
+                          <Button
+                            variant="ghost"
+                            onClick={() => addNewRow(section.id)}
+                            className="h-8"
+                          >
+                            <Plus className="h-4 w-4 mr-1" /> Add Row
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              ))}
+
+              {/* Total row at the bottom */}
+              <div className="w-full border-t border-gray-300">
+                {showInsuranceFreight && (
+                  <>
+                    <div className="flex justify-end border-b border-gray-200">
+                      <div className="w-1/3 text-right p-3 font-medium">
+                        {paymentTerms === "CIF" && "Insurance"}
+                      </div>
+                      <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
+                        {paymentTerms === "CIF" && (
+                          <Input
+                            type="number"
+                            value={insuranceAmount}
+                            onChange={(e) => setInsuranceAmount(Number(e.target.value) || 0)}
+                            className="text-right border-0 p-0 h-6"
+                          />
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex justify-end border-b border-gray-200">
+                      <div className="w-1/3 text-right p-3 font-medium">
+                        Frieght
+                      </div>
+                      <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
+                        <Input
+                          type="number"
+                          value={freightAmount}
+                          onChange={(e) => setFreightAmount(Number(e.target.value) || 0)}
+                          className="text-right border-0 p-0 h-6"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-end">
+                  <div className="w-1/3 text-right p-4 font-medium">
+                    <div className="text-sm font-medium text-gray-500">Total</div>
+                  </div>
+                  <div className="w-1/6 text-right p-4 font-semibold text-lg border-l border-gray-200">
+                    {totalFOBEuro.toFixed(2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Package Information */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Package Information</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="noOfPackages">No. of Packages</Label>
@@ -1749,132 +1840,135 @@ const InvoiceGenerator = () => {
                 />
               </div>
             </div>
+          </CardContent>
+        </Card>
 
-            {integratedTaxOption === "WITHOUT" && (
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="font-medium">Supplier Details</h3>
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSuppliers([...suppliers, {
-                        id: (suppliers.length + 1).toString(),
-                        name: '',
-                        gstin: '',
-                        invoiceNo: '',
-                        date: ''
-                      }]);
-                    }}
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Supplier
-                  </Button>
-                </div>
-                {suppliers.map((supplier, index) => (
-                  <div key={supplier.id} className="border p-4 rounded-lg">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="font-medium">SUPPLIER DETAILS :- {index + 1}</h4>
-                      {suppliers.length > 1 && (
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSuppliers(suppliers.filter(s => s.id !== supplier.id));
-                          }}
-                        >
-                          <Trash className="h-4 w-4" />
-                        </Button>
-                      )}
+        {integratedTaxOption === "WITHOUT" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Supplier Details</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex justify-between items-center">
+                <div className="flex-grow"></div>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSuppliers([...suppliers, {
+                      id: (suppliers.length + 1).toString(),
+                      name: '',
+                      gstin: '',
+                      invoiceNo: '',
+                      date: ''
+                    }]);
+                  }}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Supplier
+                </Button>
+              </div>
+              {suppliers.map((supplier, index) => (
+                <div key={supplier.id} className="border p-4 rounded-lg">
+                  <div className="flex justify-between items-center mb-4">
+                    <h4 className="font-medium">SUPPLIER DETAILS :- {index + 1}</h4>
+                    {suppliers.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => {
+                          setSuppliers(suppliers.filter(s => s.id !== supplier.id));
+                        }}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor={`name-${supplier.id}`}>NAME :</Label>
+                      <Input
+                        id={`name-${supplier.id}`}
+                        value={supplier.name}
+                        onChange={(e) => {
+                          setSuppliers(suppliers.map(s =>
+                            s.id === supplier.id
+                              ? { ...s, name: e.target.value }
+                              : s
+                          ));
+                          if (index === 0) {
+                            setAuthorizedName(e.target.value);
+                          }
+                        }}
+                        placeholder="Enter supplier name"
+                      />
                     </div>
-                    <div className="space-y-4">
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`gstin-${supplier.id}`}>GSTIN NO. :</Label>
+                      <Input
+                        id={`gstin-${supplier.id}`}
+                        value={supplier.gstin}
+                        onChange={(e) => {
+                          setSuppliers(suppliers.map(s =>
+                            s.id === supplier.id
+                              ? { ...s, gstin: e.target.value }
+                              : s
+                          ));
+                          if (index === 0) {
+                            setAuthorizedGstin(e.target.value);
+                          }
+                        }}
+                        placeholder="Enter GSTIN number"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor={`name-${supplier.id}`}>NAME :</Label>
+                        <Label htmlFor={`invoiceNo-${supplier.id}`}>TAX INVOICE NO :</Label>
                         <Input
-                          id={`name-${supplier.id}`}
-                          value={supplier.name}
+                          id={`invoiceNo-${supplier.id}`}
+                          value={supplier.invoiceNo}
                           onChange={(e) => {
                             setSuppliers(suppliers.map(s =>
                               s.id === supplier.id
-                                ? { ...s, name: e.target.value }
+                                ? { ...s, invoiceNo: e.target.value }
                                 : s
                             ));
                             if (index === 0) {
-                              setAuthorizedName(e.target.value);
+                              setGstInvoiceNoDate(`${e.target.value} ${supplier.date}`);
                             }
                           }}
-                          placeholder="Enter supplier name"
+                          placeholder="Enter tax invoice number"
                         />
                       </div>
-
                       <div className="space-y-2">
-                        <Label htmlFor={`gstin-${supplier.id}`}>GSTIN NO. :</Label>
+                        <Label htmlFor={`date-${supplier.id}`}>DATE :</Label>
                         <Input
-                          id={`gstin-${supplier.id}`}
-                          value={supplier.gstin}
+                          id={`date-${supplier.id}`}
+                          type="date"
+                          value={supplier.date}
                           onChange={(e) => {
                             setSuppliers(suppliers.map(s =>
                               s.id === supplier.id
-                                ? { ...s, gstin: e.target.value }
+                                ? { ...s, date: e.target.value }
                                 : s
                             ));
                             if (index === 0) {
-                              setAuthorizedGstin(e.target.value);
+                              setGstInvoiceNoDate(`${supplier.invoiceNo} ${e.target.value}`);
                             }
                           }}
-                          placeholder="Enter GSTIN number"
                         />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor={`invoiceNo-${supplier.id}`}>TAX INVOICE NO :</Label>
-                          <Input
-                            id={`invoiceNo-${supplier.id}`}
-                            value={supplier.invoiceNo}
-                            onChange={(e) => {
-                              setSuppliers(suppliers.map(s =>
-                                s.id === supplier.id
-                                  ? { ...s, invoiceNo: e.target.value }
-                                  : s
-                              ));
-                              if (index === 0) {
-                                setGstInvoiceNoDate(`${e.target.value} ${supplier.date}`);
-                              }
-                            }}
-                            placeholder="Enter tax invoice number"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor={`date-${supplier.id}`}>DATE :</Label>
-                          <Input
-                            id={`date-${supplier.id}`}
-                            type="date"
-                            value={supplier.date}
-                            onChange={(e) => {
-                              setSuppliers(suppliers.map(s =>
-                                s.id === supplier.id
-                                  ? { ...s, date: e.target.value }
-                                  : s
-                              ));
-                              if (index === 0) {
-                                setGstInvoiceNoDate(`${supplier.invoiceNo} ${e.target.value}`);
-                              }
-                            }}
-                          />
-                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
 
+        <Card className="mt-24">
           <CardFooter className="flex justify-end gap-4">
-            {/* <Button variant="outline" onClick={exportCSV}>
-              <FileText className="mr-2 h-4 w-4" />
-              Export CSV
-            </Button> */}
             <Button onClick={() => {
               setFormSubmitted(true);
               saveInvoiceData();
@@ -1886,13 +1980,6 @@ const InvoiceGenerator = () => {
               <ArrowRight className="mr-2 h-4 w-4" />
               Next
             </Button>
-            {/* <Button onClick={() => {
-              setFormSubmitted(true);
-              generatePDF();
-            }}>
-              <FileText className="mr-2 h-4 w-4" />
-              Generate PDF
-            </Button> */}
           </CardFooter>
         </Card>
       </div>
@@ -1913,7 +2000,7 @@ const InvoiceGenerator = () => {
               companyName={companyProfile?.name || "COMPANY NAME"}
               companyAddress={companyAddress}
               companyEmail={"EMAIL: " + (companyProfile?.email || "info@company.com")}
-              taxId={"TAX ID: TX12345"}
+              taxId={" TX12345"}
               stateCode={"STATE CODE: " + stateCode}
               panNo={"PAN NO. #: " + panNo}
               gstinNo={"GSTIN NO.#: " + gstinNo}
