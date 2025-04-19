@@ -1,0 +1,25 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "type": "module",
+  "main": "src/app.js",
+  "license": "MIT",
+  "scripts": {
+    "start": "node src/app.js",
+    "dev": "nodemon src/app.js",
+    "generate": "drizzle-kit generate:sqlite",
+    "migrate": "drizzle-kit push:sqlite"
+  },
+  "dependencies": {
+    "better-sqlite3": "^9.4.3",
+    "cors": "^2.8.5",
+    "drizzle-orm": "^0.42.0",
+    "express": "^5.1.0",
+    "morgan": "^1.10.0",
+    "pm2": "^6.0.5"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.31.0",
+    "nodemon": "^3.1.9"
+  }
+}

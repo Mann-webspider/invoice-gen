@@ -19,7 +19,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children }) => {
           {children}
         </main>
       </div>
-      <Toaster position="top-right" />
+      
     </div>
   );
 };

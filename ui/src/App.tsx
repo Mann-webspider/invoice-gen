@@ -1,8 +1,7 @@
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/sonner";
+import { QueryProvider } from '@/providers/query-provider';
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import Dashboard from "./pages/Dashboard";
 import CompanyProfile from "./pages/CompanyProfile";
@@ -12,13 +11,10 @@ import InvoiceGenerator from "./pages/InvoiceGenerator";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
-
 const App = () => (
-  <QueryClientProvider client={queryClient}>
+  <QueryProvider>
     <TooltipProvider>
       <Toaster />
-      <Sonner />
       <BrowserRouter>
         <Routes>
           <Route
@@ -37,14 +33,6 @@ const App = () => (
               </AdminLayout>
             }
           />
-          {/* <Route
-            path="/clients"
-            element={
-              <AdminLayout>
-                <Clients />
-              </AdminLayout>
-            }
-          /> */}
           <Route
             path="/products"
             element={
@@ -81,7 +69,7 @@ const App = () => (
         </Routes>
       </BrowserRouter>
     </TooltipProvider>
-  </QueryClientProvider>
+  </QueryProvider>
 );
 
 export default App;

@@ -6,12 +6,14 @@ import { FileText, Users, Package, Ship, Plus } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
-const Dashboard = () => {
+const Dashboard =  () => {
+  
   const invoices = getInvoices();
   const products = getProducts();
   const clients = getClients();
   const shippingTerms = getShippingTerms();
 
+   
   const statCards = [
     {
       title: "Total Invoices",

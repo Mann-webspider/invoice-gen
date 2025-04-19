@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useInvoiceData } from "@/hooks/useInvoiceData";
+import { useInvoicePreview } from "@/hooks/useInvoicePreview";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -137,10 +139,11 @@ function numberToWords(num: number) {
 }
 
 const InvoiceGenerator = () => {
-  const [clients, setClients] = useState<Client[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [shippingTerms, setShippingTerms] = useState<ShippingTerm[]>([]);
-  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
+  const { clients, products, shippingTerms, companyProfile, isLoading, error } = useInvoiceData();
+  const { generatePreview, previewUrl, isLoading: isPreviewLoading } = useInvoicePreview({
+    onPreviewSuccess: () => setPreviewOpen(true),
+    onPreviewError: (error) => toast.error(error)
+  });
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [taxOptionDialogOpen, setTaxOptionDialogOpen] = useState(false);
@@ -153,6 +156,65 @@ const InvoiceGenerator = () => {
   const toggleSection = (section: 'exporter' | 'shipping' | 'product' | 'gst') => {
     setExpandedSection(section);
   };
+
+  //exporter details
+  const[exporterData,setExporterData] = useState([{}]);
+  const [exporter,setExporter] = useState({
+    company_name: "",
+    company_address: "",
+    email: "",
+    tax_id: "",
+    ie_code: "",
+    pan_number: "",
+    gstin_number: "",
+    state_code: "",
+    invoice_number: "",
+    invoice_date: "",
+    consignee: "",
+    notify_party: "",
+    buyers_order_no: "",
+    buyers_order_date: "",
+    po_no: "",
+  });
+
+  // shipping details
+  const [shippingData,setShippingData] = useState({})
+  const [shipping,setShipping] = useState({
+    pre_carriage_by: "",
+    place_of_receipt: "",
+    vessel_flight_no: "",
+    port_of_loading: "",
+    port_of_discharge: "",
+    final_destination: "",
+    country_of_origin: "",
+    origin_details: "",
+    country_of_final_destination: "",
+    terms_of_delivery: "",
+    payment_terms: "",
+    shipping_method: "",
+    
+  })
+
+  // product details
+  const [productData,setProductData] = useState([{}]);
+  const [product,setProduct] = useState({
+    marks: "",
+    nos:"",
+
+    size: "",
+    quantity: "",
+    price: "",
+    total: ""
+  })
+
+  const [gstData,setGstData] = useState([{}]);  
+  const [gst ,setGst] = useState({
+    arn: "",
+    lut_date: "",
+    rate: "",
+    tax: "",
+    total: ""    
+  })
 
   // Invoice Header
   const [invoiceNo, setInvoiceNo] = useState<string>("");
@@ -311,21 +373,12 @@ const InvoiceGenerator = () => {
   useEffect(() => {
     // Show the tax option dialog
     setTaxOptionDialogOpen(true);
-    // Load data from localStorage
-    const clientsData = getClients();
-    const productsData = getProducts();
-    const shippingTermsData = getShippingTerms();
-    const companyProfileData = getCompanyProfile();
 
-    setClients(clientsData);
-    setProducts(productsData);
-    setShippingTerms(shippingTermsData);
-    setCompanyProfile(companyProfileData);
-
-    if (companyProfileData) {
-      setPanNo(companyProfileData.pan);
-      setGstinNo(companyProfileData.gstin);
-      setDeclarationText(companyProfileData.declarationText);
+    // Set initial data from companyProfile
+    if (companyProfile) {
+      setPanNo(companyProfile.pan);
+      setGstinNo(companyProfile.gstin);
+      setDeclarationText(companyProfile.declarationText);
     }
 
     // Add an empty row to the first section
@@ -591,62 +644,7 @@ const InvoiceGenerator = () => {
     return savedInvoice;
   };
 
-  const generatePDF = () => {
-    // Validate required fields first
-    if (!invoiceNo.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter an invoice number");
-      }
-      return;
-    }
-
-    if (!buyersOrderNo.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter a buyer's order number");
-      }
-      return;
-    }
-
-    if (!poNo.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter a PO number");
-      }
-      return;
-    }
-
-    if (!consignee.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter a consignee");
-      }
-      return;
-    }
-
-    if (!selectedShippingTerm) {
-      if (formSubmitted) {
-        toast.error("Please select shipping terms");
-      }
-      return;
-    }
-
-    if (sections.length === 0) {
-      if (formSubmitted) {
-        toast.error("Please add at least one section");
-      }
-      return;
-    }
-
-    // const hasEmptyItems = sections.some(section => section.items.some(item => !item.product.marksAndNos || item.quantity <= 0));
-    // if (hasEmptyItems) {
-    //   if (formSubmitted) {
-    //     toast.error("Please complete all items in all sections");
-    //   }
-    //   return;
-    // }
-
-    // Show the tax option dialog
-    setTaxOptionDialogOpen(true);
-  };
-
+ 
   const handleGeneratePDF = () => {
     // Close the dialog
     setTaxOptionDialogOpen(false);
