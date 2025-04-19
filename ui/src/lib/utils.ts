@@ -68,7 +68,7 @@ export function convertAmountToWords(amount: number): string {
 }
 
 // Function to format currency
-export function formatCurrency(amount: number, currency: string = "EUR"): string {
+export function formatCurrency(amount: number, currency: string = "USD"): string {
   return new Intl.NumberFormat("en-IN", {
     style: "currency",
     currency,

@@ -113,7 +113,7 @@ const Dashboard =  () => {
                     <div className="font-medium">
                       {new Intl.NumberFormat("en-IN", {
                         style: "currency",
-                        currency: "EUR",
+                        currency: "USD",
                       }).format(invoice.totalFOBEuro)}
                     </div>
                     <div className="text-sm text-muted-foreground">
