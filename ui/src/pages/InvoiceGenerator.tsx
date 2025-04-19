@@ -384,7 +384,15 @@ const InvoiceGenerator = () => {
 
   useEffect(() => {
     // Show the tax option dialog
-    setTaxOptionDialogOpen(true);
+    console.log(localStorage.getItem("taxDialogBox"));
+    if(localStorage.getItem("taxDialogBox")=="false"){
+      
+      setTaxOptionDialogOpen(false);
+    }else{
+
+      setTaxOptionDialogOpen(true);
+      
+    }
 
     // Set initial data from companyProfile
     if (companyProfile) {
@@ -763,13 +771,12 @@ const InvoiceGenerator = () => {
     }
 
     // Show the tax option dialog
-    setTaxOptionDialogOpen(true);
+    // setTaxOptionDialogOpen(true);
   };
 
   const handleGeneratePDF = () => {
     // Close the dialog
-    setTaxOptionDialogOpen(false);
-
+    
     // Generate the PDF
     const savedInvoice = saveInvoiceData();
     if (!savedInvoice) return;
@@ -905,6 +912,8 @@ const InvoiceGenerator = () => {
       setTermsOfDelivery(`FOB AT ${portOfLoading}`);
     }
   };
+
+  const handleSaveInvoice=()=>{}
 
   return (
     <div>
@@ -2034,6 +2043,7 @@ const InvoiceGenerator = () => {
             <Button onClick={() => {
               setFormSubmitted(true);
               handleSaveInvoice();
+              localStorage.setItem("taxDialogBox","false")
             }}>
               <Save className="mr-2 h-4 w-4" />
               Save Invoice
@@ -2227,7 +2237,12 @@ const InvoiceGenerator = () => {
             </div>
           </div>
           <div className="flex justify-end mt-4">
-            <Button onClick={handleGeneratePDF}>Submit</Button>
+            <Button onClick={()=>{
+              localStorage.setItem("taxDialogBox","false")
+              setTaxOptionDialogOpen(false)
+            }}>
+              Submit
+              </Button>
           </div>
         </DialogContent>
       </Dialog>

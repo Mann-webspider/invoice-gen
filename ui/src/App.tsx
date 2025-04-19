@@ -18,6 +18,7 @@ import AddClient from "./pages/AddClient";
 import ClientList from "./pages/ClientList";
 import AddExporter from "./pages/AddExporter";
 import ExporterList from "./pages/ExporterList";
+import { QueryProvider } from "./providers/query-provider";
 
 const queryClient = new QueryClient();
 

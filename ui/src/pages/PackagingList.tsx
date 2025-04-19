@@ -1075,7 +1075,9 @@ const PackagingList = ({
 
           <div className="flex justify-between mt-8">
             <Button variant="outline" onClick={onBack}>Back</Button>
-            <Button variant="default">Submit</Button>
+            <Button variant="default" onClick={()=>{
+               localStorage.setItem("taxDialogBox","true")
+               console.log(localStorage.getItem("taxDialogBox"));}}>Submit </Button>
         </div>
       </CardContent>
       </Card>
