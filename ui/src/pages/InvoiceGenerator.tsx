@@ -785,6 +785,9 @@ const InvoiceGenerator = () => {
     toast.success("PDF preview generated");
   };
 
+  const handleSaveInvoice = ()=>{
+    
+  }
   const exportCSV = () => {
     if (sections.length === 0) {
       toast.error("Please add at least one section");
@@ -912,8 +915,6 @@ const InvoiceGenerator = () => {
       setTermsOfDelivery(`FOB AT ${portOfLoading}`);
     }
   };
-
-  const handleSaveInvoice=()=>{}
 
   return (
     <div>
