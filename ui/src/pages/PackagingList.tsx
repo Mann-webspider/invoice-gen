@@ -435,7 +435,7 @@ const PackagingList = ({
   const [containerRows, setContainerRows] = useState<ContainerInfo[]>([
     {
       id: '1',
-      containerNo: 'SE***********',
+      containerNo: 'Sp***********',
       lineSealNo: 'R ********',
       rfidSeal: 'SPPL **** ****',
       designNo: 'TILES',
@@ -447,18 +447,34 @@ const PackagingList = ({
 
   // Add new container row
   const addContainerRow = () => {
-   
+    let newRow: ContainerInfo;
     
-    const newRow: ContainerInfo = {
-      id: Date.now().toString(),
-      containerNo: 'SE***********',
-      lineSealNo: 'R ********',
-      rfidSeal: 'SPPL **** ****',
-      designNo: 'TILES',
-      quantity: 1000,
-      netWeight: '27300.00',
-      grossWeight: '28430.00'
-    };
+    // If there are existing rows, copy values from the last row
+    if (containerRows.length > 0) {
+      const lastRow = containerRows[containerRows.length - 1];
+      newRow = {
+        id: Date.now().toString(),
+        containerNo: lastRow.containerNo,
+        lineSealNo: lastRow.lineSealNo,
+        rfidSeal: lastRow.rfidSeal,
+        designNo: lastRow.designNo,
+        quantity: lastRow.quantity,
+        netWeight: lastRow.netWeight,
+        grossWeight: lastRow.grossWeight
+      };
+    } else {
+      // Default values for first row
+      newRow = {
+        id: Date.now().toString(),
+        containerNo: 'SE***********',
+        lineSealNo: 'R ********',
+        rfidSeal: 'SPPL **** ****',
+        designNo: 'TILES',
+        quantity: 1000,
+        netWeight: '27300.00',
+        grossWeight: '28430.00'
+      };
+    }
     
     setContainerRows([...containerRows, newRow]);
   };
@@ -471,8 +487,7 @@ const PackagingList = ({
 
   // Update container row field
   const updateContainerField = (id: string, field: keyof ContainerInfo, value: string | number) => {
-    // Only check readOnly for fields other than netWeight and grossWeight
-    if (readOnly && field !== 'netWeight' && field !== 'grossWeight') return;
+    // Remove readOnly check to make all fields always editable
     
     setContainerRows(containerRows.map(row => {
       if (row.id === id) {
@@ -939,7 +954,6 @@ const PackagingList = ({
                           onChange={(e) => updateContainerField(row.id, 'containerNo', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter container no."
-                          readOnly={readOnly}
                         />
                       </TableCell>
                       <TableCell className="border p-0">
@@ -948,7 +962,6 @@ const PackagingList = ({
                           onChange={(e) => updateContainerField(row.id, 'lineSealNo', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter line seal no."
-                          readOnly={readOnly}
                         />
                       </TableCell>
                       <TableCell className="border p-0">
@@ -957,7 +970,6 @@ const PackagingList = ({
                           onChange={(e) => updateContainerField(row.id, 'rfidSeal', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter RFID seal"
-                          readOnly={readOnly}
                         />
                       </TableCell>
                       <TableCell className="border p-0">
@@ -966,7 +978,6 @@ const PackagingList = ({
                           onChange={(e) => updateContainerField(row.id, 'designNo', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter design no."
-                          readOnly={readOnly}
                         />
                       </TableCell>
                       <TableCell className="border p-0">
@@ -976,7 +987,6 @@ const PackagingList = ({
                           onChange={(e) => updateContainerField(row.id, 'quantity', parseInt(e.target.value) || 0)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter quantity"
-                          readOnly={readOnly}
                         />
                       </TableCell>
                       <TableCell className="border p-0">
@@ -985,7 +995,6 @@ const PackagingList = ({
                           onChange={(e) => updateContainerField(row.id, 'netWeight', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter net weight"
-                          // Always editable regardless of readOnly
                         />
                       </TableCell>
                       <TableCell className="border p-0">
@@ -994,7 +1003,6 @@ const PackagingList = ({
                           onChange={(e) => updateContainerField(row.id, 'grossWeight', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter gross weight"
-                          // Always editable regardless of readOnly
                         />
                       </TableCell>
                       <TableCell className="border p-0 text-center">
@@ -1075,10 +1083,23 @@ const PackagingList = ({
 
           <div className="flex justify-between mt-8">
             <Button variant="outline" onClick={onBack}>Back</Button>
-            <Button variant="default" onClick={()=>{
-               localStorage.setItem("taxDialogBox","true")
-               console.log(localStorage.getItem("taxDialogBox"));}}>Submit </Button>
-        </div>
+            <Button variant="default" onClick={() => {
+              // Store container data and other necessary data in localStorage
+              const annexureData = {
+                containerRows,
+                totalPalletCount,
+                sections,
+                markNumber,
+                invoiceHeader,
+                buyerInfo,
+                shippingInfo
+              };
+              localStorage.setItem('annexureData', JSON.stringify(annexureData));
+              
+              // Navigate to the annexure page
+              window.location.href = '/annexure';
+            }}>Next</Button>
+          </div>
       </CardContent>
       </Card>
       </div>

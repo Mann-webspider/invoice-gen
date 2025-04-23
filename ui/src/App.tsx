@@ -1,10 +1,8 @@
 import React, { useState, useEffect } from "react";
-import React, { useState, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { BrowserRouter, Routes, Route, useNavigate, Navigate } from "react-router-dom";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import Dashboard from "./pages/Dashboard";
@@ -15,6 +13,7 @@ import InvoiceGenerator from "./pages/InvoiceGenerator";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import PackagingList from "./pages/PackagingList";
+import Annexure from "./pages/Annexure";
 import InvoiceEditor from "./pages/InvoiceEditor";
 import AddClient from "./pages/AddClient";
 import ClientList from "./pages/ClientList";
@@ -63,41 +62,44 @@ const PackagingListWrapper = () => {
   );
 };
 
-// Create a wrapper for PackagingList that loads data from localStorage
-const PackagingListWrapper = () => {
+// Create a wrapper for Annexure that loads data from localStorage
+const AnnexureWrapper = () => {
   const navigate = useNavigate();
-  const [formData, setFormData] = useState<any>(null);
+  const [annexureData, setAnnexureData] = useState<any>(null);
 
   useEffect(() => {
     // Retrieve data from localStorage
-    const storedData = localStorage.getItem('invoiceFormData');
+    const storedData = localStorage.getItem('annexureData');
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
-        setFormData(parsedData);
+        setAnnexureData(parsedData);
       } catch (e) {
-        console.error("Error parsing invoice form data", e);
+        console.error("Error parsing annexure data", e);
         navigate('/');
       }
     } else {
-      // If no data is found, go back to the invoice page
-      navigate('/');
+      // If no data is found, go back to the packaging list page
+      navigate('/packaging-list');
     }
   }, [navigate]);
 
-  if (!formData) {
+  if (!annexureData) {
     return <div>Loading...</div>;
   }
 
   return (
-    <PackagingList 
-      onBack={() => navigate('/invoice')}
-      importedSections={formData.sections}
-      markNumber={formData.markNumber}
-      readOnly={formData.readOnly}
-      invoiceHeader={formData.invoiceHeader} // Pass invoice header information
-      buyerInfo={formData.buyerInfo} // Pass buyer information
-      shippingInfo={formData.shippingInfo} // Pass shipping information
+    <Annexure 
+      onBack={() => navigate('/packaging-list')}
+      importedSections={annexureData.sections}
+      markNumber={annexureData.markNumber}
+      invoiceHeader={annexureData.invoiceHeader}
+      buyerInfo={annexureData.buyerInfo}
+      shippingInfo={annexureData.shippingInfo}
+      containerInfo={{
+        containerRows: annexureData.containerRows,
+        totalPalletCount: annexureData.totalPalletCount
+      }}
     />
   );
 };
@@ -169,54 +171,10 @@ const App = () => (
             }
           />
           <Route
-            path="/invoice-editor/:id"
+            path="/annexure"
             element={
               <AdminLayout>
-                <InvoiceEditor />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/add-client"
-            element={
-              <AdminLayout>
-                <AddClient />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/client-list"
-            element={
-              <AdminLayout>
-                <ClientList />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/add-exporter"
-            element={
-              <AdminLayout>
-                <AddExporter />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/exporter-list"
-            element={
-              <AdminLayout>
-                <ExporterList />
-              </AdminLayout>
-            }
-          />
-          <Route
-            path="/next-form"
-            element={<Navigate to="/packaging-list" replace />}
-          />
-          <Route
-            path="/packaging-list"
-            element={
-              <AdminLayout>
-                <PackagingListWrapper />
+                <AnnexureWrapper />
               </AdminLayout>
             }
           />
