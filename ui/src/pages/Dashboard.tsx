@@ -12,7 +12,7 @@ const Dashboard =  () => {
   const products = getProducts();
   const clients = getClients();
   const shippingTerms = getShippingTerms();
-
+  
    
   const statCards = [
     {
