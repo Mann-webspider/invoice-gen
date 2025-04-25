@@ -14,12 +14,14 @@ import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import PackagingList from "./pages/PackagingList";
 import Annexure from "./pages/Annexure";
+import VgmForm from "./pages/VgmForm";
 import InvoiceEditor from "./pages/InvoiceEditor";
 import AddClient from "./pages/AddClient";
 import ClientList from "./pages/ClientList";
 import AddExporter from "./pages/AddExporter";
 import ExporterList from "./pages/ExporterList";
 import { QueryProvider } from "./providers/query-provider";
+import TestPage from "./pages/TestPage";
 
 const queryClient = new QueryClient();
 
@@ -100,6 +102,41 @@ const AnnexureWrapper = () => {
         containerRows: annexureData.containerRows,
         totalPalletCount: annexureData.totalPalletCount
       }}
+    />
+  );
+};
+
+// Create a wrapper for VgmForm that loads data from localStorage
+const VgmFormWrapper = () => {
+  const navigate = useNavigate();
+  const [vgmData, setVgmData] = useState<any>(null);
+
+  useEffect(() => {
+    // Retrieve data from localStorage
+    const storedData = localStorage.getItem('vgmData');
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        setVgmData(parsedData);
+      } catch (e) {
+        console.error("Error parsing VGM data", e);
+        navigate('/');
+      }
+    } else {
+      // If no data is found, go back to the annexure page
+      navigate('/annexure');
+    }
+  }, [navigate]);
+
+  if (!vgmData) {
+    return <div>Loading...</div>;
+  }
+
+  return (
+    <VgmForm 
+      onBack={() => navigate('/annexure')}
+      containerInfo={vgmData.containerInfo}
+      invoiceHeader={vgmData.invoiceHeader}
     />
   );
 };
@@ -215,6 +252,22 @@ const App = () => (
             element={
               <AdminLayout>
                 <ExporterList />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/vgm-form"
+            element={
+              <AdminLayout>
+                <VgmFormWrapper />
+              </AdminLayout>
+            }
+          />
+          <Route
+            path="/test"
+            element={
+              <AdminLayout>
+                <TestPage />
               </AdminLayout>
             }
           />

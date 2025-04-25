@@ -163,10 +163,19 @@ const Annexure = ({
     }
   }, [selectedManufacturer]);
 
-  // Handle form submission - same functionality as PackagingList submit
+  // Handle form submission - navigate to VGM form
   const handleSubmit = () => {
-    localStorage.setItem("taxDialogBox", "true");
-    console.log(localStorage.getItem("taxDialogBox"));
+    // Store data for VGM form
+    const vgmData = {
+      containerInfo,
+      invoiceHeader,
+      netWeight,
+      grossWeight
+    };
+    localStorage.setItem('vgmData', JSON.stringify(vgmData));
+    
+    // Navigate to the VGM form page
+    window.location.href = '/vgm-form';
   };
 
   // Handle container size change
@@ -596,7 +605,7 @@ const Annexure = ({
       {/* Footer Buttons */}
       <div className="flex justify-between mt-8">
         <Button variant="outline" onClick={onBack}>Back</Button>
-        <Button variant="default" onClick={handleSubmit}>Submit</Button>
+        <Button variant="default" onClick={handleSubmit}>Next</Button>
       </div>
     </div>
   );

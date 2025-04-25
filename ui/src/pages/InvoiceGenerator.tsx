@@ -61,6 +61,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import MarksAndNumbers from "@/components/MarksAndNumbers";
 
 // Helper function to convert number to words for invoice use
 function numberToWords(num: number) {
@@ -345,8 +346,8 @@ const InvoiceGenerator = () => {
 
   // Package Info
   const [noOfPackages, setNoOfPackages] = useState("14000 BOX");
-  const [grossWeight, setGrossWeight] = useState("1623");
-  const [netWeight, setNetWeight] = useState("1621");
+  const [grossWeight, setGrossWeight] = useState("");
+  const [netWeight, setNetWeight] = useState("");
   const [exportUnderDutyDrawback, setExportUnderDutyDrawback] = useState(true);
   const [ftpIncentiveDeclaration, setFtpIncentiveDeclaration] = useState(
     "I/we shall claim under chapter 3 incentive of FTP as admissible at time policy in force - MEIS, RODTEP"
@@ -365,15 +366,16 @@ const InvoiceGenerator = () => {
   const [totalFOBEuro, setTotalFOBEuro] = useState<number>(0);
   const [amountInWords, setAmountInWords] = useState<string>("");
 
-  const [marksAndNosConfig, setMarksAndNosConfig] = useState({
-    first: "10",
-    second: "X",
-    third: "20"
+  // Replace the marksAndNosConfig and containerType state, keeping containerTypes as a reference
+  const [marksAndNumbersValues, setMarksAndNumbersValues] = useState({
+    containerType: "FCL",
+    leftValue: "10",
+    rightValue: "20"
   });
-  const [containerType, setContainerType] = useState("FCL");
+
+  const containerTypes = ["FCL", "LCL"];
 
   // Add these options
-  const containerTypes = ["FCL", "LCL"];
   const numberOptions1 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20", "21", "22", "23", "24", "25", "26", "27", "28", "29", "30", "31", "32", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "47", "48", "49", "50", "51", "52", "53", "54", "55", "56", "57", "58", "59", "60", "61", "62", "63", "64", "65", "66", "67", "68", "69", "70", "71", "72", "73", "74", "75", "76", "77", "78", "79", "80", "81", "82", "83", "84", "85", "86", "87", "88", "89", "90", "91", "92", "93", "94", "95", "96", "97", "98", "99", "100"];
   const numberOptions2 = ["20", "40"];
 
@@ -382,13 +384,26 @@ const InvoiceGenerator = () => {
   const [freightAmount, setFreightAmount] = useState<number>(0);
   const [showInsuranceFreight, setShowInsuranceFreight] = useState<boolean>(false);
 
+  // Add the missing markNumber state
+  const [markNumber, setMarkNumber] = useState<string>("10X20 FCL");
+
+  // Add a mapping for size to SQM/BOX values
+  const [sizeToSqmMap] = useState<{ [key: string]: number }>({
+    "600 X 1200": 1.44,
+    "600 X 600": 0.72,
+    "800 X 800": 1.28,
+    "300 X 600": 0.36,
+    "300 X 300": 0.18
+  });
+
   useEffect(() => {
     // Show the tax option dialog
     console.log(localStorage.getItem("taxDialogBox"));
-    if(localStorage.getItem("taxDialogBox")=="false"){
+    // if(localStorage.getItem("taxDialogBox")=="false"){
       
-      setTaxOptionDialogOpen(false);
-    }else{
+    //   setTaxOptionDialogOpen(false);
+    // }else{
+    if(true){
 
       setTaxOptionDialogOpen(true);
       
@@ -401,9 +416,56 @@ const InvoiceGenerator = () => {
       setDeclarationText(companyProfile.declarationText);
     }
 
+    // Check for annexure data from packaging list
+    const annexureDataStr = localStorage.getItem('annexureData');
+    const vgmFormDataStr = localStorage.getItem('vgmFormData');
+    
+    if (annexureDataStr) {
+      try {
+        const annexureData = JSON.parse(annexureDataStr);
+        if (annexureData.containerRows && annexureData.containerRows.length > 0) {
+          // Calculate total gross weight and net weight from container rows
+          const totalGrossWeight = annexureData.containerRows.reduce(
+            (sum: number, row: any) => sum + parseFloat(row.grossWeight || "0"), 
+            0
+          ).toFixed(2);
+          
+          const totalNetWeight = annexureData.containerRows.reduce(
+            (sum: number, row: any) => sum + parseFloat(row.netWeight || "0"), 
+            0
+          ).toFixed(2);
+          
+          // Update state with the calculated values
+          setGrossWeight(totalGrossWeight);
+          setNetWeight(totalNetWeight);
+        }
+      } catch (error) {
+        console.error("Error parsing annexure data:", error);
+      }
+    } else if (vgmFormDataStr) {
+      // Check if we're returning from VGM form
+      try {
+        const vgmFormData = JSON.parse(vgmFormDataStr);
+        if (vgmFormData.containers && vgmFormData.containers.length > 0) {
+          // Use the gross weight from VGM form if available
+          const totalGrossWeight = vgmFormData.containers.reduce(
+            (sum: number, container: any) => sum + parseFloat(container.grossWeight || "0"), 
+            0
+          ).toFixed(2);
+          
+          // For VGM, we might not have net weight, so only set gross weight
+          if (totalGrossWeight && parseFloat(totalGrossWeight) > 0) {
+            setGrossWeight(totalGrossWeight);
+          }
+        }
+      } catch (error) {
+        console.error("Error parsing VGM form data:", error);
+      }
+    }
+
     // Add an empty row to the first section
     addNewRow(sections[0].id);
-  }, []);
+  }, []); // Empty dependency array ensures this only runs once on mount
 
   useEffect(() => {
     // Calculate totals
@@ -439,11 +501,11 @@ const InvoiceGenerator = () => {
         ...item,
         product: {
           ...item.product,
-          marksAndNos: `${marksAndNosConfig.first}${marksAndNosConfig.second}${marksAndNosConfig.third} ${containerType}`
+          marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`
         }
       }))
     })));
-  }, [marksAndNosConfig, containerType, sections]);
+  }, [marksAndNumbersValues, sections]);
 
   const addNewRow = (sectionId: string) => {
     // Find the section to get its title
@@ -453,20 +515,24 @@ const InvoiceGenerator = () => {
     // Get the HSN code based on the section title
     const hsnCode = hsnCodes[section.title] || "69072100";
     
+    // Use the default size and its corresponding SQM value
+    const defaultSize = sizes[0] || "600 X 1200";
+    const defaultSqmPerBox = sizeToSqmMap[defaultSize] || 1.44;
+    
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
       product: {
         id: "",
         description: "",
         hsnCode: hsnCode,
-        size: sizes[0] || "600 X 1200",
+        size: defaultSize,
         price: 10,
-        sqmPerBox: 1.44,
-        marksAndNos: `${marksAndNosConfig.first}${marksAndNosConfig.second}${marksAndNosConfig.third} ${containerType}`
+        sqmPerBox: defaultSqmPerBox,
+        marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`
       },
       quantity: 1000,
       unitType: "Box",
-      totalSQM: 1440,
+      totalSQM: 1000 * defaultSqmPerBox,
       totalFOB: 10000,
       sectionId
     };
@@ -798,7 +864,7 @@ const InvoiceGenerator = () => {
     let csvContent = "data:text/csv;charset=utf-8,";
 
     // Add header row
-    csvContent += "Invoice No,Date,Client,Item,Description,HSN Code,Size,Quantity,SQM/Box,Total SQM,Price,Total FOB\n";
+    csvContent += "Invoice No,Date,Client,Item,Description,HSN Code,Size,Quantity,SQM/BOX,Total SQM,Price,Total FOB\n";
 
     // Add data rows
     sections.forEach(section => {
@@ -846,7 +912,7 @@ const InvoiceGenerator = () => {
     // Save the current state before navigating
     const formData = {
       sections: sections,
-      markNumber: `${ieCode}`,
+      markNumber: markNumber, // Use the markNumber from state
       readOnly: true,
       // Add invoice header information
       invoiceHeader: {
@@ -915,6 +981,15 @@ const InvoiceGenerator = () => {
       setTermsOfDelivery(`FOB AT ${portOfLoading}`);
     }
   };
+
+  useEffect(() => {
+    const markNumber = marksAndNumbersValues.containerType === 'LCL' 
+      ? `LCL` 
+      : `${marksAndNumbersValues.leftValue}X${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`;
+
+    console.log("Updating markNumber:", markNumber, "from values:", marksAndNumbersValues);
+    setMarkNumber(markNumber);
+  }, [marksAndNumbersValues, sections]);
 
   return (
     <div>
@@ -1446,69 +1521,43 @@ const InvoiceGenerator = () => {
           <CardContent className="space-y-6">
             <div className="rounded-lg">
               <div className="space-y-4">
-                <h4 className="font-medium">Marks & Nos.</h4>
-                <div className="flex flex-row w-96 gap-1">
-                  {/* Group 1: First Dropdown and X */}
-                  <div className="flex flex-row gap-3 w-36">
-                    <Select
-                      value={marksAndNosConfig.first}
-                      onValueChange={(value) => setMarksAndNosConfig(prev => ({ ...prev, first: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select number" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {numberOptions1.map((num) => (
-                          <SelectItem key={num} value={num}>
-                            {num}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <div className="flex items-center w-8 justify-center">
-                      <span className="text-md font-medium">X</span>
-                    </div>
-                  </div>
-
-                  {/* Small gap between "X" and 2nd dropdown */}
-                  <div className="w-1" />
-
-                  {/* Group 2: Third Dropdown and Container Type */}
-                  <div className="flex flex-row gap-10 w-64">
-                    <Select
-                      value={marksAndNosConfig.third}
-                      onValueChange={(value) => setMarksAndNosConfig(prev => ({ ...prev, third: value }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select number" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {numberOptions2.map((num) => (
-                          <SelectItem key={num} value={num}>
-                            {num}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-
-                    <Select
-                      value={containerType}
-                      onValueChange={setContainerType}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {containerTypes.map((type) => (
-                          <SelectItem key={type} value={type}>
-                            {type}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <MarksAndNumbers 
+                  initialContainerType={marksAndNumbersValues.containerType}
+                  initialLeftValue={marksAndNumbersValues.leftValue}
+                  initialRightValue={marksAndNumbersValues.rightValue}
+                  onChange={(value: string | any) => {
+                    // Handle both string and object formats
+                    if (typeof value === 'string') {
+                      if (value === 'LCL') {
+                        setMarksAndNumbersValues({
+                          containerType: 'LCL',
+                          leftValue: '',
+                          rightValue: ''
+                        });
+                      } else {
+                        // Parse the value in the format "10X20 ft FCL"
+                        const parts = value.match(/^(\d+)X([\d\s\w]+)\s+(\w+)$/);
+                        if (parts) {
+                          setMarksAndNumbersValues({
+                            containerType: parts[3],
+                            leftValue: parts[1],
+                            rightValue: parts[2]
+                          });
+                        }
+                      }
+                    } else if (typeof value === 'object' && value !== null) {
+                      // Handle object format directly
+                      setMarksAndNumbersValues({
+                        containerType: value.containerType || 'FCL',
+                        leftValue: value.leftValue || '',
+                        rightValue: value.rightValue || ''
+                      });
+                    }
+                    
+                    console.log("MarksAndNumbers updated:", 
+                      typeof value === 'string' ? value : JSON.stringify(value));
+                  }}
+                />
               </div>
             </div>
 
@@ -1571,17 +1620,23 @@ const InvoiceGenerator = () => {
                   <Table className="invoice-table">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[50px]">SR NO</TableHead>
-                        <TableHead>Description</TableHead>
-                        <TableHead>HSN Code</TableHead>
-                        <TableHead>Size</TableHead>
-                        <TableHead className="w-[100px]">Quantity</TableHead>
-                        <TableHead>Unit Type</TableHead>
-                        <TableHead>SQM/BOX</TableHead>
-                        <TableHead>Total SQM</TableHead>
-                        <TableHead>Price</TableHead>
-                        <TableHead>Total FOB</TableHead>
-                        <TableHead className="w-[70px]">Actions</TableHead>
+                        <TableHead className="w-[50px] border font-bold">SR NO</TableHead>
+                        <TableHead className="border font-bold">Description</TableHead>
+                        <TableHead className="border font-bold">HSN Code</TableHead>
+                        <TableHead className="border font-bold">Size</TableHead>
+                        <TableHead className="w-[100px] border font-bold">Quantity</TableHead>
+                        <TableHead className="border font-bold">Unit Type</TableHead>
+                        <TableHead className="border font-bold">
+                          SQM/{(() => {
+                            // Find first item with unit type or use BOX as default
+                            const firstItem = section.items.find(i => i.unitType);
+                            return firstItem ? firstItem.unitType : "BOX";
+                          })()}
+                        </TableHead>
+                        <TableHead className="border font-bold">Total SQM</TableHead>
+                        <TableHead className="border font-bold">Price</TableHead>
+                        <TableHead className="border font-bold">Total FOB</TableHead>
+                        <TableHead className="w-[70px] border font-bold">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1637,6 +1692,9 @@ const InvoiceGenerator = () => {
                               <Select
                                 value={item.product.size}
                                 onValueChange={(value) => {
+                                  // Get the corresponding SQM/BOX value for this size
+                                  const sqmPerBox = sizeToSqmMap[value] || item.product.sqmPerBox;
+                                  
                                   setSections(currentSections =>
                                     currentSections.map(s =>
                                       s.id === section.id
@@ -1648,8 +1706,10 @@ const InvoiceGenerator = () => {
                                                 ...i,
                                                 product: {
                                                   ...i.product,
-                                                  size: value
-                                                }
+                                                  size: value,
+                                                  sqmPerBox: sqmPerBox
+                                                },
+                                                totalSQM: i.quantity * sqmPerBox
                                               }
                                               : i
                                           )
@@ -1701,42 +1761,159 @@ const InvoiceGenerator = () => {
                                 className="h-8"
                               />
                             </TableCell>
-                            <TableCell>
+                            <TableCell className="border">
                               <Select
-                                value={item.unitType}
+                                value={item.unitType || "BOX"}
                                 onValueChange={(value) => {
-                                  setSections(currentSections =>
-                                    currentSections.map(s =>
+                                  // Update the sections state with the new unit type
+                                  setSections(
+                                    sections.map((s) =>
                                       s.id === section.id
                                         ? {
-                                          ...s,
-                                          items: s.items.map(i =>
-                                            i.id === item.id
-                                              ? { ...i, unitType: value }
-                                              : i
-                                          )
-                                        }
+                                            ...s,
+                                            items: s.items.map((i) =>
+                                              i.id === item.id
+                                                ? {
+                                                    ...i,
+                                                    unitType: value,
+                                                  }
+                                                : i
+                                            ),
+                                          }
                                         : s
                                     )
                                   );
                                 }}
                               >
                                 <SelectTrigger className="h-8">
-                                  <SelectValue placeholder="Select unit" />
+                                  <SelectValue placeholder="Select" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {units.map((unit) => (
-                                    <SelectItem key={unit} value={unit}>
-                                      {unit}
-                                    </SelectItem>
-                                  ))}
+                                  <SelectItem value="Box">Box</SelectItem>
+                                  <SelectItem value="Pallet">Pallet</SelectItem>
+                                  <SelectItem value="Carton">Carton</SelectItem>
+                                  <SelectItem value="Piece">Piece</SelectItem>
                                 </SelectContent>
                               </Select>
                             </TableCell>
-                            <TableCell>{item.product.sqmPerBox.toFixed(2)}</TableCell>
-                            <TableCell>{item.totalSQM.toFixed(2)}</TableCell>
-                            <TableCell>{item.product.price.toFixed(2)}</TableCell>
-                            <TableCell>{item.totalFOB.toFixed(2)}</TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                value={item.product.sqmPerBox || ""}
+                                onChange={(e) => {
+                                  const sqmPerBox = parseFloat(e.target.value) || 0;
+                                  setSections(
+                                    sections.map((s) =>
+                                      s.id === section.id
+                                        ? {
+                                            ...s,
+                                            items: s.items.map((i) =>
+                                              i.id === item.id
+                                                ? {
+                                                    ...i,
+                                                    product: {
+                                                      ...i.product,
+                                                      sqmPerBox
+                                                    },
+                                                    totalSQM: i.quantity * sqmPerBox,
+                                                    // Recalculate totalFOB in case it's based on sqm
+                                                    totalFOB: i.quantity * i.product.price
+                                                  }
+                                                : i
+                                            )
+                                          }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="h-8 text-right"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                value={item.totalSQM || ""}
+                                onChange={(e) => {
+                                  const totalSQM = parseFloat(e.target.value) || 0;
+                                  setSections(
+                                    sections.map((s) =>
+                                      s.id === section.id
+                                        ? {
+                                            ...s,
+                                            items: s.items.map((i) =>
+                                              i.id === item.id
+                                                ? {
+                                                    ...i,
+                                                    totalSQM: totalSQM
+                                                  }
+                                                : i
+                                            )
+                                          }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="h-8 text-right"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                value={item.product.price || ""}
+                                onChange={(e) => {
+                                  const price = parseFloat(e.target.value) || 0;
+                                  setSections(
+                                    sections.map((s) =>
+                                      s.id === section.id
+                                        ? {
+                                            ...s,
+                                            items: s.items.map((i) =>
+                                              i.id === item.id
+                                                ? {
+                                                    ...i,
+                                                    product: {
+                                                      ...i.product,
+                                                      price
+                                                    },
+                                                    totalFOB: i.quantity * price
+                                                  }
+                                                : i
+                                            )
+                                          }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="h-8 text-right"
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                value={item.totalFOB || ""}
+                                onChange={(e) => {
+                                  const totalFOB = parseFloat(e.target.value) || 0;
+                                  setSections(
+                                    sections.map((s) =>
+                                      s.id === section.id
+                                        ? {
+                                            ...s,
+                                            items: s.items.map((i) =>
+                                              i.id === item.id
+                                                ? {
+                                                    ...i,
+                                                    totalFOB: totalFOB
+                                                  }
+                                                : i
+                                            )
+                                          }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="h-8 text-right"
+                              />
+                            </TableCell>
                             <TableCell>
                               <Button
                                 variant="ghost"
@@ -1801,7 +1978,7 @@ const InvoiceGenerator = () => {
                 )}
                 <div className="flex justify-end">
                   <div className="w-1/3 text-right p-4 font-medium">
-                    <div className="text-sm font-medium text-gray-500">Total</div>
+                    <div className="text-sm font-medium text-gray-500">Total {paymentTerms === "FOB" ? "FOB" : paymentTerms}</div>
                   </div>
                   <div className="w-1/6 text-right p-4 font-semibold text-lg border-l border-gray-200">
                     {totalFOBEuro.toFixed(2)}
@@ -1818,29 +1995,43 @@ const InvoiceGenerator = () => {
             <CardTitle>Package Information</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="noOfPackages">No. of Packages</Label>
                 <Input
                   id="noOfPackages"
-                  value={noOfPackages}
+                  value={(() => {
+                    // Calculate total quantity by summing all items' quantities
+                    const totalQuantity = sections.reduce(
+                      (total, section) => 
+                        total + section.items.reduce(
+                          (sectionTotal, item) => sectionTotal + item.quantity, 
+                          0
+                        ), 
+                      0
+                    );
+                    // Use unit type of first item if available
+                    const firstItem = sections.find(s => s.items.length > 0)?.items[0];
+                    const unitType = firstItem?.unitType || "BOX";
+                    return `${totalQuantity} ${unitType.toUpperCase()}`;
+                  })()}
                   readOnly
                   className="cursor-default"
-                  // onChange={(e) => setNoOfPackages(e.target.value)}
                   placeholder="e.g., 14000 BOX"
                 />
               </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="grossWeight">Gross Weight (KGS)</Label>
-                    <Input
-                      id="grossWeight"
-                      value={grossWeight}
-                      readOnly
-                      className="cursor-default"
-                      placeholder="Enter gross weight"
-                    />
-                  </div>
+              <div className="space-y-2">
+                <Label htmlFor="noOfPackages">No. of SQMs</Label>
+                <Input
+                  id="noOfSQMs"
+                  value={`${totalSQM.toFixed(2)} SQM`}
+                  readOnly
+                  className="cursor-default"
+                  placeholder="e.g., 20.16 SQM"
+                />
+              </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="netWeight">Net Weight (KGS)</Label>
@@ -1849,10 +2040,19 @@ const InvoiceGenerator = () => {
                   readOnly
                   className="cursor-default"
                   value={netWeight}
-                  // onChange={(e) => setNetWeight(e.target.value)}
-                  placeholder="Enter net weight"
+                  placeholder="Auto-filled from packaging list"
                 />
               </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="grossWeight">Gross Weight (KGS)</Label>
+                    <Input
+                      id="grossWeight"
+                      value={grossWeight}
+                      readOnly
+                      className="cursor-default"
+                      placeholder="Auto-filled from packaging list"
+                    />
+                  </div>
             </div>
 
             <div className="space-y-4">
@@ -1893,7 +2093,7 @@ const InvoiceGenerator = () => {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="totalFOBEuro">TOTAL FOB EURO</Label>
+                    <Label htmlFor="totalFOBEuro">TOTAL {paymentTerms} {selectedCurrency}</Label>
                     <Input
                       id="totalFOBEuro"
                       value={totalFOBEuro.toFixed(2)}
