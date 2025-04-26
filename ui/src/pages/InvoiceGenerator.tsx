@@ -301,21 +301,18 @@ const InvoiceGenerator = () => {
     "Box", "Pallet", "Carton", "Piece"
   ]);
   const [hsnCodes] = useState<{ [key: string]: string }>({
-    // "Sanitary": "69072100",
-    // "Tiles": "69072200",
-    // "Mix": "69073000",
-    // "Ceramic": "69074000",
-    // "Porcelain": "69072100",
     "Glazed porcelain Floor Tiles": "69072100",
     "Polished Vitrified Tiles": "69072200",
     "Ceramic Wall Tiles": "69072300",
-    "Digital Floor Tiles": "69072100"
+    "Digital Floor Tiles": "69072100",
+    "CERAMIC SANITARYWARE": "69101000"
   });
   const [sectionOptions, setSectionOptions] = useState<string[]>([
     "Glazed porcelain Floor Tiles",
     "Polished Vitrified Tiles",
     "Ceramic Wall Tiles",
-    "Digital Floor Tiles"
+    "Digital Floor Tiles",
+    "CERAMIC SANITARYWARE"
   ]);
   const [paymentTermsOptions, setPaymentTermsOptions] = useState<string[]>([
     "FOB",
@@ -323,7 +320,7 @@ const InvoiceGenerator = () => {
     "CNF",
   ]);
 
-  const [productType, setProductType] = useState<string>("Sanitary");
+  const [productType, setProductType] = useState<string>("Tiles");
   const [productTypeOptions, setProductTypeOptions] = useState<string[]>([
     "Sanitary",
     "Tiles",
@@ -395,6 +392,13 @@ const InvoiceGenerator = () => {
     "300 X 600": 0.36,
     "300 X 300": 0.18
   });
+
+  // Add new state for tracking custom section titles and HSN codes
+  const [customSectionHsnCodes, setCustomSectionHsnCodes] = useState<{ [key: string]: string }>({});
+  const [showSectionOptions, setShowSectionOptions] = useState<boolean>(false);
+
+  // Replace the single showSectionOptions state with a map to track each section's dropdown state
+  const [openSectionDropdowns, setOpenSectionDropdowns] = useState<{[key: string]: boolean}>({});
 
   useEffect(() => {
     // Show the tax option dialog
@@ -512,8 +516,30 @@ const InvoiceGenerator = () => {
     const section = sections.find(s => s.id === sectionId);
     if (!section) return;
     
-    // Get the HSN code based on the section title
-    const hsnCode = hsnCodes[section.title] || "69072100";
+    // Determine HSN code based on section title and custom mappings
+    let hsnCode;
+    
+    if (productType === "Sanitary") {
+      hsnCode = "69101000";
+    } else {
+      // First check predefined hsnCodes
+      hsnCode = hsnCodes[section.title];
+      
+      // If not found in predefined codes, check custom mappings
+      if (!hsnCode) {
+        hsnCode = customSectionHsnCodes[section.title];
+      }
+      
+      // If still not found and there are existing items, use HSN code from the last item
+      if (!hsnCode && section.items.length > 0) {
+        hsnCode = section.items[section.items.length - 1].product.hsnCode;
+      }
+      
+      // Default fallback
+      if (!hsnCode) {
+        hsnCode = "69072100";
+      }
+    }
     
     // Use the default size and its corresponding SQM value
     const defaultSize = sizes[0] || "600 X 1200";
@@ -990,6 +1016,50 @@ const InvoiceGenerator = () => {
     console.log("Updating markNumber:", markNumber, "from values:", marksAndNumbersValues);
     setMarkNumber(markNumber);
   }, [marksAndNumbersValues, sections]);
+
+  // Add handler for product type change
+  const handleProductTypeChange = (newType: string) => {
+    setProductType(newType);
+    
+    // If Sanitary is selected, update the section title to CERAMIC SANITARYWARE
+    if (newType === "Sanitary") {
+      setSections(currentSections => 
+        currentSections.map(section => {
+          // Update section title to CERAMIC SANITARYWARE
+          return {
+            ...section,
+            title: "CERAMIC SANITARYWARE",
+            items: section.items.map(item => ({
+              ...item,
+              product: {
+                ...item.product,
+                hsnCode: "69101000"
+              }
+            }))
+          };
+        })
+      );
+    } 
+    // If Faucets is selected, update the section title to BRASS FAUCETS
+    else if (newType === "Faucets") {
+      setSections(currentSections => 
+        currentSections.map(section => {
+          // Update section title to BRASS FAUCETS
+          return {
+            ...section,
+            title: "BRASS FAUCETS",
+            items: section.items.map(item => ({
+              ...item,
+              product: {
+                ...item.product,
+                hsnCode: "84818090"
+              }
+            }))
+          };
+        })
+      );
+    }
+  };
 
   return (
     <div>
@@ -1565,42 +1635,102 @@ const InvoiceGenerator = () => {
               {sections.map((section, sectionIndex) => (
                 <div key={section.id} className="mb-6">
                   <div className="flex items-center gap-4 mb-2">
-                    <select
-                      title="Section Title"
-                      value={section.title}
-                      onChange={(e) => {
-                        const newTitle = e.target.value;
-                        // Get HSN code for the selected title
-                        const hsnCode = hsnCodes[newTitle] || "69072100";
-                        
-                        setSections(currentSections =>
-                          currentSections.map(s => {
-                            if (s.id === section.id) {
-                              // Update section title and all items' HSN codes
-                              return {
-                                ...s,
-                                title: newTitle,
-                                items: s.items.map(item => ({
-                                  ...item,
-                                  product: {
-                                    ...item.product,
-                                    hsnCode: hsnCode
-                                  }
-                                }))
-                              };
-                            }
-                            return s;
-                          })
-                        );
-                      }}
-                      className="w-96 font-medium border rounded px-2 py-2"
-                    >
-                      {sectionOptions.map((option, index) => (
-                        <option key={index} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative w-96">
+                      <Input
+                        type="text"
+                        value={section.title}
+                        onChange={(e) => {
+                          const newTitle = e.target.value;
+                          // Check if the title exists in predefined options or in custom mappings
+                          const hsnCode = hsnCodes[newTitle] || customSectionHsnCodes[newTitle] || "";
+                          
+                          setSections(currentSections =>
+                            currentSections.map(s => {
+                              if (s.id === section.id) {
+                                // If HSN code is empty and there are items, use the first item's HSN code
+                                const firstItemHsnCode = s.items[0]?.product.hsnCode;
+                                const effectiveHsnCode = hsnCode || firstItemHsnCode || "";
+                                
+                                // If using a custom title not in our predefined map, store its HSN code
+                                if (!hsnCodes[newTitle] && effectiveHsnCode) {
+                                  setCustomSectionHsnCodes(prev => ({
+                                    ...prev,
+                                    [newTitle]: effectiveHsnCode
+                                  }));
+                                }
+                                
+                                return {
+                                  ...s,
+                                  title: newTitle,
+                                  items: s.items.map(item => ({
+                                    ...item,
+                                    product: {
+                                      ...item.product,
+                                      hsnCode: effectiveHsnCode || item.product.hsnCode
+                                    }
+                                  }))
+                                };
+                              }
+                              return s;
+                            })
+                          );
+                        }}
+                        onFocus={() => {
+                          // Close all other dropdowns first
+                          const updatedDropdowns = {};
+                          Object.keys(openSectionDropdowns).forEach(key => {
+                            updatedDropdowns[key] = false;
+                          });
+                          // Open only this dropdown
+                          updatedDropdowns[section.id] = true;
+                          setOpenSectionDropdowns(updatedDropdowns);
+                        }}
+                        onBlur={() => {
+                          // Close this dropdown after a small delay to allow click on options
+                          setTimeout(() => {
+                            setOpenSectionDropdowns(prev => ({
+                              ...prev,
+                              [section.id]: false
+                            }));
+                          }, 200);
+                        }}
+                        placeholder="Enter section title or select from options"
+                        className={`w-full font-medium border rounded px-2 py-2 ${productType === "Sanitary" ? "bg-gray-50" : ""}`}
+                      />
+                      {openSectionDropdowns[section.id] && (
+                        <div className="absolute top-full left-0 w-full bg-white border rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
+                          {sectionOptions.map((option, index) => (
+                            <div 
+                              key={index} 
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onMouseDown={() => {
+                                setSections(currentSections =>
+                                  currentSections.map(s => {
+                                    if (s.id === section.id) {
+                                      const hsnCode = hsnCodes[option] || "69072100";
+                                      return {
+                                        ...s,
+                                        title: option,
+                                        items: s.items.map(item => ({
+                                          ...item,
+                                          product: {
+                                            ...item.product,
+                                            hsnCode: hsnCode
+                                          }
+                                        }))
+                                      };
+                                    }
+                                    return s;
+                                  })
+                                );
+                              }}
+                            >
+                              {option}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
 
                     {sections.length > 1 && section.items.length === 0 && (
                       <Button
@@ -1684,8 +1814,29 @@ const InvoiceGenerator = () => {
                             <TableCell>
                               <Input
                                 value={item.product.hsnCode}
-                                readOnly
-                                className="h-8 bg-gray-50 w-24"
+                                onChange={(e) => {
+                                  setSections(currentSections =>
+                                    currentSections.map(s =>
+                                      s.id === section.id
+                                        ? {
+                                          ...s,
+                                          items: s.items.map(i =>
+                                            i.id === item.id
+                                              ? {
+                                                ...i,
+                                                product: {
+                                                  ...i.product,
+                                                  hsnCode: e.target.value
+                                                }
+                                              }
+                                              : i
+                                          )
+                                        }
+                                        : s
+                                    )
+                                  );
+                                }}
+                                className="h-8 w-24"
                               />
                             </TableCell>
                             <TableCell>
@@ -1709,7 +1860,8 @@ const InvoiceGenerator = () => {
                                                   size: value,
                                                   sqmPerBox: sqmPerBox
                                                 },
-                                                totalSQM: i.quantity * sqmPerBox
+                                                totalSQM: i.quantity * sqmPerBox,
+                                                totalFOB: i.quantity * i.product.price
                                               }
                                               : i
                                           )
@@ -1816,7 +1968,6 @@ const InvoiceGenerator = () => {
                                                       sqmPerBox
                                                     },
                                                     totalSQM: i.quantity * sqmPerBox,
-                                                    // Recalculate totalFOB in case it's based on sqm
                                                     totalFOB: i.quantity * i.product.price
                                                   }
                                                 : i
@@ -1826,34 +1977,17 @@ const InvoiceGenerator = () => {
                                     )
                                   );
                                 }}
-                                className="h-8 text-right"
+                                className={`h-8 text-right ${productType === "Sanitary" ? "bg-gray-100" : ""}`}
+                                readOnly={productType === "Sanitary"}
+                                disabled={productType === "Sanitary"}
                               />
                             </TableCell>
                             <TableCell>
                               <Input
                                 type="number"
-                                value={item.totalSQM || ""}
-                                onChange={(e) => {
-                                  const totalSQM = parseFloat(e.target.value) || 0;
-                                  setSections(
-                                    sections.map((s) =>
-                                      s.id === section.id
-                                        ? {
-                                            ...s,
-                                            items: s.items.map((i) =>
-                                              i.id === item.id
-                                                ? {
-                                                    ...i,
-                                                    totalSQM: totalSQM
-                                                  }
-                                                : i
-                                            )
-                                          }
-                                        : s
-                                    )
-                                  );
-                                }}
-                                className="h-8 text-right"
+                                value={item.totalSQM?.toFixed(2) || ""}
+                                readOnly
+                                className="h-8 text-right bg-gray-50"
                               />
                             </TableCell>
                             <TableCell>
@@ -2383,57 +2517,63 @@ const InvoiceGenerator = () => {
           <DialogHeader>
             <DialogTitle>Tax Option 1</DialogTitle>
           </DialogHeader>
-          <div className="border p-1 mt-2">
-            <div className="space-y-4">
-              <h3 className="font-medium">Tax Option</h3>
-              <div className="space-y-2">
-                <Label htmlFor="integratedTaxOption">Integrated Tax Option</Label>
-                <Select
-                  value={integratedTaxOption}
-                  onValueChange={(value: "WITH" | "WITHOUT") => setIntegratedTaxOption(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select integrated tax option" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="WITHOUT">WITHOUT PAYMENT OF INTEGRATED TAX</SelectItem>
-                    <SelectItem value="WITH">WITH PAYMENT OF INTEGRATED TAX</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="paymentTerms">Payment Terms</Label>
-                <Select
-                  value={paymentTerms}
-                  onValueChange={handlePaymentTermsChange}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select payment terms" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {paymentTermsOptions.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="productType">Product Type</Label>
-                <Select
-                  value={productType}
-                  onValueChange={(value: string) => setProductType(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select product type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {productTypeOptions.map((option) => (
-                      <SelectItem key={option} value={option}>{option}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          <div className="border p-4 mt-2">
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-medium text-lg mb-3">Tax Option</h3>
+                
+                <div className="space-y-5">
+                  <div className="space-y-2">
+                    <Label htmlFor="integratedTaxOption">Integrated Tax Option</Label>
+                    <Select
+                      value={integratedTaxOption}
+                      onValueChange={(value: "WITH" | "WITHOUT") => setIntegratedTaxOption(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select integrated tax option" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="WITHOUT">WITHOUT PAYMENT OF INTEGRATED TAX</SelectItem>
+                        <SelectItem value="WITH">WITH PAYMENT OF INTEGRATED TAX</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="paymentTerms">Payment Terms</Label>
+                    <Select
+                      value={paymentTerms}
+                      onValueChange={handlePaymentTermsChange}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select payment terms" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {paymentTermsOptions.map((option) => (
+                          <SelectItem key={option} value={option}>{option}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="productType">Product Type</Label>
+                    <Select
+                      value={productType}
+                      onValueChange={(value: string) => handleProductTypeChange(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select product type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sanitary">Sanitary</SelectItem>
+                        <SelectItem value="Faucets">Faucets</SelectItem>
+                        <SelectItem value="Tiles">Tiles</SelectItem>
+                        <SelectItem value="Mix">Mix</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
