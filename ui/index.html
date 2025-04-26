@@ -2,6 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Zeric Ceramic Invoice Generator</title>
     <meta name="description" content="Lovable Generated Project" />
@@ -15,6 +16,28 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@lovable_dev" />
     <meta name="twitter:image" content="https://lovable.dev/opengraph-image-p98pqg.png" />
+
+    <script>
+      // Fix for InvoiceGenerator - this script runs before React
+      window.addEventListener('load', function() {
+        // Check if we're on the invoice page
+        if (window.location.pathname === '/invoice') {
+          // Add this debug helper
+          window.fixInvoiceGenerator = function() {
+            // Find React instance on DOM
+            const invoiceRoot = document.querySelector('#root');
+            if (invoiceRoot && invoiceRoot._reactRootContainer) {
+              console.log('React root found, attempting fix');
+              // Force re-render by changing URL slightly
+              window.history.pushState({}, '', '/invoice?refresh=' + Date.now());
+              window.location.reload();
+            }
+          };
+          // Console message for users experiencing blank screen
+          console.log('If you see a blank screen, run window.fixInvoiceGenerator() in the console');
+        }
+      });
+    </script>
   </head>
 
   <body>

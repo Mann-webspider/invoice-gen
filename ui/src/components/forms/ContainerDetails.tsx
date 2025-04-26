@@ -30,8 +30,8 @@ export const ContainerDetails: React.FC<ContainerDetailsProps> = ({
       <div className="flex flex-row w-96 gap-1">
         <div className="flex flex-row gap-3 w-36">
           <Select
-            value={marksAndNosConfig.first}
-            onValueChange={(val) => setMarksAndNosConfig(prev => ({ ...prev, first: val }))}
+            value={marksAndNosConfig.leftValue}
+            onValueChange={(val) => setMarksAndNosConfig(prev => ({ ...prev, leftValue: val }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select number" />
@@ -50,7 +50,7 @@ export const ContainerDetails: React.FC<ContainerDetailsProps> = ({
         <div className="flex flex-row gap-10 w-64">
           <Select
             value={marksAndNosConfig.third}
-            onValueChange={(val) => setMarksAndNosConfig(prev => ({ ...prev, third: val }))}
+            onValueChange={(val) => setMarksAndNosConfig(prev => ({ ...prev, containerType: val }))}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select number" />

@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Trash } from 'lucide-react';
 import { Product, InvoiceItem, ProductSection } from '@/lib/types';
 import { format } from 'date-fns';
+import MarksAndNumbers from '@/components/MarksAndNumbers';
 
 // Update the props interface to receive data from InvoiceGenerator
 interface PackagingListProps {
@@ -500,6 +501,35 @@ const PackagingList = ({
     }));
   };
 
+  // Update to handle container type
+  const [containerType, setContainerType] = useState<string>('FCL');
+
+  // Extract container type from markNumber
+  useEffect(() => {
+    if (markNumber) {
+      if (markNumber.includes('LCL')) {
+        setContainerType('LCL');
+      } else if (markNumber.includes('FCL')) {
+        setContainerType('FCL');
+      }
+    }
+  }, [markNumber]);
+
+  // Add a handler for when the marks and numbers change
+  const handleMarksAndNumbersChange = (value: string) => {
+    if (value === 'LCL') {
+      setContainerType('LCL');
+      setMarkParts(['', '', 'LCL']);
+    } else {
+      // Parse the value in the format "10X20 FCL"
+      const parts = value.match(/^(\d+)X(\d+)\s+(\w+)$/);
+      if (parts) {
+        setContainerType(parts[3]);
+        setMarkParts([parts[1], parts[2], parts[3]]);
+      }
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Add the Customs Invoice Header */}
@@ -717,10 +747,21 @@ const PackagingList = ({
           <div className="space-y-6">
             {/* Mark Number Display */}
             <div className="border p-4">
-              <div className="flex justify-between items-center mb-2">
-                <Label className="font-bold text-base">Marks & Nos.</Label>
-                <div className="font-bold">{markParts[0]}X{markParts[1]}{markParts[2]}</div>
-              </div>
+              {readOnly ? (
+                <div className="flex justify-between items-center mb-2">
+                  <Label className="font-bold text-base">Marks & Nos.</Label>
+                  <div className="font-bold">
+                    {containerType === 'LCL' ? 'LCL' : `${markParts[0]}X${markParts[1]} ${markParts[2]}`}
+                  </div>
+                </div>
+              ) : (
+                <MarksAndNumbers 
+                  initialContainerType={containerType}
+                  initialLeftValue={markParts[0]}
+                  initialRightValue={markParts[1]}
+                  onChange={handleMarksAndNumbersChange}
+                />
+              )}
             </div>
 
             {/* Product Sections */}

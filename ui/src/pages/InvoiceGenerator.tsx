@@ -401,8 +401,8 @@ const InvoiceGenerator = () => {
 
   // Package Info
   const [noOfPackages, setNoOfPackages] = useState("14000 BOX");
-  const [grossWeight, setGrossWeight] = useState("1623");
-  const [netWeight, setNetWeight] = useState("1621");
+  const [grossWeight, setGrossWeight] = useState("");
+  const [netWeight, setNetWeight] = useState("");
   const [exportUnderDutyDrawback, setExportUnderDutyDrawback] = useState(true);
   const [ftpIncentiveDeclaration, setFtpIncentiveDeclaration] = useState(
     "I/we shall claim under chapter 3 incentive of FTP as admissible at time policy in force - MEIS, RODTEP"
@@ -421,10 +421,11 @@ const InvoiceGenerator = () => {
   const [totalFOBEuro, setTotalFOBEuro] = useState<number>(0);
   const [amountInWords, setAmountInWords] = useState<string>("");
 
-  const [marksAndNosConfig, setMarksAndNosConfig] = useState({
-    first: "10",
-    second: "X",
-    third: "20",
+  // Replace the marksAndNosConfig and containerType state, keeping containerTypes as a reference
+  const [marksAndNumbersValues, setMarksAndNumbersValues] = useState({
+    containerType: "FCL",
+    leftValue: "10",
+    rightValue: "20",
   });
   const [containerType, setContainerType] = useState("FCL");
 
@@ -458,7 +459,7 @@ const InvoiceGenerator = () => {
 
     // Add an empty row to the first section
     addNewRow(sections[0].id);
-  }, []);
+  }, []); // Empty dependency array ensures this only runs once on mount
 
   useEffect(() => {
     // Calculate totals
@@ -516,14 +517,14 @@ const InvoiceGenerator = () => {
         id: "",
         description: "",
         hsnCode: hsnCode,
-        size: sizes[0] || "600 X 1200",
+        size: defaultSize,
         price: 10,
         sqmPerBox: 1.44,
         marksAndNos: `${marksAndNosConfig.first}${marksAndNosConfig.second}${marksAndNosConfig.third} ${containerType}`,
       },
       quantity: 1000,
       unitType: "Box",
-      totalSQM: 1440,
+      totalSQM: 1000 * defaultSqmPerBox,
       totalFOB: 10000,
       sectionId,
     };
@@ -797,7 +798,7 @@ const InvoiceGenerator = () => {
     // Save the current state before navigating
     const formData = {
       sections: sections,
-      markNumber: `${ieCode}`,
+      markNumber: markNumber, // Use the markNumber from state
       readOnly: true,
       // Add invoice header information
       invoiceHeader: {
