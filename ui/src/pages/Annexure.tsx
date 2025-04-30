@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ProductSection } from '@/lib/types';
 import { format } from 'date-fns';
 
+
 interface AnnexureProps {
   onBack: () => void;
   importedSections?: ProductSection[];
@@ -187,6 +188,7 @@ const Annexure = ({
 
   return (
     <div className="space-y-6">
+    
       {/* Header - App-themed styling but maintaining the image layout */}
       <div className="bg-white p-6 shadow-sm border rounded-lg">
         <h1 className="text-3xl font-bold text-center mb-2">ANNEXURE</h1>

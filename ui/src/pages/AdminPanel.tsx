@@ -1,521 +1,379 @@
-import  React, { useState ,useEffect} from "react";
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-  TableFooter,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Plus, Pencil, Trash2, Save } from "lucide-react";
-import {
-  getDropdownOptions,
-  addDropdownOption,
-  updateDropdownOption,
-  deleteDropdownOption
-} from "@/lib/dataService";
-import { DropdownCategory, DropdownOption } from "@/lib/types";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Edit, Trash, Plus, Save, ArrowUpDown, ExternalLink, FileText, Edit2 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import api from "@/lib/axios";
 
-// Define sections based on the images provided
-const sections = [
+type DropdownOption = {
+  id: string;
+  value: string;
+  categoryId: string;
+};
+
+type Category = {
+  id: string;
+  name: string;
+  options: DropdownOption[];
+};
+
+type DropdownOptions = {
+  categories: Category[];
+};
+
+type Exporter = {
+  id: string;
+  company_name: string;
+  company_address: string;
+  email: string;
+  tax_id: string;
+  ie_code: string;
+  pan_number: string;
+  gstin_number: string;
+  state_code: string;
+  invoice_number: string;
+  authorized_name: string;
+  authorized_designation: string;
+  contact_number: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+// Mock recent invoices data
+const recentInvoices = [
+  { id: '1', number: 'EXP/642/2025', date: '4/14/2025', totalAmount: 0, items: 0 },
+  { id: '2', number: 'EXP/642/2025', date: '4/14/2025', totalAmount: 0, items: 0 },
+  { id: '3', number: 'EXP/642/2025', date: '4/14/2025', totalAmount: 0, items: 0 },
+];
+
+// Mock initial exporters data
+const initialExporters: Exporter[] = [
   {
-    id: "exporter",
-    name: "Exporter Section",
-    categories: [
-      "exporter",
-      "ieCode",
-      "panNo",
-      "gstinNo",
-      "stateCode",
-      "buyersOrderNoFormat",
-      "poNo",
-      "email",
-      "taxId"
-    ]
-  },
-  {
-    id: "shipping",
-    name: "Shipping Details",
-    categories: [
-      "preCarriageBy",
-      "placeOfReceipt",
-      "countryOfOrigin",
-      "countryOfFinalDestination",
-      "vesselFlightNo",
-      "portOfLoading",
-      "portOfDischarge",
-      "finalDestination",
-      "termsOfDelivery",
-      "shippingMethod",
-      "euroRate"
-    ]
-  },
-  {
-    id: "table",
-    name: "Table Information",
-    categories: [
-      "marksAndNos",
-      "size",
-      "sanitaryTilesMix",
-      "unit",
-      "hsnCode"
-    ]
-  },
-  {
-    id: "supplier",
-    name: "Supplier Details",
-    categories: [
-      "supplierName",
-      "supplierGstin",
-      "taxInvoiceFormat"
-    ]
-  },
-  {
-    id: "arn",
-    name: "ARN & Declaration",
-    categories: [
-      "exportUnderGstCircular",
-      "applicationReferenceNumber"
-    ]
+    id: "1",
+    company_name: "Zeric Ceramic",
+    company_address: "SECOND FLOOR, OFFICE NO 7,\nISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI,\nGujarat, 363642\nINDIA",
+    email: "info@zericceramic.com",
+    tax_id: "24AACF*********",
+    ie_code: "AACFZ6****",
+    pan_number: "AACFZ6****",
+    gstin_number: "24AACF*********",
+    state_code: "24",
+    invoice_number: "EXP/001/2024",
+    authorized_name: "John Doe",
+    authorized_designation: "Export Manager",
+    contact_number: "+91 98765 43210",
+    createdAt: "2024-01-01",
+    updatedAt: "2024-04-15"
   }
 ];
 
-const AdminPanel = () => {
-  const { toast } = useToast();
-  const [dropdownOptions, setDropdownOptions] = useState(getDropdownOptions());
-  const [activeSection, setActiveSection] = useState(sections[0].id);
-  const [selectedCategory, setSelectedCategory] = useState<string>("");
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [newOptionValue, setNewOptionValue] = useState("");
-  const [editOption, setEditOption] = useState<DropdownOption | null>(null);
-  const [editOptionValue, setEditOptionValue] = useState("");
-  const [editingField, setEditingField] = useState<string | null>(null);
-  const [newFieldValue, setNewFieldValue] = useState("");
+// Section definitions
+const sections = [
+  { id: "exporter", label: "Exporter Section" },
+  { id: "shipping", label: "Shipping Details" },
+  { id: "table", label: "Table Information" },
+  { id: "supplier", label: "Supplier Details" },
+  { id: "arn", label: "ARN & Declaration" }
+];
 
-  // Add state for form data
-  const [exporterData, setExporterData] = useState({
-    exporterName: "",
-    companyAddress: "",
+
+const AdminPanel = () => {
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<string>("exporter");
+  const [exporters, setExporters] = useState<Exporter[]>([{
+    id:"",
+    company_name: "",
+    company_address: "",
+    contact_number: "",
     email: "",
-    taxId: "",
-    ieCode: "",
-    panNo: "",
-    gstinNo: "",
-    stateCode: "",
-    invoiceNumber: ""
+    tax_id: "",
+    ie_code: "",
+    pan_number: "",
+    gstin_number: "",
+    invoice_number: "",
+    authorized_name: "",
+    authorized_designation: "",
+    state_code: "",
+    createdAt: "2024-01-01",
+    updatedAt: "2024-04-15"
+  }]);
+  const [selectedExporter, setSelectedExporter] = useState<Exporter | null>(null);
+  const [isAddExporterDialogOpen, setIsAddExporterDialogOpen] = useState(false);
+  const [isEditExporterDialogOpen, setIsEditExporterDialogOpen] = useState(false);
+  const [isViewExporterDialogOpen, setIsViewExporterDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [exporterToDelete, setExporterToDelete] = useState<string | null>(null);
+  
+  // Form state for adding/editing exporters
+  const [formData, setFormData] = useState<Omit<Exporter,  'createdAt' | 'updatedAt'>>({
+    id:"",
+    company_name: "",
+    company_address: "",
+    contact_number: "",
+    email: "",
+    tax_id: "",
+    ie_code: "",
+    pan_number: "",
+    gstin_number: "",
+    invoice_number: "",
+    authorized_name: "",
+    authorized_designation: "",
+    state_code: ""
   });
 
-  // Add state for multiple exporters
-  const [exporters, setExporters] = useState<Array<{
-    id: string;
-    exporterName: string;
-    companyAddress: string;
-    email: string;
-    taxId: string;
-    ieCode: string;
-    panNo: string;
-    gstinNo: string;
-    stateCode: string;
-    invoiceNumber: string;
-  }>>([
-    // Default exporter
+  // Mock shipping details data
+  const [shippingDetails, setShippingDetails] = useState([
     {
-      id: "default-exporter",
-      exporterName: "Zeric Ceramic",
-      companyAddress: "SECOND FLOOR, OFFICE NO 7,\nISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI,\nGujarat, 363642\nINDIA",
-      email: "info@zericceramic.com",
-      taxId: "24AACF*********",
-      ieCode: "AACFZ6****",
-      panNo: "AACFZ6****",
-      gstinNo: "24AACF*********",
-      stateCode: "24",
-      invoiceNumber: "EXP/001/2024"
-    }
+      "id": "9",
+      "category": "place_of_receipt",
+      "value": ""
+  }
   ]);
 
-  // Add state for selected exporter in dropdown
-  const [selectedExporterId, setSelectedExporterId] = useState<string>("default-exporter");
+  // State for adding new values
+  const [newValue, setNewValue] = useState("");
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [isAddValueDialogOpen, setIsAddValueDialogOpen] = useState(false);
+  const [editingItemIndex, setEditingItemIndex] = useState<number | null>(null);
+  const [editingItemValue, setEditingItemValue] = useState("");
+  const [isEditValueDialogOpen, setIsEditValueDialogOpen] = useState(false);
 
-  const [supplierData, setSupplierData] = useState({
-    supplierName: "",
-    gstinNo: "",
-    taxInvoiceNo: ""
+  // Add table information data
+  const [tableInfo, setTableInfo] = useState({
+    descriptionHsnPairs: [
+      { id: "1", description: "Glazed porcelain Floor Tiles", hsn_code: "69072100" },
+      { id: "2", description: "Polished Vitrified Tiles", hsn_code: "69072200" },
+      { id: "3", description: "Ceramic Wall Tiles", hsn_code: "69072300" },
+      { id: "4", description: "Digital Floor Tiles", hsn_code: "69072100" }
+    ],
+    sizeSqmPairs: [
+      { id: "1", size: "600 X 1200", sqm: "1.44" },
+      { id: "2", size: "600 X 600", sqm: "0.72" },
+      { id: "3", size: "800 X 800", sqm: "1.28" },
+      { id: "4", size: "300 X 600", sqm: "0.36" },
+      { id: "5", size: "300 X 300", sqm: "0.18" }
+    ],
+    unitTypes: [{id:"1",value:"Box"}]
   });
 
-  const [arnData, setArnData] = useState({
+  // State for adding/editing table information
+  const [newDescHsnPair, setNewDescHsnPair] = useState({ description: "", hsn_code: "" });
+  const [newSizeSqmPair, setNewSizeSqmPair] = useState({ size: "", sqm: "" });
+  const [newUnitType, setNewUnitType] = useState("");
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [isAddDescHsnDialogOpen, setIsAddDescHsnDialogOpen] = useState(false);
+  const [isEditDescHsnDialogOpen, setIsEditDescHsnDialogOpen] = useState(false);
+  const [isAddSizeSqmDialogOpen, setIsAddSizeSqmDialogOpen] = useState(false);
+  const [isEditSizeSqmDialogOpen, setIsEditSizeSqmDialogOpen] = useState(false);
+  const [isAddUnitTypeDialogOpen, setIsAddUnitTypeDialogOpen] = useState(false);
+  const [isEditUnitTypeDialogOpen, setIsEditUnitTypeDialogOpen] = useState(false);
+  const [editingUnitTypeIndex, setEditingUnitTypeIndex] = useState<number | null>(null);
+  const [editingUnitTypeValue, setEditingUnitTypeValue] = useState("");
+
+  // Add supplier details state
+  const [suppliers, setSuppliers] = useState([
+    {
+      id: "",
+      name: "",
+      gstin_number: "",
+      address: "",
+      permission: ""
+    }
+  ]);
+  
+  const [isAddSupplierDialogOpen, setIsAddSupplierDialogOpen] = useState(false);
+  const [isEditSupplierDialogOpen, setIsEditSupplierDialogOpen] = useState(false);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [supplierFormData, setSupplierFormData] = useState({
+    name: "",
+    gstin_number: "",
+    address: "",
+    permission: ""
+  });
+
+  // Add ARN & Declaration state
+  const [arnDeclaration, setArnDeclaration] = useState({
     gstCircular: "",
-    applicationReferenceNumber: ""
+    applicationRefNumber: ""
   });
 
-  // Add state for shipping details
-  const [shippingData, setShippingData] = useState({
-    placeOfReceipt: "",
-    portOfLoading: "",
-    portOfDischarge: "",
-    finalDestination: ""
-  });
-
-  // Add state for table information
-  const [tableData, setTableData] = useState({
-    marksNos1: "",
-    marksNos2: "",
-    description: "",
-    hsnCode: "",
-    size: "",
-    unitType: ""
-  });
-
-  // Add handlers for saving each section
-  const handleSaveExporterSection = () => {
-    // Here you would typically save the data to your backend
-    // For now, we'll just show a success toast
-    toast({
-      title: "Success",
-      description: "All exporter fields (except invoice number) saved successfully",
-    });
+  // Function to handle ARN & Declaration changes
+  const handleArnDeclarationChange = (field: string, value: string) => {
+    setArnDeclaration(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const handleSaveSupplierSection = () => {
-    // Here you would typically save the data to your backend
-    // For now, we'll just show a success toast
-    toast({
-      title: "Success",
-      description: "Supplier details saved successfully",
-    });
-  };
-
-  const handleSaveARNSection = () => {
-    // Here you would typically save the data to your backend
-    // For now, we'll just show a success toast
+  // Function to save ARN & Declaration
+  const handleSaveArnDeclaration = () => {
+    // Here you would save to database
     toast({
       title: "Success",
       description: "ARN & Declaration saved successfully",
     });
   };
-
-  // Get categories for the active section
-  const activeSectionData = sections.find(section => section.id === activeSection);
-  const categoriesInSection = activeSectionData?.categories || [];
-
-  // Filter dropdown categories to only show those in the active section
-  const filteredCategories = dropdownOptions.categories.filter(
-    category => categoriesInSection.includes(category.id)
-  );
-
-  // Set the first category of the section as selected by default when section changes
-  React.useEffect(() => {
-    if (filteredCategories.length > 0 && (!selectedCategory || !categoriesInSection.includes(selectedCategory))) {
-      setSelectedCategory(filteredCategories[0].id);
+   // Define an async function inside useEffect
+   const fetchExporterDetails = async () => {
+    try {
+       // Check if there's a valid exporter id
+        const response = await api.get(`/exporter`);
+        const exporterData = response.data.data;
+        console.log(exporterData);
+        
+        setExporters(exporterData);
+        
+      
+    } catch (error) {
+      console.error("Failed to fetch exporter details:", error);
     }
-  }, [activeSection, filteredCategories]);
-
-  const selectedCategoryData = dropdownOptions.categories.find(
-    (category) => category.id === selectedCategory
-  );
-
-  const handleAddOption = () => {
-    if (!newOptionValue.trim()) {
-      toast({
-        title: "Error",
-        description: "Option value cannot be empty",
-        variant: "destructive",
+  };
+  const fetchShippingDetails = async () => {
+    try {
+       // Check if there's a valid exporter id
+        const response = await api.get(`/dropdown-options`);
+        const shippingData = response.data.data.shipping;
+        console.log(shippingData);
+        
+        setShippingDetails(shippingData);
+        
+      
+    } catch (error) {
+      console.error("Failed to fetch exporter details:", error);
+    }
+  };
+  const fetchTableDetails = async () => {
+    try {
+       // Check if there's a valid exporter id
+        const response = await api.get(`/tableinfo`);
+        const tableData = response.data.data;
+        console.log(tableData);
+        
+        setTableInfo(tableData);
+        
+      
+    } catch (error) {
+      console.error("Failed to fetch exporter details:", error);
+    }
+  };
+  const fetchSupplierDetails = async () => {
+    try {
+       // Check if there's a valid exporter id
+        const response = await api.get(`/supplier`);
+        const supplierData = response.data.data;
+        console.log(supplierData);
+        
+        setSuppliers(supplierData);
+        
+      
+    } catch (error) {
+      console.error("Failed to fetch exporter details:", error);
+    }
+  };
+  
+  // Initialize form data when editing an exporter
+  useEffect(() => {
+    fetchExporterDetails();
+    fetchShippingDetails();
+    fetchTableDetails();
+    fetchSupplierDetails();
+    // if (selectedExporter && isEditExporterDialogOpen) {
+    // }
+  }, []);
+  // Initialize form data when editing an exporter
+  useEffect(() => {
+    if (selectedExporter && isEditExporterDialogOpen) {
+      setFormData({
+        id:selectedExporter.id,
+        company_name: selectedExporter.company_name,
+        company_address: selectedExporter.company_address,
+        email: selectedExporter.email,
+        tax_id: selectedExporter.tax_id,
+        ie_code: selectedExporter.ie_code,
+        pan_number: selectedExporter.pan_number,
+        gstin_number: selectedExporter.gstin_number,
+        state_code: selectedExporter.state_code,
+        invoice_number: selectedExporter.invoice_number,
+        authorized_name: selectedExporter.authorized_name,
+        authorized_designation: selectedExporter.authorized_designation,
+        contact_number: selectedExporter.contact_number
       });
-      return;
     }
+  }, [selectedExporter, isEditExporterDialogOpen]);
 
-    const updatedOptions = addDropdownOption(selectedCategory, {
-      id: "",
-      value: newOptionValue.trim(),
+  // Reset form data when closing dialogs
+  const resetFormData = () => {
+    setFormData({
+      id:"",
+      company_name: "",
+      company_address: "",
+      email: "",
+      tax_id: "",
+      ie_code: "",
+      pan_number: "",
+      gstin_number: "",
+      state_code: "",
+      invoice_number: "",
+      authorized_name: "",
+      authorized_designation: "",
+      contact_number: ""
     });
-
-    setDropdownOptions(updatedOptions);
-    setNewOptionValue("");
-    setIsAddDialogOpen(false);
-
-    toast({
-      title: "Success",
-      description: "Option added successfully",
-    });
   };
 
-  const handleEditOption = () => {
-    if (!editOption || !editOptionValue.trim()) {
-      toast({
-        title: "Error",
-        description: "Option value cannot be empty",
-        variant: "destructive",
-      });
-      return;
-    }
+  // ------------------------start exporter --------------------------------
+  const handleAddExporter = async () => {
+    const createExporter = async (data)=>{
+      try {
+        
+        // Check if there's a valid exporter id
+        delete formData.id
+        delete formData.invoice_number
+        
+        
+         const response = await api.post(`/exporter`,data);
+         const exporterData = response.data.data;
+         
+         
+         return exporterData
+         
+       
+     } catch (error) {
+      if(error.status == 400){
 
-    const updatedOptions = updateDropdownOption(
-      selectedCategory,
-      editOption.id,
-      { value: editOptionValue.trim() }
-    );
-
-    setDropdownOptions(updatedOptions);
-    setEditOption(null);
-    setEditOptionValue("");
-    setIsEditDialogOpen(false);
-
-    toast({
-      title: "Success",
-      description: "Option updated successfully",
-    });
-  };
-
-  const handleDeleteOption = (optionId: string) => {
-    if (confirm("Are you sure you want to delete this option?")) {
-      const updatedOptions = deleteDropdownOption(selectedCategory, optionId);
-      setDropdownOptions(updatedOptions);
-
-      toast({
-        title: "Success",
-        description: "Option deleted successfully",
-      });
-    }
-  };
-
-  const openEditDialog = (option: DropdownOption) => {
-    setEditOption(option);
-    setEditOptionValue(option.value);
-    setIsEditDialogOpen(true);
-  };
-
-  const startEditing = (categoryId: string) => {
-    setEditingField(categoryId);
-    const category = dropdownOptions.categories.find(c => c.id === categoryId);
-    if (category && category.options.length > 0) {
-      setNewFieldValue(category.options[0].value);
-    } else {
-      setNewFieldValue("");
-    }
-  };
-
-  const handleSaveField = (categoryId: string) => {
-    if (!newFieldValue.trim()) {
-      toast({
-        title: "Error",
-        description: "Field value cannot be empty",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check if option already exists
-    const category = dropdownOptions.categories.find(c => c.id === categoryId);
-    if (category) {
-      if (category.options.length > 0) {
-        // Update existing option
-        updateDropdownOption(categoryId, category.options[0].id, { value: newFieldValue.trim() });
-      } else {
-        // Add new option
-        addDropdownOption(categoryId, { id: "", value: newFieldValue.trim() });
+        console.error("Failed to add exporter details:", error.response.data.message);
+        return error.response.data
       }
+     }
     }
-
-    // Refresh dropdown options
-    setDropdownOptions(getDropdownOptions());
-    setEditingField(null);
-
-    toast({
-      title: "Success",
-      description: "Field value saved successfully",
-    });
-  };
-
-  // Add handlers for saving individual shipping fields
-  const handleSavePlaceOfReceipt = () => {
-    toast({
-      title: "Success",
-      description: "Place of Receipt saved successfully",
-    });
-  };
-
-  const handleSavePortOfLoading = () => {
-    toast({
-      title: "Success",
-      description: "Port of Loading saved successfully",
-    });
-  };
-
-  const handleSavePortOfDischarge = () => {
-    toast({
-      title: "Success",
-      description: "Port of Discharge saved successfully",
-    });
-  };
-
-  const handleSaveFinalDestination = () => {
-    toast({
-      title: "Success",
-      description: "Final Destination saved successfully",
-    });
-  };
-
-  // Add handlers for saving table information fields
-  const handleSaveMarksNos1 = () => {
-    toast({
-      title: "Success",
-      description: "Marks & Nos. (1) saved successfully",
-    });
-  };
-
-  const handleSaveMarksNos2 = () => {
-    toast({
-      title: "Success",
-      description: "Marks & Nos. (2) saved successfully",
-    });
-  };
-
-  const handleSaveDescriptionAndHsnCode = () => {
-    toast({
-      title: "Success",
-      description: "Description and HSN Code saved successfully",
-    });
-  };
-
-  const handleSaveSize = () => {
-    toast({
-      title: "Success",
-      description: "Size saved successfully",
-    });
-  };
-
-  const handleSaveUnitType = () => {
-    toast({
-      title: "Success",
-      description: "Unit Type saved successfully",
-    });
-  };
-
-  // Add handlers for saving individual exporter fields
-  const handleSaveExporterName = () => {
-    toast({
-      title: "Success",
-      description: "Exporter Name saved successfully",
-    });
-  };
-
-  const handleSaveCompanyAddress = () => {
-    toast({
-      title: "Success",
-      description: "Company Address saved successfully",
-    });
-  };
-
-  const handleSaveEmail = () => {
-    toast({
-      title: "Success",
-      description: "Email saved successfully",
-    });
-  };
-
-  const handleSaveTaxId = () => {
-    toast({
-      title: "Success",
-      description: "Tax ID saved successfully",
-    });
-  };
-
-  const handleSaveIECode = () => {
-    toast({
-      title: "Success",
-      description: "I.E. Code saved successfully",
-    });
-  };
-
-  const handleSavePANNo = () => {
-    toast({
-      title: "Success",
-      description: "PAN No. saved successfully",
-    });
-  };
-
-  const handleSaveGSTINNo = () => {
-    toast({
-      title: "Success",
-      description: "GSTIN No. saved successfully",
-    });
-  };
-
-  const handleSaveStateCode = () => {
-    toast({
-      title: "Success",
-      description: "State Code saved successfully",
-    });
-  };
-
-  const handleSaveInvoiceNumber = () => {
-    toast({
-      title: "Success",
-      description: "Invoice Number saved successfully",
-    });
-  };
-
-  // Function to add a new exporter
-  const handleAddExporter = () => {
     // Validate required fields
-    if (!exporterData.exporterName.trim()) {
+    
+    const newExporter =await  createExporter(formData)
+    if(newExporter.status == "error"){
       toast({
         title: "Error",
-        description: "Exporter Name is required",
+        description: newExporter.message,
         variant: "destructive",
       });
-      return;
+      return
     }
+    
 
-    // Create new exporter with current form data
-    const newExporter = {
-      id: Date.now().toString(),
-      ...exporterData
-    };
+    
 
     // Add to exporters array
     setExporters([...exporters, newExporter]);
-
-    // Set the newly added exporter as selected
-    setSelectedExporterId(newExporter.id);
-
-    // Clear the form for next entry
-    setExporterData({
-      exporterName: "",
-      companyAddress: "",
-      email: "",
-      taxId: "",
-      ieCode: "",
-      panNo: "",
-      gstinNo: "",
-      stateCode: "",
-      invoiceNumber: ""
-    });
+    setIsAddExporterDialogOpen(false);
+    resetFormData();
 
     toast({
       title: "Success",
@@ -523,834 +381,2117 @@ const AdminPanel = () => {
     });
   };
 
-  // Function to handle exporter selection from dropdown
-  const handleExporterSelect = (exporterId: string) => {
-    setSelectedExporterId(exporterId);
-  };
-
-  // Get the selected exporter data for display in the table
-  const selectedExporter = selectedExporterId
-    ? exporters.find(exp => exp.id === selectedExporterId)
-    : exporters.length > 0 ? exporters[0] : null;
-
-  // Render the Exporter section with a form layout similar to the invoice form
-  const renderExporterSection = () => {
-    // Helper function to get the first option value for a category
-    const getCategoryValue = (categoryId: string) => {
-      const category = dropdownOptions.categories.find(c => c.id === categoryId);
-      if (category && category.options.length > 0) {
-        return category.options[0].value;
+  const handleEditExporter = async () => {
+    const updateExporterDetails = async (id,data) => {
+      try {
+         // Check if there's a valid exporter id
+          const response = await api.put(`/exporter/${id}`,data);
+          const exporterData = response.data.data;
+          
+          
+          // setExporters(exporterData);
+          
+        
+      } catch (error) {
+        console.error("Failed to update exporter details:", error);
       }
-      return "";
     };
+    if (!selectedExporter) return;
+    updateExporterDetails(formData.id,formData)
+    
+    
 
-    return (
-      <div className="space-y-6">
+    // Update the exporter
+    const updatedExporters = exporters.map(exporter => {
+      if (exporter.id === selectedExporter.id) {
+        return {
+          ...exporter,
+          ...formData,
+          updatedAt: new Date().toISOString().split('T')[0]
+        };
+      }
+      return exporter;
+    });
+
+    setExporters(updatedExporters);
+    setIsEditExporterDialogOpen(false);
+    setSelectedExporter(null);
+    resetFormData();
+
+    toast({
+      title: "Success",
+      description: "Exporter updated successfully",
+    });
+  };
+
+  
+  const handleDeleteExporter = async () => {
+    async function deleteExporter(id){
+      try {
+        let res = await api.delete(`/exporter/${id}`)
+        console.log(res.data)
+      } catch (error) {
+        console.log(error);
+        return error.response.data
+      }
+    }
+    if (!exporterToDelete) return;
+    let res = await deleteExporter(exporterToDelete)
+    if (res.status == "error"){
+      toast({
+        title: res.status,
+        description: res.message,
+      });
+    }
+
+    
+    // Filter out the exporter to delete
+    const updatedExporters = exporters.filter(exporter => exporter.id !== exporterToDelete);
+    setExporters(updatedExporters);
+    setIsDeleteDialogOpen(false);
+    setExporterToDelete(null);
+
+    toast({
+      title: "Success",
+      description: "Exporter deleted successfully",
+    });
+  };
+  // ------------------------finish exporter --------------------------------
+  const openEditDialog = (exporter: Exporter) => {
+    setSelectedExporter(exporter);
+    setIsEditExporterDialogOpen(true);
+  };
+
+  const openViewDialog = (exporter: Exporter) => {
+    setSelectedExporter(exporter);
+    setIsViewExporterDialogOpen(true);
+  };
+
+  const openDeleteDialog = (exporterId: string) => {
+    setExporterToDelete(exporterId);
+    setIsDeleteDialogOpen(true);
+  };
+
+  // ------------------------start shipping --------------------------------
+
+
+
+
+  const handleAddShippingValue = () => {
+    const addShipping = async (category,value)=>{
+      try {
+        let res = await api.post('/dropdown-options',{category:category,value:value})
+        console.log(res.data.allOptions);
+        
+        return res.data.data
+      } catch (error) {
+          return error.response.data
+      }
+    }
+    if (!editingCategory || !newValue.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a value",
+        variant: "destructive",
+      });
+      return;
+    }
+    console.log(editingCategory);
+    
+    addShipping(editingCategory,newValue)
+
+    // setShippingDetails(prev => {
+    //   const updated = { ...prev };
+    //   if (editingCategory === "place_of_receipt") {
+    //     updated.place_of_receipt = [...prev.place_of_receipt, newValue];
+    //   } else if (editingCategory === "port_of_loading") {
+    //     updated.port_of_loading = [...prev.port_of_loading, newValue];
+    //   } else if (editingCategory === "port_of_discharge") {
+    //     updated.port_of_discharge = [...prev.port_of_discharge, newValue];
+    //   } else if (editingCategory === "final_destination") {
+    //     updated.final_destination = [...prev.final_destination, newValue];
+    //   }
+    //   return updated;
+    // });
+
+    setNewValue("");
+    setIsAddValueDialogOpen(false);
+    setEditingCategory(null);
+
+    toast({
+      title: "Success",
+      description: "Value added successfully",
+    });
+  };
+
+  const handleEditShippingValue = () => {
+    if (!editingCategory || !editingItemValue.trim() || editingItemIndex === null) {
+      toast({
+        title: "Error",
+        description: "Please enter a value",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    
+
+    setEditingItemValue("");
+    setIsEditValueDialogOpen(false);
+    setEditingCategory(null);
+    setEditingItemIndex(null);
+
+    toast({
+      title: "Success",
+      description: "Value updated successfully",
+    });
+  };
+
+  const handleDeleteShippingValue = (category: string, index: string) => {
+   const deleteShippingValues =async (id)=>{
+    try {
+      let res = await api.delete(`/dropdown-options/${id}`)
+      if(res.status == 204){
+
+        return {status:"success",
+          message:"Delete successfully"
+        }
+      }
+      setShippingDetails(res.data)
+      
+    } catch (error) {
+      toast({
+        title: "Delete",
+        description: "Value deleted successfully",
+      });
+      return error.response.data
+    }
+   }
+  let error = deleteShippingValues(index)
+   
+    toast({
+      title: "Success",
+      description: "Value deleted successfully",
+    });
+  };
+
+
+  // ------------------------finish shipping --------------------------------
+  const openEditValueDialog = (category: string,  value: string) => {
+    setEditingCategory(category);
+    // setEditingItemIndex(index);
+    setEditingItemValue(value);
+    setIsEditValueDialogOpen(true);
+  };
+
+  const openAddValueDialog = (category: string) => {
+    setEditingCategory(category);
+    setNewValue("");
+    setIsAddValueDialogOpen(true);
+  };
+
+ 
+  // ------------------------start table information --------------------------------
+  const handleAddDescHsnPair = async () => {
+    if (!newDescHsnPair.description.trim() || !newDescHsnPair.hsn_code.trim()) {
+      toast({
+        title: "Error",
+        description: "Both Description and HSN Code are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.post('/product-category', newDescHsnPair);
+      console.log(response);
+      
+      if (response.data && response.status === 201) {
+        setTableInfo(prev => ({
+          ...prev,
+          descriptionHsnPairs: [
+            ...prev.descriptionHsnPairs,
+            {
+              id: response.data.id,
+              description: response.data.description,
+              hsn_code: response.data.hsn_code
+            }
+          ]
+        }));
+
+        setNewDescHsnPair({ description: "", hsn_code: "" });
+        setIsAddDescHsnDialogOpen(false);
+
+        toast({
+          title: "Success",
+          description: "Description and HSN Code pair added successfully",
+        });
+      } else {
+        throw new Error("Failed to add product category");
+      }
+    } catch (error) {
+      console.error("Error adding product category:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to add product category. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditDescHsnPair = async () => {
+    if (!editingItemId || !newDescHsnPair.description.trim() || !newDescHsnPair.hsn_code.trim()) {
+      toast({
+        title: "Error",
+        description: "Both Description and HSN Code are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.put(`/product-category/${editingItemId}`, newDescHsnPair);
+      console.log(response);
+
+      if (response.data && response.status === 200) {
+        setTableInfo(prev => ({
+          ...prev,
+          descriptionHsnPairs: prev.descriptionHsnPairs.map(pair => 
+            pair.id === editingItemId 
+              ? { 
+                  id: response.data.data.id,
+                  description: response.data.data.description,
+                  hsn_code: response.data.data.hsn_code
+                }
+              : pair
+          )
+        }));
+
+        setNewDescHsnPair({ description: "", hsn_code: "" });
+        setIsEditDescHsnDialogOpen(false);
+        setEditingItemId(null);
+
+        toast({
+          title: "Success",
+          description: "Description and HSN Code pair updated successfully",
+        });
+      } else {
+        throw new Error("Failed to update product category");
+      }
+    } catch (error) {
+      console.error("Error updating product category:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update product category. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteDescHsnPair = async (id: string) => {
+    try {
+      const response = await api.delete(`/product-category/${id}`);
+      console.log(response);
+
+      if (response.status === 200) {
+        setTableInfo(prev => ({
+          ...prev,
+          descriptionHsnPairs: prev.descriptionHsnPairs.filter(pair => pair.id !== id)
+        }));
+
+        toast({
+          title: "Success",
+          description: "Description and HSN Code pair deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete product category");
+      }
+    } catch (error) {
+      console.error("Error deleting product category:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete product category. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
+  // ------------------------finish table information --------------------------------
+  // ------------------------start size and sqm --------------------------------
+  const handleAddSizeSqmPair = async () => {
+    if (!newSizeSqmPair.size.trim() || !newSizeSqmPair.sqm.trim()) {
+      toast({
+        title: "Error",
+        description: "Both Size and SQM are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.post('/product-size', newSizeSqmPair);
+      
+      if (response.data && response.status === 201) {
+        setTableInfo(prev => ({
+          ...prev,
+          sizeSqmPairs: [
+            ...prev.sizeSqmPairs,
+            {
+              id: response.data.id,
+              size: response.data.size,
+              sqm: response.data.sqm
+            }
+          ]
+        }));
+
+        setNewSizeSqmPair({ size: "", sqm: "" });
+        setIsAddSizeSqmDialogOpen(false);
+
+        toast({
+          title: "Success",
+          description: "Size and SQM pair added successfully",
+        });
+      } else {
+        throw new Error("Failed to add size and SQM pair");
+      }
+    } catch (error) {
+      console.error("Error adding size and SQM pair:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to add size and SQM pair. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditSizeSqmPair = async () => {
+    if (!editingItemId || !newSizeSqmPair.size.trim() ) {
+      toast({
+        title: "Error",
+        description: "Both Size and SQM are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.put(`/product-size/${editingItemId}`, newSizeSqmPair);
+      console.log(response);
+      if (response.data && response.status === 200) {
+        setTableInfo(prev => ({
+          ...prev,
+          sizeSqmPairs: prev.sizeSqmPairs.map(pair => 
+            pair.id === editingItemId 
+              ? { 
+                  id: response.data.id,
+                  size: response.data.size,
+                  sqm: response.data.sqm
+                }
+              : pair
+          )
+        }));
+
+        setNewSizeSqmPair({ size: "", sqm: "" });
+        setIsEditSizeSqmDialogOpen(false);
+        setEditingItemId(null);
+
+        toast({
+          title: "Success",
+          description: "Size and SQM pair updated successfully",
+        });
+      } else {
+        throw new Error("Failed to update size and SQM pair");
+      }
+    } catch (error) {
+      console.error("Error updating size and SQM pair:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update size and SQM pair. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSizeSqmPair = async (id: string) => {
+    try {
+      const response = await api.delete(`/product-size/${id}`);
+     
+      if (response.status === 200) {
+        setTableInfo(prev => ({
+          ...prev,
+          sizeSqmPairs: prev.sizeSqmPairs.filter(pair => pair.id !== id)
+        }));
+
+        toast({
+          title: "Success",
+          description: "Size and SQM pair deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete size and SQM pair");
+      }
+    } catch (error) {
+      console.error("Error deleting size and SQM pair:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete size and SQM pair. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  // ------------------------finish size and sqm --------------------------------
+  // ------------------------start unit type --------------------------------
+  const handleAddUnitType = async () => {
+    if (!newUnitType.trim()) {
+      toast({
+        title: "Error",
+        description: "Unit Type is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.post('/dropdown-options', {
+        category: 'unit_type',
+        value: newUnitType
+      });
+
+      if (response.data && response.data.status === "success") {
+        setTableInfo(prev => ({
+          ...prev,
+          unitTypes: [
+            ...prev.unitTypes,
+            {
+              id: response.data.data.id,
+              value: newUnitType
+            }
+          ]
+        }));
+
+        setNewUnitType("");
+        setIsAddUnitTypeDialogOpen(false);
+
+        toast({
+          title: "Success",
+          description: "Unit Type added successfully",
+        });
+      } else {
+        throw new Error("Failed to add unit type");
+      }
+    } catch (error) {
+      console.error("Error adding unit type:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to add unit type. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditUnitType = async () => {
+    if (editingUnitTypeIndex === null || !editingUnitTypeValue.trim()) {
+      toast({
+        title: "Error",
+        description: "Unit Type is required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const unitTypeToEdit = tableInfo.unitTypes[editingUnitTypeIndex];
+    if (!unitTypeToEdit) {
+      toast({
+        title: "Error",
+        description: "Unit Type not found",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    
+    try {
+      const response = await api.put(`/dropdown-options/${unitTypeToEdit.id}`, {
+        category: 'unit_type',
+        value: editingUnitTypeValue
+      });
+
+      if (response.data && response.status === 200) {
+        setTableInfo(prev => {
+          const newUnitTypes = [...prev.unitTypes];
+          newUnitTypes[editingUnitTypeIndex] = {
+            id: unitTypeToEdit.id,
+            value: editingUnitTypeValue
+          };
+          return {
+            ...prev,
+            unitTypes: newUnitTypes
+          };
+        });
+
+        setEditingUnitTypeValue("");
+        setIsEditUnitTypeDialogOpen(false);
+        setEditingUnitTypeIndex(null);
+
+        toast({
+          title: "Success",
+          description: "Unit Type updated successfully",
+        });
+      } else {
+        throw new Error("Failed to update unit type");
+      }
+    } catch (error) {
+      console.error("Error updating unit type:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update unit type. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteUnitType = async (id: string) => {
+    const unitTypeToDelete = tableInfo.unitTypes.find(type => type.id === id);
+    if (!unitTypeToDelete) {
+      toast({
+        title: "Error",
+        description: "Unit Type not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.delete(`/dropdown-options/${id}`);
+
+      if (response.status === 200) {
+        setTableInfo(prev => ({
+          ...prev,
+          unitTypes: prev.unitTypes.filter(type => type.id !== id)
+        }));
+
+        toast({
+          title: "Success",
+          description: "Unit Type deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete unit type");
+      }
+    } catch (error) {
+      console.error("Error deleting unit type:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete unit type. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  // ------------------------finish unit type --------------------------------
+  const openEditDescHsnDialog = (id: string, description: string, hsn_code: string) => {
+    setEditingItemId(id);
+    setNewDescHsnPair({ description, hsn_code });
+    setIsEditDescHsnDialogOpen(true);
+  };
+
+  const openEditSizeSqmDialog = (id: string, size: string, sqm: string) => {
+    setEditingItemId(id);
+    setNewSizeSqmPair({ size, sqm });
+    setIsEditSizeSqmDialogOpen(true);
+  };
+
+  const openEditUnitTypeDialog = (index: number, value: string) => {
+    setEditingUnitTypeIndex(index);
+    setEditingUnitTypeValue(value);
+    setIsEditUnitTypeDialogOpen(true);
+  };
+
+  const handleAddSupplier = async () => {
+    if (!supplierFormData.name.trim() || !supplierFormData.gstin_number.trim()) {
+      toast({
+        title: "Error",
+        description: "Name and GSTIN No. are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.post('/supplier', supplierFormData);
+      
+      if (response.data && response.status === 201) {
+        setSuppliers([...suppliers, response.data]);
+        setIsAddSupplierDialogOpen(false);
+        setSupplierFormData({
+          name: "",
+          gstin_number: "",
+          address: "",
+          permission: ""
+        });
+
+        toast({
+          title: "Success",
+          description: "Supplier added successfully",
+        });
+      } else {
+        throw new Error("Failed to add supplier");
+      }
+    } catch (error) {
+      console.error("Error adding supplier:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to add supplier. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleEditSupplier = async () => {
+    if (!selectedSupplier || !supplierFormData.name.trim() || !supplierFormData.gstin_number.trim()) {
+      toast({
+        title: "Error",
+        description: "Name and GSTIN No. are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.put(`/supplier/${selectedSupplier.id}`, supplierFormData);
+      
+      if (response.data && response.status === 200) {
+        setSuppliers(suppliers.map(supplier => 
+          supplier.id === selectedSupplier.id 
+            ? { ...supplier, ...response.data }
+            : supplier
+        ));
+
+        setIsEditSupplierDialogOpen(false);
+        setSelectedSupplier(null);
+        setSupplierFormData({
+          name: "",
+          gstin_number: "",
+          address: "",
+          permission: ""
+        });
+
+        toast({
+          title: "Success",
+          description: "Supplier updated successfully",
+        });
+      } else {
+        throw new Error("Failed to update supplier");
+      }
+    } catch (error) {
+      console.error("Error updating supplier:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to update supplier. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeleteSupplier = async (id: string) => {
+    try {
+      const response = await api.delete(`/supplier/${id}`);
+      
+      if (response.status === 204) {
+        setSuppliers(suppliers.filter(supplier => supplier.id !== id));
+
+        toast({
+          title: "Success",
+          description: "Supplier deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete supplier");
+      }
+    } catch (error) {
+      console.error("Error deleting supplier:", error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to delete supplier. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openEditSupplierDialog = (supplier) => {
+    setSelectedSupplier(supplier);
+    setSupplierFormData({
+      name: supplier.name,
+      gstin_number: supplier.gstin_number,
+      address: supplier.address,
+      permission: supplier.permission
+    });
+    setIsEditSupplierDialogOpen(true);
+  };
+
+  // Render functions for different sections
+  const renderExporterSection = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Manage Exporters</h2>
+        <Button 
+          onClick={() => setIsAddExporterDialogOpen(true)}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Exporter
+        </Button>
+      </div>
+
+    
+
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="p-4 bg-gray-50 border-b">
+          <h3 className="font-semibold">Saved Exporters</h3>
+        </div>
+        <div className="p-4">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Exporter Name</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>IE Code</TableHead>
+                <TableHead>GSTIN</TableHead>
+                <TableHead>Last Updated</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {exporters.map((exporter) => (
+                <TableRow key={exporter.id}>
+                  <TableCell className="font-medium">{exporter.company_name}</TableCell>
+                  <TableCell>{exporter.email}</TableCell>
+                  <TableCell>{exporter.ie_code}</TableCell>
+                  <TableCell>{exporter.gstin_number}</TableCell>
+                  <TableCell>{exporter.updatedAt}</TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex justify-end space-x-2">
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openViewDialog(exporter)}
+                      >
+                        <FileText className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openEditDialog(exporter)}
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        onClick={() => openDeleteDialog(exporter.id)}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderShippingSection = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Shipping Details Management</h2>
+      </div>
+
+      <div className="bg-[#edf6f9] rounded-lg shadow overflow-hidden p-4 border border-[#edf6f9]">
+        <h3 className="font-bold text-lg mb-4 uppercase text-amber-900">SHIPPING DETAILS</h3>
+        
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-4 border rounded-md p-4 bg-white">
-            <div className="bg-blue-100 p-3 -m-4 mb-4 border-b">
-              <h3 className="font-bold uppercase text-sm">EXPORTER</h3>
+          {/* Place of Receipt */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="placeOfReceipt" className="text-sm font-medium uppercase">PLACE OF RECEIPT</Label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => openAddValueDialog("place_of_receipt")}
+                className="h-8 px-2"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
             </div>
-
-            <div>
-              <Label htmlFor="exporter-select" className="uppercase text-xs font-bold">Exporter Name</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="email"
-                  placeholder="Company Name"
-                  className="mt-1"
-                  value={exporterData.exporterName}
-                  onChange={(e) => setExporterData({ ...exporterData, exporterName: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="company-address" className="uppercase text-xs font-bold">Company Address</Label>
-              <div className="flex items-start gap-2">
-                <Textarea
-                  id="company-address"
-                  className="mt-1 h-24"
-                  placeholder="Enter company address"
-                  value={exporterData.companyAddress}
-                  onChange={(e) => setExporterData({ ...exporterData, companyAddress: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="email" className="uppercase text-xs font-bold">Email</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="email"
-                  placeholder="e.g., yourmail@gmail.com"
-                  className="mt-1"
-                  value={exporterData.email}
-                  onChange={(e) => setExporterData({ ...exporterData, email: e.target.value })}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="tax-id" className="uppercase text-xs font-bold">Tax ID</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="tax-id"
-                  placeholder="e.g., 24AACF********"
-                  className="mt-1"
-                  value={exporterData.taxId}
-                  onChange={(e) => setExporterData({ ...exporterData, taxId: e.target.value })}
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Right Column */}
-          <div className="space-y-4 border rounded-md p-4 bg-white">
-            <div className="bg-blue-100 p-3 -m-4 mb-4 border-b">
-              <h3 className="font-bold uppercase text-sm">EXPORTER DETAILS</h3>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="ie-code" className="uppercase text-xs font-bold">I.E. Code #</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="ie-code"
-                    placeholder="1234567890"
-                    className="mt-1"
-                    value={exporterData.ieCode}
-                    onChange={(e) => setExporterData({ ...exporterData, ieCode: e.target.value })}
-                  />
+            
+            <div className="bg-white border rounded-md h-40 overflow-y-auto">
+              {shippingDetails.filter((val,idx)=> {return val.category == 'place_of_receipt'}).map((item) => (
+                <div key={`place_of_receipt-${item.id}`} className="flex justify-between items-center p-2 hover:bg-gray-50 border-b last:border-b-0">
+                  <span className="truncate">{item.value}</span>
+                  <div className="flex space-x-1 ml-2 shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openEditValueDialog("place_of_receipt", item.value)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 text-amber-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteShippingValue("place_of_receipt", item.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Trash className="h-3.5 w-3.5 text-red-600" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ))}
+              {shippingDetails.filter((val,idx)=> {return val.category == 'place_of_receipt'}).length === 0 && (
+                <div className="p-2 text-gray-500 text-center">No places of receipt added</div>
+              )}
+            </div>
+          </div>
 
-              <div>
-                <Label htmlFor="pan-no" className="uppercase text-xs font-bold">PAN NO. #</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="pan-no"
-                    placeholder="Enter PAN number"
-                    className="mt-1"
-                    value={exporterData.panNo}
-                    onChange={(e) => setExporterData({ ...exporterData, panNo: e.target.value })}
-                  />
+          {/* Port of Loading */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="portOfLoading" className="text-sm font-medium uppercase">PORT OF LOADING</Label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => openAddValueDialog("port_of_loading")}
+                className="h-8 px-2"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="bg-white border rounded-md h-40 overflow-y-auto">
+              {shippingDetails.filter((val,idx)=> {return val.category == 'port_of_loading'}).map((port) => (
+                <div key={`port_of_loading-${port.id}`} className="flex justify-between items-center p-2 hover:bg-gray-50 border-b last:border-b-0">
+                  <span className="truncate">{port.value}</span>
+                  <div className="flex space-x-1 ml-2 shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openEditValueDialog("port_of_loading", port.value)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 text-amber-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteShippingValue("port_of_loading", port.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Trash className="h-3.5 w-3.5 text-red-600" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ))}
+              {shippingDetails.filter((val,idx)=> {return val.category == 'port_of_loading'}).length === 0 && (
+                <div className="p-2 text-gray-500 text-center">No ports of loading added</div>
+              )}
             </div>
+          </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="gstin-no" className="uppercase text-xs font-bold">GSTIN NO. #</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="gstin-no"
-                    placeholder="Enter GSTIN number"
-                    className="mt-1"
-                    value={exporterData.gstinNo}
-                    onChange={(e) => setExporterData({ ...exporterData, gstinNo: e.target.value })}
-                  />
+          {/* Port of Discharge */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="portOfDischarge" className="text-sm font-medium uppercase">PORT OF DISCHARGE</Label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => openAddValueDialog("port_of_discharge")}
+                className="h-8 px-2"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="bg-white border rounded-md h-40 overflow-y-auto">
+              {shippingDetails.filter((val,idx)=> {return val.category == 'port_of_discharge'}).map((port) => (
+                <div key={`port_of_discharge-${port.id}`} className="flex justify-between items-center p-2 hover:bg-gray-50 border-b last:border-b-0">
+                  <span className="truncate">{port.value}</span>
+                  <div className="flex space-x-1 ml-2 shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openEditValueDialog("port_of_discharge", port.value)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 text-amber-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteShippingValue("port_of_discharge", port.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Trash className="h-3.5 w-3.5 text-red-600" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              ))}
+              {shippingDetails.filter((val,idx)=> {return val.category == 'port_of_discharge'}).length === 0 && (
+                <div className="p-2 text-gray-500 text-center">No ports of discharge added</div>
+              )}
+            </div>
+          </div>
 
-              <div>
-                <Label htmlFor="state-code" className="uppercase text-xs font-bold">STATE CODE</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="state-code"
-                    placeholder="24"
-                    className="mt-1"
-                    value={exporterData.stateCode}
-                    onChange={(e) => setExporterData({ ...exporterData, stateCode: e.target.value })}
-                  />
+          {/* Final Destination */}
+          <div className="space-y-2">
+            <div className="flex justify-between items-center">
+              <Label htmlFor="finalDestination" className="text-sm font-medium uppercase">FINAL DESTINATION</Label>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => openAddValueDialog("final_destination")}
+                className="h-8 px-2"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            <div className="bg-white border rounded-md h-40 overflow-y-auto">
+              {shippingDetails.filter((val,idx)=> {return val.category == 'final_destination'}).map((destination) => (
+                <div key={`final_destination-${destination.id}`} className="flex justify-between items-center p-2 hover:bg-gray-50 border-b last:border-b-0">
+                  <span className="truncate">{destination.value}</span>
+                  <div className="flex space-x-1 ml-2 shrink-0">
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => openEditValueDialog("final_destination", destination.value)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Edit2 className="h-3.5 w-3.5 text-amber-600" />
+                    </Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => handleDeleteShippingValue("final_destination", destination.id)}
+                      className="h-6 w-6 p-0"
+                    >
+                      <Trash className="h-3.5 w-3.5 text-red-600" />
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="invoiceNo">INVOICE NUMBER</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="invoiceNo"
-                  value={exporterData.invoiceNumber}
-                  onChange={(e) => setExporterData({ ...exporterData, invoiceNumber: e.target.value })}
-                  placeholder="e.g., EXP/001/2024"
-                  required
-                />
-                <Button
-                  onClick={handleSaveInvoiceNumber}
-                  size="sm"
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        {/* Save button for Exporter section */}
-        <div className="flex justify-end mt-4 space-x-4">
-          <Button onClick={handleAddExporter} className="bg-blue-600 hover:bg-blue-700">
-            <Save className="h-4 w-4 mr-2" />
-            Save All Exporter Fields
-          </Button>
-          {/* <Button onClick={handleSaveExporterSection} className="bg-blue-600 hover:bg-blue-700">
-            <Save className="h-4 w-4 mr-2" />
-            Save All Exporter Fields
-          </Button> */}
-        </div>
-
-        {/* Table to display saved exporter data */}
-        <div className="mt-8 border rounded-md p-4 bg-white">
-          <div className="bg-blue-100 p-3 -m-4 mb-4 border-b">
-            <h3 className="font-bold uppercase text-sm">Saved Exporter Information</h3>
-          </div>
-
-          {exporters.length === 0 ? (
-            <div className="text-center py-4 text-gray-500">
-              No additional exporters saved yet. Fill the form above and click "Save All Exporter Fields".
-            </div>
-          ) : (
-            <>
-              <div className="mb-4">
-                <Label htmlFor="exporter-selector" className="mb-2 block">Select Exporter:</Label>
-                <Select
-                  value={selectedExporterId || exporters[0]?.id || ""}
-                  onValueChange={handleExporterSelect}
-                >
-                  <SelectTrigger id="exporter-selector" className="w-full">
-                    <SelectValue placeholder="Select an exporter" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {exporters.map(exporter => (
-                      <SelectItem key={exporter.id} value={exporter.id}>
-                        {exporter.exporterName || "Unnamed Exporter"}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[200px]">Field</TableHead>
-                    <TableHead>Value</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {selectedExporter && (
-                    <>
-                      <TableRow>
-                        <TableCell className="font-medium">Exporter Name</TableCell>
-                        <TableCell>{selectedExporter.exporterName || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Company Address</TableCell>
-                        <TableCell>{selectedExporter.companyAddress || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Email</TableCell>
-                        <TableCell>{selectedExporter.email || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Tax ID</TableCell>
-                        <TableCell>{selectedExporter.taxId || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">I.E. Code #</TableCell>
-                        <TableCell>{selectedExporter.ieCode || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">PAN NO. #</TableCell>
-                        <TableCell>{selectedExporter.panNo || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">GSTIN NO. #</TableCell>
-                        <TableCell>{selectedExporter.gstinNo || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">State Code</TableCell>
-                        <TableCell>{selectedExporter.stateCode || "-"}</TableCell>
-                      </TableRow>
-                      <TableRow>
-                        <TableCell className="font-medium">Invoice Number</TableCell>
-                        <TableCell>{selectedExporter.invoiceNumber || "-"}</TableCell>
-                      </TableRow>
-                    </>
-                  )}
-                </TableBody>
-              </Table>
-            </>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Render the Shipping section with a form layout similar to the invoice form
-  const renderShippingSection = () => {
-    return (
-      <div className="space-y-6">
-        <div className="space-y-4 border rounded-md p-4 bg-white">
-          <div className="bg-orange-100 p-3 -m-4 mb-4 border-b">
-            <h3 className="font-bold uppercase text-sm">Shipping Details</h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="place-receipt" className="uppercase text-xs font-bold">Place of Receipt</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="place-receipt"
-                  placeholder="MORBI"
-                  className="mt-1"
-                  value={shippingData.placeOfReceipt}
-                  onChange={(e) => setShippingData({ ...shippingData, placeOfReceipt: e.target.value })}
-                />
-                <Button
-                  onClick={handleSavePlaceOfReceipt}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="port-loading" className="uppercase text-xs font-bold">Port of Loading</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="port-loading"
-                  placeholder="MUNDRA"
-                  className="mt-1"
-                  value={shippingData.portOfLoading}
-                  onChange={(e) => setShippingData({ ...shippingData, portOfLoading: e.target.value })}
-                />
-                <Button
-                  onClick={handleSavePortOfLoading}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="port-discharge" className="uppercase text-xs font-bold">Port of Discharge</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="port-discharge"
-                  placeholder="NEW YORK"
-                  className="mt-1"
-                  value={shippingData.portOfDischarge}
-                  onChange={(e) => setShippingData({ ...shippingData, portOfDischarge: e.target.value })}
-                />
-                <Button
-                  onClick={handleSavePortOfDischarge}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="final-destination" className="uppercase text-xs font-bold">Final Destination</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="final-destination"
-                  placeholder="USA"
-                  className="mt-1"
-                  value={shippingData.finalDestination}
-                  onChange={(e) => setShippingData({ ...shippingData, finalDestination: e.target.value })}
-                />
-                <Button
-                  onClick={handleSaveFinalDestination}
-                  size="sm"
-                  className="mt-1 bg-orange-600 hover:bg-orange-700"
-                >
-                  <Save className="h-3 w-3" />
-                </Button>
-              </div>
+              ))}
+              {shippingDetails.filter((val,idx)=> {return val.category == 'final_destination'}).length === 0 && (
+                <div className="p-2 text-gray-500 text-center">No final destinations added</div>
+              )}
             </div>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  // Render the Table Information section with a form layout similar to the invoice form
-  const renderTableSection = () => {
-    return (
-      <div className="space-y-6">
-        <div className="border rounded-md p-4 bg-white shadow-sm">
-          <div className="bg-green-100 p-3 -m-4 mb-4 border-b flex items-center">
-            <h3 className="font-bold uppercase text-sm">Table Information</h3>
-          </div>
+  const renderTableSection = () => (
+    <div className="space-y-6 ">
+    
 
-          <div className="space-y-8">
-            {/* Marks & Nos. section with individual save buttons */}
-            {/* <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-              <Label htmlFor="marks-nos" className="block text-sm font-medium mb-2">Marks & Nos.</Label>
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="marks-nos-1"
-                    placeholder="10"
-                    className="w-24 h-9"
-                    value={tableData.marksNos1}
-                    onChange={(e) => setTableData({ ...tableData, marksNos1: e.target.value })}
-                  />
-                  <Button
-                    onClick={handleSaveMarksNos1}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center"
-                    title="Save Marks & Nos. (1)"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </div>
-                <span className="flex items-center text-gray-500 font-medium">X</span>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="marks-nos-2"
-                    placeholder="20"
-                    className="w-24 h-9"
-                    value={tableData.marksNos2}
-                    onChange={(e) => setTableData({ ...tableData, marksNos2: e.target.value })}
-                  />
-                  <Button
-                    onClick={handleSaveMarksNos2}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center"
-                    title="Save Marks & Nos. (2)"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div> */}
-
-            {/* Description and HSN Code with a single save button between them */}
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label htmlFor="description" className="block text-sm font-medium mb-2">Description</Label>
-                  <Input
-                    id="description"
-                    placeholder="Glazed porcelain Floor Tiles"
-                    className="h-9"
-                    value={tableData.description}
-                    onChange={(e) => setTableData({ ...tableData, description: e.target.value })}
-                  />
-                </div>
-
-                <div className="flex items-end gap-2">
-                  <div className="flex-1">
-                    <Label htmlFor="hsn-code" className="block text-sm font-medium mb-2">HSN Code</Label>
-                    <Input
-                      id="hsn-code"
-                      placeholder="69072100"
-                      className="h-9"
-                      value={tableData.hsnCode}
-                      onChange={(e) => setTableData({ ...tableData, hsnCode: e.target.value })}
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSaveDescriptionAndHsnCode}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center mb-1"
-                    title="Save Description and HSN Code"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-
-            {/* Size and Unit Type with individual save buttons */}
-            <div className="bg-gray-50 p-4 rounded-md border border-gray-100">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <Label htmlFor="size" className="block text-sm font-medium mb-2">Size</Label>
-                    <Input
-                      id="size"
-                      placeholder="600 X 1200"
-                      className="h-9"
-                      value={tableData.size}
-                      onChange={(e) => setTableData({ ...tableData, size: e.target.value })}
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSaveSize}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center mt-6"
-                    title="Save Size"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <div className="flex-1">
-                    <Label htmlFor="unit-type" className="block text-sm font-medium mb-2">Unit Type</Label>
-                    <Input
-                      id="unit-type"
-                      placeholder="Box"
-                      className="h-9"
-                      value={tableData.unitType}
-                      onChange={(e) => setTableData({ ...tableData, unitType: e.target.value })}
-                    />
-                  </div>
-                  <Button
-                    onClick={handleSaveUnitType}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 h-9 w-9 p-0 flex items-center justify-center mt-6"
-                    title="Save Unit Type"
-                  >
-                    <Save className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render the Supplier Details section with a form layout similar to the invoice form
-  const renderSupplierSection = () => {
-    return (
-      <div className="space-y-6">
-        <div className="border rounded-md p-4 bg-white">
-          <div className="bg-purple-100 p-3 -m-4 mb-4 border-b">
-            <h3 className="font-bold uppercase text-sm">Supplier Details</h3>
-          </div>
-
-          <div className="space-y-6">
-            <div className="border-b pb-4">
-              <div className="flex items-start">
-                <Label htmlFor="supplier-name" className="uppercase text-xs font-bold w-20 pt-2">NAME :</Label>
-                <div className="flex-1">
-                  <Input
-                    id="supplier-name"
-                    placeholder="ABC"
-                    className="mt-1"
-                    value={supplierData.supplierName}
-                    onChange={(e) => setSupplierData({ ...supplierData, supplierName: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div className="border-b pb-4">
-              <div className="flex items-start">
-                <Label htmlFor="gstin-no" className="uppercase text-xs font-bold w-20 pt-2">GSTIN NO. :</Label>
-                <div className="flex-1">
-                  <Input
-                    id="gstin-no"
-                    placeholder="XXXXXXXXXXX"
-                    className="mt-1"
-                    value={supplierData.gstinNo}
-                    onChange={(e) => setSupplierData({ ...supplierData, gstinNo: e.target.value })}
-                  />
-                </div>
-              </div>
-            </div>
-
-
-            {/* <div className="border-b pb-4">
-              <div className="flex items-start">
-                <Label htmlFor="tax-invoice-no" className="uppercase text-xs font-bold w-32 pt-2">TAX INVOICE NO :</Label>
-                <div className="flex-1">
-                  <Input
-                    id="tax-invoice-no"
-                    placeholder="GST/XXX"
-                    className="mt-1"
-                    value={supplierData.taxInvoiceNo}
-                    onChange={(e) => setSupplierData({ ...supplierData, taxInvoiceNo: e.target.value })}
-                  />
-                </div>
-              </div>
-
-
-            </div> */}
-          </div>
-
-          {/* Save button for Supplier Details section */}
-          <div className="flex justify-end mt-4">
-            <Button onClick={() => toast({
-              title: "Success",
-              description: "Supplier details saved successfully",
-            })} className="bg-purple-600 hover:bg-purple-700">
-              <Save className="h-4 w-4 mr-2" />
-              Save Supplier Details
+      <div className="bg-[#e8f5e9] rounded-lg shadow overflow-hidden p-4 border border-[#c8e6c9]">
+        <h3 className="font-bold text-lg mb-4 uppercase text-green-900">TABLE INFORMATION</h3>
+        
+        {/* Description and HSN Code Pair */}
+        <div className="mb-8 bg-white p-4 rounded-md shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-medium text-base">Description & HSN Code</h4>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setNewDescHsnPair({ description: "", hsn_code: "" });
+                setIsAddDescHsnDialogOpen(true);
+              }}
+              className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Pair
             </Button>
           </div>
+          
+          <div className="h-40 overflow-y-auto border rounded-md">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="py-2 pl-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2">Description</th>
+                  <th className="py-2 pl-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">HSN Code</th>
+                  <th className="py-2 pr-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {tableInfo.descriptionHsnPairs.map(p => p.description).map((desc) => {
+                  const pair = tableInfo.descriptionHsnPairs.find(p => p.description === desc);
+                  if (!pair) return null;
+                  
+                  return (
+                    <tr key={pair.id} className="hover:bg-gray-50">
+                      <td className="py-2 pl-3 text-md truncate" title={pair.description}>
+                        <div className="truncate">{pair.description}</div>
+                      </td>
+                      <td className="py-2 pl-3 text-md text-gray-500 truncate" title={pair.hsn_code}>
+                        <div className="truncate">{pair.hsn_code}</div>
+                      </td>
+                      <td className="py-2 pr-2 text-right">
+                        <div className="flex justify-end space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => openEditDescHsnDialog(pair.id, pair.description, pair.hsn_code)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Edit2 className="h-3.5 w-3.5 text-green-600" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteDescHsnPair(pair.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash className="h-3.5 w-3.5 text-red-600" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {tableInfo.descriptionHsnPairs.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="text-center py-4 text-gray-500">
+                      No Description/HSN pairs added yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        {/* Size and SQM Pair */}
+        <div className="mb-8 bg-white p-4 rounded-md shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-medium text-base">Size & SQM</h4>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setNewSizeSqmPair({ size: "", sqm: "" });
+                setIsAddSizeSqmDialogOpen(true);
+              }}
+              className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Pair
+            </Button>
+          </div>
+          
+          <div className="h-40 overflow-y-auto border rounded-md">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="py-2 pl-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2">Size</th>
+                  <th className="py-2 pl-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">SQM</th>
+                  <th className="py-2 pr-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {tableInfo.sizeSqmPairs.map(p => p.size).map((size) => {
+                  const pair = tableInfo.sizeSqmPairs.find(p => p.size === size);
+                  if (!pair) return null;
+                  
+                  return (
+                    <tr key={pair.id} className="hover:bg-gray-50">
+                      <td className="py-2 pl-3 text-md truncate" title={pair.size}>
+                        <div className="truncate">{pair.size}</div>
+                      </td>
+                      <td className="py-2 pl-3 text-md text-gray-500 truncate" title={pair.sqm}>
+                        <div className="truncate">{pair.sqm}</div>
+                      </td>
+                      <td className="py-2 pr-2 text-right">
+                        <div className="flex justify-end space-x-1">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => openEditSizeSqmDialog(pair.id, pair.size, pair.sqm)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Edit2 className="h-3.5 w-3.5 text-green-600" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteSizeSqmPair(pair.id)}
+                            className="h-6 w-6 p-0"
+                          >
+                            <Trash className="h-3.5 w-3.5 text-red-600" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+                {tableInfo.sizeSqmPairs.length === 0 && (
+                  <tr>
+                    <td colSpan={3} className="text-center py-4 text-gray-500">
+                      No Size/SQM pairs added yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        
+        {/* Unit Type */}
+        <div className="bg-white p-4 rounded-md shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-medium text-base">Unit Type</h4>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => {
+                setNewUnitType("");
+                setIsAddUnitTypeDialogOpen(true);
+              }}
+              className="bg-green-50 text-green-600 border-green-200 hover:bg-green-100 hover:text-green-700"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Unit Type
+            </Button>
+          </div>
+          
+          <div className="h-40 overflow-y-auto border rounded-md">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="py-2 pl-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-full">Unit Type</th>
+                  <th className="py-2 pr-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {tableInfo.unitTypes.map((type, index) => (
+                  <tr key={type.id} className="hover:bg-gray-50">
+                    <td className="py-2 pl-3 text-md truncate" title={type.value}>
+                      <div className="truncate">{type.value}</div>
+                    </td>
+                    <td className="py-2 pr-2 text-right">
+                      <div className="flex justify-end space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => openEditUnitTypeDialog(tableInfo.unitTypes.indexOf(type), type.value)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Edit2 className="h-3.5 w-3.5 text-green-600" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDeleteUnitType(type.id)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Trash className="h-3.5 w-3.5 text-red-600" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {tableInfo.unitTypes.length === 0 && (
+                  <tr>
+                    <td colSpan={2} className="text-center py-4 text-gray-500">
+                      No unit types added yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  // Render the ARN & Declaration section with a form layout similar to the invoice form
-  const renderARNSection = () => {
-    return (
-      <div className="space-y-6">
-        <div className="border rounded-md p-4 bg-white">
-          <div className="bg-amber-100 p-3 -m-4 mb-4 border-b">
-            <h3 className="font-bold uppercase text-sm">ARN & Declaration</h3>
-          </div>
+  const renderSupplierSection = () => (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold">Supplier Details Management</h2>
+        <Button 
+          onClick={() => {
+            setSupplierFormData({
+              name: "",
+              gstin_number: "",
+              address: "",
+              permission: ""
+            });
+            setIsAddSupplierDialogOpen(true);
+          }}
+          className="bg-purple-600 hover:bg-purple-700"
+        >
+          <Plus className="h-4 w-4 mr-2" />
+          Add New Supplier
+        </Button>
+      </div>
 
-          <div className="space-y-6">
-            <div>
-              <h4 className="font-medium mb-3">Export Under GST Circular</h4>
-              <div className="border-b pb-4">
-                <Input
-                  id="gst-circular"
-                  placeholder="EXPORT UNDER GST CIRCULAR NO. XX/20XX Customs DT.XX/XX/20XX"
-                  className="mt-1"
-                />
-              </div>
+      <div className="bg-[#f3e5f5] rounded-lg shadow overflow-hidden p-4 border border-[#e1bee7]">
+        <h3 className="font-bold text-lg mb-4 uppercase text-purple-900">SUPPLIER DETAILS</h3>
+        
+        <div className="bg-white p-4 rounded-md shadow-sm">
+          <div className="overflow-x-auto">
+            <div className="min-w-full border rounded-md">
+              <table className="w-full">
+                <thead className="bg-gray-50 sticky top-0 z-10">
+                  <tr>
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">Name</th>
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">GSTIN No.</th>
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-2/5">Address</th>
+                    <th className="py-3 px-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/5">S.S. Permission No.</th>
+                    <th className="py-3 px-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200 bg-white">
+                  {suppliers.map((supplier) => (
+                    <tr key={supplier.id} className="hover:bg-gray-50">
+                      <td className="py-3 px-4">
+                        <div className="truncate max-w-[150px]" title={supplier.name}>{supplier.name}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="truncate max-w-[150px]" title={supplier.gstin_number}>{supplier.gstin_number}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="truncate max-w-[300px]" title={supplier.address}>{supplier.address}</div>
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="truncate max-w-[150px]" title={supplier.permission}>{supplier.permission}</div>
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <div className="flex justify-end space-x-2">
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => openEditSupplierDialog(supplier)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Edit2 className="h-4 w-4 text-purple-600" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteSupplier(supplier.id)}
+                            className="h-8 w-8 p-0"
+                          >
+                            <Trash className="h-4 w-4 text-red-600" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {suppliers.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-6 text-gray-500">
+                        No suppliers added yet.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
+          </div>
+        </div>
+      </div>
 
+      {/* Add Supplier Dialog */}
+      <Dialog open={isAddSupplierDialogOpen} onOpenChange={setIsAddSupplierDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add New Supplier</DialogTitle>
+            <DialogDescription>
+              Enter supplier details. Fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
             <div>
-              <h4 className="font-medium mb-3">Application Reference Number</h4>
-              <div className="border-b pb-4">
-                <Input
-                  id="application-reference-number"
-                  placeholder="ACXXXXXXXXXXXXXXX"
-                  className="mt-1"
-                />
-              </div>
+              <Label htmlFor="name">Name *</Label>
+              <Input
+                id="name"
+                value={supplierFormData.name}
+                onChange={(e) => setSupplierFormData({...supplierFormData, name: e.target.value})}
+                placeholder="Enter supplier name"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="gstin">GSTIN No. *</Label>
+              <Input
+                id="gstin_number"
+                value={supplierFormData.gstin_number}
+                onChange={(e) => setSupplierFormData({...supplierFormData, gstin_number: e.target.value})}
+                placeholder="e.g., 24ABCDE1234F1Z5"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="address">Address</Label>
+              <Textarea
+                id="address"
+                value={supplierFormData.address}
+                onChange={(e) => setSupplierFormData({...supplierFormData, address: e.target.value})}
+                placeholder="Enter supplier address"
+                className="mt-1"
+                rows={4}
+              />
+            </div>
+            <div>
+              <Label htmlFor="permission">S.S. PERMISSION No.</Label>
+              <Input
+                id="permission"
+                value={supplierFormData.permission}
+                onChange={(e) => setSupplierFormData({...supplierFormData, permission: e.target.value})}
+                placeholder="e.g., SSP/MRB/2023/1234"
+                className="mt-1"
+              />
             </div>
           </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddSupplierDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddSupplier} className="bg-purple-600 hover:bg-purple-700">Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-          {/* Save button for ARN & Declaration section */}
-          <div className="flex justify-end mt-4">
-            <Button onClick={() => toast({
-              title: "Success",
-              description: "ARN & Declaration saved successfully",
-            })} className="bg-amber-600 hover:bg-amber-700">
+      {/* Edit Supplier Dialog */}
+      <Dialog open={isEditSupplierDialogOpen} onOpenChange={setIsEditSupplierDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Edit Supplier</DialogTitle>
+            <DialogDescription>
+              Update supplier details. Fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="edit-name">Name *</Label>
+              <Input
+                id="edit-name"
+                value={supplierFormData.name}
+                onChange={(e) => setSupplierFormData({...supplierFormData, name: e.target.value})}
+                placeholder="Enter supplier name"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-gstin">GSTIN No. *</Label>
+              <Input
+                id="edit-gstin_number"
+                value={supplierFormData.gstin_number}
+                onChange={(e) => setSupplierFormData({...supplierFormData, gstin_number: e.target.value})}
+                placeholder="e.g., 24ABCDE1234F1Z5"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-address">Address</Label>
+              <Textarea
+                id="edit-address"
+                value={supplierFormData.address}
+                onChange={(e) => setSupplierFormData({...supplierFormData, address: e.target.value})}
+                placeholder="Enter supplier address"
+                className="mt-1"
+                rows={4}
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-permission">S.S. PERMISSION No.</Label>
+              <Input
+                id="edit-permission"
+                value={supplierFormData.permission}
+                onChange={(e) => setSupplierFormData({...supplierFormData, permission: e.target.value})}
+                placeholder="e.g., SSP/MRB/2023/1234"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditSupplierDialogOpen(false);
+              setSelectedSupplier(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSupplier} className="bg-purple-600 hover:bg-purple-700">Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+
+  const renderARNSection = () => (
+    <div className="space-y-6">
+      <div className="bg-[#fff9c4] rounded-lg shadow overflow-hidden p-4 border border-[#fff59d]">
+        <h3 className="font-bold text-lg mb-6 uppercase text-amber-900">ARN & DECLARATION</h3>
+        
+        <div className="bg-white p-4 rounded-md shadow-sm space-y-6">
+          <div>
+            <Label htmlFor="gstCircular" className="text-base font-medium mb-2 block">Export Under GST Circular</Label>
+            <Input
+              id="gstCircular"
+              className="w-full"
+              placeholder="EXPORT UNDER GST CIRCULAR NO. XX/20XX Customs DT.XX/XX/20XX"
+              value={arnDeclaration.gstCircular}
+              onChange={(e) => handleArnDeclarationChange("gstCircular", e.target.value)}
+            />
+          </div>
+          
+          <div>
+            <Label htmlFor="applicationRefNumber" className="text-base font-medium mb-2 block">Application Reference Number</Label>
+            <Input
+              id="applicationRefNumber"
+              className="w-full"
+              placeholder="ACXXXXXXXXXXXXXX"
+              value={arnDeclaration.applicationRefNumber}
+              onChange={(e) => handleArnDeclarationChange("applicationRefNumber", e.target.value)}
+            />
+          </div>
+          
+          <div className="pt-4 flex justify-end">
+            <Button 
+              className="bg-amber-600 hover:bg-amber-700"
+              onClick={handleSaveArnDeclaration}
+            >
               <Save className="h-4 w-4 mr-2" />
               Save ARN & Declaration
             </Button>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+
+  // Add exporter form fields
+  const renderExporterForm = () => (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="company_name">Exporter Name *</Label>
+          <Input
+            id="company_name"
+            value={formData.company_name}
+            onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+            placeholder="Company Name"
+            required
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="company_address">Company Address</Label>
+          <Textarea
+            id="company_address"
+            value={formData.company_address}
+            onChange={(e) => setFormData({ ...formData, company_address: e.target.value })}
+            placeholder="Enter full company address"
+            rows={3}
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            value={formData.email}
+            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            placeholder="e.g., contact@company.com"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="tax_id">Tax ID</Label>
+          <Input
+            id="tax_id"
+            value={formData.tax_id}
+            onChange={(e) => setFormData({ ...formData, tax_id: e.target.value })}
+            placeholder="e.g., 24AACF*********"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="authorized_name">Name of Authorized Official</Label>
+          <Input
+            id="authorized_name"
+            value={formData.authorized_name}
+            onChange={(e) => setFormData({ ...formData, authorized_name: e.target.value })}
+            placeholder="e.g., John Doe"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="authorized_designation">Designation of Authorized Official</Label>
+          <Input
+            id="authorized_designation"
+            value={formData.authorized_designation}
+            onChange={(e) => setFormData({ ...formData, authorized_designation: e.target.value })}
+            placeholder="e.g., Export Manager"
+          />
+        </div>
+      </div>
+      
+      <div className="space-y-4">
+        <div>
+          <Label htmlFor="ie_code">I.E. Code #</Label>
+          <Input
+            id="ie_code"
+            value={formData.ie_code}
+            onChange={(e) => setFormData({ ...formData, ie_code: e.target.value })}
+            placeholder="e.g., 1234567890"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="pan_number">PAN NO. #</Label>
+          <Input
+            id="pan_number"
+            value={formData.pan_number}
+            onChange={(e) => setFormData({ ...formData, pan_number: e.target.value })}
+            placeholder="Enter PAN number"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="gstin_number">GSTIN NO. #</Label>
+          <Input
+            id="gstin_number"
+            value={formData.gstin_number}
+            onChange={(e) => setFormData({ ...formData, gstin_number: e.target.value })}
+            placeholder="Enter GSTIN number"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="state_code">State Code</Label>
+          <Input
+            id="state_code"
+            value={formData.state_code}
+            onChange={(e) => setFormData({ ...formData, state_code: e.target.value })}
+            placeholder="e.g., 24"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="invoice_number">Invoice Number Format</Label>
+          <Input
+            id="invoice_number"
+            value={formData.invoice_number}
+            onChange={(e) => setFormData({ ...formData, invoice_number: e.target.value })}
+            placeholder="e.g., EXP/001/2024"
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="contact_number">Contact Number</Label>
+          <Input
+            id="contact_number"
+            value={formData.contact_number}
+            onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+            placeholder="e.g., +91 98765 43210"
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
-    <div>
-      <PageHeader
-        title="Admin Panel"
-        description="Manage dropdown options for invoice forms"
-        action={
-          <Button asChild>
-            <a href="/">Back to Dashboard</a>
-          </Button>
-        }
-      />
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold">Admin Panel</h1>
+          <p className="text-muted-foreground">Manage dropdown options for invoice forms</p>
+        </div>
+        <Button onClick={() => navigate('/dashboard')} variant="outline">
+          Back to Dashboard
+        </Button>
+      </div>
 
-      <Card className="mb-6">
-        <CardHeader>
+      <Card className="mt-6">
+        <CardHeader className="pb-3">
           <CardTitle>Dropdown Options Management</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeSection} onValueChange={setActiveSection} className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid grid-cols-5 mb-6">
-              {sections.map((section) => (
-                <TabsTrigger key={section.id} value={section.id}>
-                  {section.name}
-                </TabsTrigger>
-              ))}
+              <TabsTrigger value="exporter">Exporter Section</TabsTrigger>
+              <TabsTrigger value="shipping">Shipping Details</TabsTrigger>
+              <TabsTrigger value="table">Table Information</TabsTrigger>
+              <TabsTrigger value="supplier">Supplier Details</TabsTrigger>
+              <TabsTrigger value="arn">ARN & Declaration</TabsTrigger>
             </TabsList>
-
-            <TabsContent value="exporter" className="space-y-4">
+            <TabsContent value="exporter">
               {renderExporterSection()}
             </TabsContent>
-
-            <TabsContent value="shipping" className="space-y-4">
+            <TabsContent value="shipping">
               {renderShippingSection()}
             </TabsContent>
-
-            <TabsContent value="table" className="space-y-4">
+            <TabsContent value="table">
               {renderTableSection()}
             </TabsContent>
-
-            <TabsContent value="supplier" className="space-y-4">
+            <TabsContent value="supplier">
               {renderSupplierSection()}
             </TabsContent>
-
-            <TabsContent value="arn" className="space-y-4">
+            <TabsContent value="arn">
               {renderARNSection()}
             </TabsContent>
-
-            {sections.filter(s => s.id !== "exporter" && s.id !== "shipping" && s.id !== "table" && s.id !== "supplier" && s.id !== "arn").map((section) => (
-              <TabsContent key={section.id} value={section.id} className="space-y-4">
-                <div className="mb-4">
-                  <Label htmlFor="category-select">Select Field</Label>
-                  <Select
-                    value={selectedCategory}
-                    onValueChange={setSelectedCategory}
-                  >
-                    <SelectTrigger id="category-select" className="w-full md:w-[300px]">
-                      <SelectValue placeholder="Select a field" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {filteredCategories.map((category) => (
-                        <SelectItem key={category.id} value={category.id}>
-                          {category.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {selectedCategoryData && (
-                  <div>
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium">
-                        Options for {selectedCategoryData.name}
-                      </h3>
-                      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button>
-                            <Plus className="h-4 w-4 mr-2" />
-                            Add Option
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Add New Option</DialogTitle>
-                            <DialogDescription>
-                              Add a new option for {selectedCategoryData.name}
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="py-4">
-                            <Label htmlFor="new-option-value">Option Value</Label>
-                            <Input
-                              id="new-option-value"
-                              value={newOptionValue}
-                              onChange={(e) => setNewOptionValue(e.target.value)}
-                              placeholder="Enter option value"
-                            />
-                          </div>
-                          <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
-                              Cancel
-                            </Button>
-                            <Button onClick={handleAddOption}>Add</Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    </div>
-
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Value</TableHead>
-                          <TableHead className="w-[100px] text-right">Actions</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedCategoryData.options.length > 0 ? (
-                          selectedCategoryData.options.map((option) => (
-                            <TableRow key={option.id}>
-                              <TableCell>{option.value}</TableCell>
-                              <TableCell className="text-right">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => openEditDialog(option)}
-                                >
-                                  <Pencil className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => handleDeleteOption(option.id)}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </Button>
-                              </TableCell>
-                            </TableRow>
-                          ))
-                        ) : (
-                          <TableRow>
-                            <TableCell colSpan={2} className="text-center py-6 text-muted-foreground">
-                              No options available. Click "Add Option" to create one.
-                            </TableCell>
-                          </TableRow>
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                )}
-              </TabsContent>
-            ))}
           </Tabs>
+        </CardContent>
+      </Card>
 
-          <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Option</DialogTitle>
-                <DialogDescription>
-                  Update the option value
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <Label htmlFor="edit-option-value">Option Value</Label>
-                <Input
-                  id="edit-option-value"
-                  value={editOptionValue}
-                  onChange={(e) => setEditOptionValue(e.target.value)}
-                  placeholder="Enter option value"
-                />
+      {/* Add Exporter Dialog */}
+      <Dialog open={isAddExporterDialogOpen} onOpenChange={setIsAddExporterDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Add New Exporter</DialogTitle>
+            <DialogDescription>
+              Fill in the details to add a new exporter. Fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+          {renderExporterForm()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsAddExporterDialogOpen(false);
+              resetFormData();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddExporter}>Save Exporter</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Exporter Dialog */}
+      <Dialog open={isEditExporterDialogOpen} onOpenChange={setIsEditExporterDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Exporter</DialogTitle>
+            <DialogDescription>
+              Update the exporter details. Fields marked with * are required.
+            </DialogDescription>
+          </DialogHeader>
+          {renderExporterForm()}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditExporterDialogOpen(false);
+              setSelectedExporter(null);
+              resetFormData();
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditExporter}>Update Exporter</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Exporter Dialog */}
+      <Dialog open={isViewExporterDialogOpen} onOpenChange={setIsViewExporterDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Exporter Details</DialogTitle>
+          </DialogHeader>
+          {selectedExporter && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Exporter Name</h3>
+                  <p>{selectedExporter.company_name}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Company Address</h3>
+                  <p className="whitespace-pre-line">{selectedExporter.company_address}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Email</h3>
+                  <p>{selectedExporter.email}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Tax ID</h3>
+                  <p>{selectedExporter.tax_id}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Authorized Name</h3>
+                  <p>{selectedExporter.authorized_name}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Authorized Designation</h3>
+                  <p>{selectedExporter.authorized_designation}</p>
+                </div>
               </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={handleEditOption}>Save</Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </CardContent>
-      </Card>
+              <div className="space-y-3">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">I.E. Code #</h3>
+                  <p>{selectedExporter.ie_code}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">PAN NO. #</h3>
+                  <p>{selectedExporter.pan_number}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">GSTIN NO. #</h3>
+                  <p>{selectedExporter.gstin_number}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">State Code</h3>
+                  <p>{selectedExporter.state_code}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Invoice Number Format</h3>
+                  <p>{selectedExporter.invoice_number}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-500">Contact Number</h3>
+                  <p>{selectedExporter.contact_number}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsViewExporterDialogOpen(false);
+              setSelectedExporter(null);
+            }}>
+              Close
+            </Button>
+            <Button onClick={() => {
+              setIsViewExporterDialogOpen(false);
+              if (selectedExporter) {
+                openEditDialog(selectedExporter);
+              }
+            }}>
+              Edit Exporter
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Instructions</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">
-            Use this panel to manage dropdown options that will appear in the invoice form.
-            Select a section tab, then choose a field from the dropdown to edit its options.
-          </p>
-          <ul className="list-disc list-inside mt-2 text-muted-foreground">
-            <li>Navigate between sections using the tabs at the top</li>
-            <li>For each section, you'll see a preview of the form layout</li>
-            <li>Select a specific field to edit from the dropdown</li>
-            <li>Click "Add Option" to add a new option to the selected field</li>
-            <li>Click the pencil icon to edit an existing option</li>
-            <li>Click the trash icon to delete an option</li>
-          </ul>
-          <p className="mt-2 text-muted-foreground">
-            These options will be available as dropdown selections when creating new invoices.
-          </p>
-        </CardContent>
-      </Card>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete Exporter</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this exporter? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsDeleteDialogOpen(false);
+              setExporterToDelete(null);
+            }}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteExporter}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Value Dialog */}
+      <Dialog open={isAddValueDialogOpen} onOpenChange={setIsAddValueDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Add New {editingCategory === 'place_of_receipt' ? 'Place of Receipt' :
+                      editingCategory === 'port_of_loading' ? 'Port of Loading' :
+                      editingCategory === 'port_of_discharge' ? 'Port of Discharge' :
+                      'Final Destination'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Label htmlFor="newValue">Value</Label>
+            <Input
+              id="newValue"
+              value={newValue}
+              onChange={(e) => setNewValue(e.target.value)}
+              placeholder="Enter new value"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsAddValueDialogOpen(false);
+              setEditingCategory(null);
+              setNewValue("");
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddShippingValue}>Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Value Dialog */}
+      <Dialog open={isEditValueDialogOpen} onOpenChange={setIsEditValueDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Edit {editingCategory === 'place_of_receipt' ? 'Place of Receipt' :
+                   editingCategory === 'port_of_loading' ? 'Port of Loading' :
+                   editingCategory === 'port_of_discharge' ? 'Port of Discharge' :
+                   'Final Destination'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <Label htmlFor="editValue">Value</Label>
+            <Input
+              id="editValue"
+              value={editingItemValue}
+              onChange={(e) => setEditingItemValue(e.target.value)}
+              placeholder="Enter updated value"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditValueDialogOpen(false);
+              setEditingCategory(null);
+              setEditingItemIndex(null);
+              setEditingItemValue("");
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditShippingValue}>Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Description/HSN Dialog */}
+      <Dialog open={isAddDescHsnDialogOpen} onOpenChange={setIsAddDescHsnDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Description & HSN Code</DialogTitle>
+            <DialogDescription>
+              Enter the description and HSN code as a pair.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="description">Description</Label>
+              <Input
+                id="description"
+                value={newDescHsnPair.description}
+                onChange={(e) => setNewDescHsnPair({...newDescHsnPair, description: e.target.value})}
+                placeholder="e.g., Glazed porcelain Floor Tiles"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="hsn_code">HSN Code</Label>
+              <Input
+                id="hsn_code"
+                value={newDescHsnPair.hsn_code}
+                onChange={(e) => setNewDescHsnPair({...newDescHsnPair, hsn_code: e.target.value})}
+                placeholder="e.g., 69072100"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDescHsnDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddDescHsnPair}>Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Description/HSN Dialog */}
+      <Dialog open={isEditDescHsnDialogOpen} onOpenChange={setIsEditDescHsnDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Description & HSN Code</DialogTitle>
+            <DialogDescription>
+              Update the description and HSN code as a pair.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="edit-description" >Description</Label>
+              <Input
+                id="edit-description"
+                value={newDescHsnPair.description}
+                onChange={(e) => setNewDescHsnPair({...newDescHsnPair, description: e.target.value})}
+                placeholder="e.g., Glazed porcelain Floor Tiles"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-hsn_code">HSN Code</Label>
+              <Input
+                id="edit-hsn_code"
+                value={newDescHsnPair.hsn_code}
+                onChange={(e) => setNewDescHsnPair({...newDescHsnPair, hsn_code: e.target.value})}
+                placeholder="e.g., 69072100"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditDescHsnDialogOpen(false);
+              setEditingItemId(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditDescHsnPair}>Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Size/SQM Dialog */}
+      <Dialog open={isAddSizeSqmDialogOpen} onOpenChange={setIsAddSizeSqmDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Size & SQM</DialogTitle>
+            <DialogDescription>
+              Enter the size and SQM value as a pair.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="size">Size</Label>
+              <Input
+                id="size"
+                value={newSizeSqmPair.size}
+                onChange={(e) => setNewSizeSqmPair({...newSizeSqmPair, size: e.target.value})}
+                placeholder="e.g., 600 X 1200"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="sqm">SQM</Label>
+              <Input
+                id="sqm"
+                value={newSizeSqmPair.sqm}
+                onChange={(e) => setNewSizeSqmPair({...newSizeSqmPair, sqm: e.target.value})}
+                placeholder="e.g., 1.44"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddSizeSqmDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddSizeSqmPair}>Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Size/SQM Dialog */}
+      <Dialog open={isEditSizeSqmDialogOpen} onOpenChange={setIsEditSizeSqmDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Size & SQM</DialogTitle>
+            <DialogDescription>
+              Update the size and SQM value as a pair.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="edit-size">Size</Label>
+              <Input
+                id="edit-size"
+                value={newSizeSqmPair.size}
+                onChange={(e) => setNewSizeSqmPair({...newSizeSqmPair, size: e.target.value})}
+                placeholder="e.g., 600 X 1200"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-sqm">SQM</Label>
+              <Input
+                id="edit-sqm"
+                value={newSizeSqmPair.sqm}
+                onChange={(e) => setNewSizeSqmPair({...newSizeSqmPair, sqm: e.target.value})}
+                placeholder="e.g., 1.44"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditSizeSqmDialogOpen(false);
+              setEditingItemId(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditSizeSqmPair}>Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Unit Type Dialog */}
+      <Dialog open={isAddUnitTypeDialogOpen} onOpenChange={setIsAddUnitTypeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Unit Type</DialogTitle>
+            <DialogDescription>
+              Enter a new unit type.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="unitType">Unit Type</Label>
+              <Input
+                id="unitType"
+                value={newUnitType}
+                onChange={(e) => setNewUnitType(e.target.value)}
+                placeholder="e.g., Box"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddUnitTypeDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleAddUnitType}>Add</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Unit Type Dialog */}
+      <Dialog open={isEditUnitTypeDialogOpen} onOpenChange={setIsEditUnitTypeDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Unit Type</DialogTitle>
+            <DialogDescription>
+              Update the unit type.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="edit-unitType">Unit Type</Label>
+              <Input
+                id="edit-unitType"
+                value={editingUnitTypeValue}
+                onChange={(e) => setEditingUnitTypeValue(e.target.value)}
+                placeholder="e.g., Box"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setIsEditUnitTypeDialogOpen(false);
+              setEditingUnitTypeIndex(null);
+            }}>
+              Cancel
+            </Button>
+            <Button onClick={handleEditUnitType}>Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

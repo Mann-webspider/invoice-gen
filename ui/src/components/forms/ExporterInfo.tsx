@@ -18,10 +18,12 @@ import {
 } from "@/components/ui/select"
 import { useEffect } from "react"
 import api from "@/lib/axios"
+import { useForm } from "@/context/FormContext"
+
 
 interface ExporterInfoProps {
   selectedExporter: string
-  exporters: string[]
+  
   handleExporterSelect: (value: string) => void
   companyAddress: string
   email: string
@@ -48,7 +50,7 @@ async function getExporters(){
   if(res.status !== 200){
     return "error"
   }
-  return res.data
+  return res.data.data
 }
     
  
@@ -79,6 +81,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
   setEmail,
   setExporters
 }) => {
+  const {formData, setInvoiceData} = useForm()
   useEffect(()=>{
     (async ()=>{
 
@@ -92,6 +95,15 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
       }
     })()
     },[])
+
+    useEffect(()=>{
+      setInvoiceData({
+        ...formData.invoice,
+        invoice_number: invoiceNo,
+        invoice_date: invoiceDate,
+        exporter: exporters.find((e) => e.company_name === selectedExporter)
+      })
+    },[selectedExporter,invoiceDate])
   return (
     <Card>
       <CardHeader>
@@ -180,7 +192,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                               >
                                 <CalendarIcon className="mr-2 h-4 w-4" />
                                 {invoiceDate ? (
-                                  format(invoiceDate, "PPP")
+                                  format(invoiceDate, "dd/MM/yyyy")
                                 ) : (
                                   <span>Pick a date</span>
                                 )}
@@ -190,7 +202,12 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                               <Calendar
                                 mode="single"
                                 selected={invoiceDate}
-                                onSelect={(date) => date && setInvoiceDate(date)}
+                                onSelect={(date) => {
+                                  if (date) {
+                                    const formattedDate = format(date, 'yyyy-MM-dd');
+                                    setInvoiceDate(formattedDate);
+                                  }
+                                }}
                                 initialFocus
                                 className={cn("p-3 pointer-events-auto")}
                               />

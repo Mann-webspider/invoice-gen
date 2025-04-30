@@ -16,6 +16,7 @@ import { Plus, Trash } from 'lucide-react';
 import { Product, InvoiceItem, ProductSection } from '@/lib/types';
 import { format } from 'date-fns';
 import MarksAndNumbers from '@/components/MarksAndNumbers';
+import { useForm } from '@/context/FormContext';
 
 // Update the props interface to receive data from InvoiceGenerator
 interface PackagingListProps {
@@ -69,7 +70,13 @@ const PackagingList = ({
   buyerInfo,
   shippingInfo
 }: PackagingListProps) => {
-  // HSN codes mapping to section titles
+  const {formData, setInvoiceData,setPackagingListData} = useForm();
+  let exporter = formData.invoice.exporter;
+  let buyer = formData.invoice.buyer;
+  let shipping = formData.invoice.shipping;
+  console.log(buyer);
+  console.log(shipping);
+  // HSN codes mapping to section titles  
   const [hsnCodes] = useState<{ [key: string]: string }>({
     "Glazed porcelain Floor Tiles": "69072100",
     "Glazed Ceramic Wall tiles": "69072300",
@@ -529,7 +536,9 @@ const PackagingList = ({
       }
     }
   };
-
+  
+  
+  
   return (
     <div className="space-y-6">
       {/* Add the Customs Invoice Header */}
@@ -538,7 +547,7 @@ const PackagingList = ({
       </div>
       
       {/* Invoice Header Section */}
-      {invoiceHeader && (
+      {formData && (
         <Card>
           <CardHeader>
             <CardTitle>Invoice Information</CardTitle>
@@ -548,36 +557,36 @@ const PackagingList = ({
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Exporter</Label>
-                  <Input value={invoiceHeader.selectedExporter} readOnly className="bg-gray-50" />
+                  <Input value={exporter.company_name} readOnly className="bg-gray-50" />
                 </div>
                 <div className="space-y-2">
                   <Label>Company Address</Label>
                   <textarea 
                     className="w-full p-2 rounded-md border bg-gray-50" 
-                    value={invoiceHeader.companyAddress} 
+                    value={exporter.company_address} 
                     readOnly 
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input value={invoiceHeader.email} readOnly className="bg-gray-50" />
+                  <Input value={exporter.email} readOnly className="bg-gray-50" />
                 </div>
                 <div className="space-y-2">
                   <Label>Tax ID</Label>
-                  <Input value={invoiceHeader.taxid} readOnly className="bg-gray-50" />
+                  <Input value={exporter.tax_id} readOnly className="bg-gray-50" />
                 </div>
               </div>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Invoice Number</Label>
-                    <Input value={invoiceHeader.invoiceNo} readOnly className="bg-gray-50" />
+                    <Input value={formData.invoice.invoice_number} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>Invoice Date</Label>
                     <Input 
-                      value={invoiceHeader.invoiceDate ? format(new Date(invoiceHeader.invoiceDate), 'PP') : ''} 
+                      value={formData.invoice.invoice_date ? format(new Date(formData.invoice.invoice_date), 'PP') : ''} 
                       readOnly 
                       className="bg-gray-50" 
                     />
@@ -589,21 +598,21 @@ const PackagingList = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>I.E. Code #</Label>
-                    <Input value={invoiceHeader.ieCode} readOnly className="bg-gray-50" />
+                    <Input value={exporter.ie_code} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>PAN No. #</Label>
-                    <Input value={invoiceHeader.panNo} readOnly className="bg-gray-50" />
+                    <Input value={exporter.pan_number} readOnly className="bg-gray-50" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>GSTIN No. #</Label>
-                    <Input value={invoiceHeader.gstinNo} readOnly className="bg-gray-50" />
+                    <Input value={exporter.gstin_number} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>State Code</Label>
-                    <Input value={invoiceHeader.stateCode} readOnly className="bg-gray-50" />
+                    <Input value={exporter.state_code} readOnly className="bg-gray-50" />
                   </div>
                 </div>
               </div>
@@ -613,7 +622,7 @@ const PackagingList = ({
       )}
 
       {/* Buyer Information */}
-      {buyerInfo && (
+      {buyer && (
         <Card>
           <CardHeader>
             <CardTitle>Buyer Information</CardTitle>
@@ -627,12 +636,12 @@ const PackagingList = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>Order No.</Label>
-                    <Input value={buyerInfo.buyersOrderNo} readOnly className="bg-gray-50" />
+                    <Input value={buyer.buyer_order_no} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>Order Date</Label>
                     <Input 
-                      value={buyerInfo.buyersOrderDate ? format(new Date(buyerInfo.buyersOrderDate), 'PP') : ''} 
+                      value={buyer.buyer_order_date ? format(new Date(buyer.buyer_order_date), 'PP') : ''} 
                       readOnly 
                       className="bg-gray-50" 
                     />
@@ -640,17 +649,17 @@ const PackagingList = ({
                 </div>
                 <div className="space-y-2">
                   <Label>PO No.</Label>
-                  <Input value={buyerInfo.poNo} readOnly className="bg-gray-50" />
+                  <Input value={buyer.po_no} readOnly className="bg-gray-50" />
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4 mt-6">
                   <div className="space-y-2">
                     <Label>Consignee</Label>
-                    <Input value={buyerInfo.consignee} readOnly className="bg-gray-50" />
+                    <Input value={buyer.consignee} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>Notify Party</Label>
-                    <Input value={buyerInfo.notifyParty} readOnly className="bg-gray-50" />
+                    <Input value={buyer.notify_party} readOnly className="bg-gray-50" />
                   </div>
                 </div>
               </div>
@@ -660,7 +669,7 @@ const PackagingList = ({
       )}
 
       {/* Shipping Information */}
-      {shippingInfo && (
+      {shipping && (
         <Card>
           <CardHeader>
             <CardTitle>Shipping Information</CardTitle>

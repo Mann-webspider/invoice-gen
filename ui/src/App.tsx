@@ -12,7 +12,7 @@ import CompanyProfile from "./pages/CompanyProfile";
 import Products from "./pages/Products";
 import ShippingTerms from "./pages/ShippingTerms";
 import InvoiceGenerator from "./pages/InvoiceGenerator";
-import AdminPanel from "./pages/AdminPanel2";
+import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import PackagingList from "./pages/PackagingList";
 import Annexure from "./pages/Annexure";
@@ -24,6 +24,8 @@ import AddExporter from "./pages/AddExporter";
 import ExporterList from "./pages/ExporterList";
 import { QueryProvider } from "./providers/query-provider";
 import TestPage from "./pages/TestPage";
+import { FormProvider } from "./context/FormContext";
+
 
 const queryClient = new QueryClient();
 
@@ -144,6 +146,8 @@ const VgmFormWrapper = () => {
 };
 
 const App = () => (
+  <FormProvider>
+
   <QueryProvider>
     <TooltipProvider>
       <Toaster />
@@ -180,7 +184,7 @@ const App = () => (
                 <ShippingTerms />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/invoice"
             element={
@@ -200,7 +204,7 @@ const App = () => (
           <Route
             path="/next-form"
             element={<Navigate to="/packaging-list" replace />}
-          />
+            />
           <Route
             path="/packaging-list"
             element={
@@ -208,7 +212,7 @@ const App = () => (
                 <PackagingListWrapper />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/annexure"
             element={
@@ -216,7 +220,7 @@ const App = () => (
                 <AnnexureWrapper />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/invoice-editor/:id"
             element={
@@ -224,7 +228,7 @@ const App = () => (
                 <InvoiceEditor />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/add-client"
             element={
@@ -232,7 +236,7 @@ const App = () => (
                 <AddClient />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/client-list"
             element={
@@ -240,7 +244,7 @@ const App = () => (
                 <ClientList />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/add-exporter"
             element={
@@ -248,7 +252,7 @@ const App = () => (
                 <AddExporter />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/exporter-list"
             element={
@@ -256,7 +260,7 @@ const App = () => (
                 <ExporterList />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/vgm-form"
             element={
@@ -264,7 +268,7 @@ const App = () => (
                 <VgmFormWrapper />
               </AdminLayout>
             }
-          />
+            />
           <Route
             path="/test"
             element={
@@ -278,6 +282,7 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryProvider>
+            </FormProvider>
 );
 
 export default App;

@@ -44,5 +44,5 @@ const InvoiceHeader: React.FC<InvoiceHeaderProps> = ({
     </div>
   );
 };
-
 export default InvoiceHeader;
+

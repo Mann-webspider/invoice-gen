@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash } from "lucide-react";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import {
   Select,
@@ -14,21 +14,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { useForm } from "@/context/FormContext";
+
+
 interface Supplier {
   id: string;
   name: string;
-  gstin: string;
-  invoiceNo: string;
-  date: string;
+  gstin_number: string;
+  tax_invoice_number?: string;
+  date?: string;
+  authorizedName?: string;
+  authorizedGstin?: string;
+  contactNo?: string;
 }
+
+interface SupplierDetailsProps {
+  suppliers: Supplier[];
+  setSuppliers: (suppliers: Supplier[]) => void;
+  integratedTaxOption: "WITH" | "WITHOUT";
+  setAuthorizedName: (name: string) => void;
+  setAuthorizedGstin: (gstin: string) => void;
+  setGstInvoiceNoDate: (date: string) => void;
+  selectedSupplier: object;
+  setSelectedSupplier: (supplier: object) => void;
+}
+
 async function getSuppliers() {
   let res = await api.get("/supplier")
   if (res.status !== 200) {
     return "error"
   }
-  return res.data
+  return res.data.data
 }
-let supplierList = []
+
 export const SupplierDetails = ({
   suppliers,
   setSuppliers,
@@ -38,20 +56,43 @@ export const SupplierDetails = ({
   setGstInvoiceNoDate,
   selectedSupplier,
   setSelectedSupplier
-}) => {
-
+}: SupplierDetailsProps) => {
+  const [availableSuppliers, setAvailableSuppliers] = useState<Supplier[]>([]);
+  const {formData, setInvoiceData} = useForm()
   useEffect(() => {
     (async () => {
       try {
-        const supplier = await getSuppliers();
-        console.log(supplier);
-        setSuppliers(supplier);
+        const fetchedSuppliers = await getSuppliers();
+        setAvailableSuppliers(fetchedSuppliers);
       }
       catch (error) {
-        console.error("Failed to fetch exporters:", error);
+        console.error("Failed to fetch suppliers:", error);
       }
     })()
-  }, [])
+  }, []);
+  useEffect(()=>{
+    setInvoiceData({
+      ...formData.invoice,
+      supplier: selectedSupplier
+    })
+  },[selectedSupplier])
+  
+
+  const handleSupplierSelect = (value: string, supplierId: string, index: number) => {
+    const selectedSupplier = availableSuppliers.find(s => s.name === value);
+    setSuppliers(suppliers.map(s =>
+      s.id === supplierId
+        ? {
+            ...selectedSupplier,
+            name: value,
+            gstin_number: selectedSupplier?.gstin_number || '',
+          }
+        : s
+    ));
+    
+    
+  };
+
   return (
     <>
       {integratedTaxOption === "WITHOUT" && (
@@ -61,37 +102,36 @@ export const SupplierDetails = ({
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="flex justify-between items-center">
-              <div className="flex-grow" />
+              <div className="flex-grow"></div>
               <Button
                 variant="outline"
                 onClick={() => {
-                  supplierList.push(
-                   
-                    {
-                      id: (suppliers.length + 1).toString(),
-                      supplier_name: '',
-                      gstin_number: '',
-                      tax_invoice_no: '',
-                      date: '',
-                    }
-                  );
+                  setSuppliers([...suppliers, {
+                    id: (suppliers.length + 1).toString(),
+                    name: '',
+                    gstin_number: '',
+                    tax_invoice_number: '',
+                    date: '',
+                    authorizedName: '',
+                    authorizedGstin: '',
+                    contactNo: ''
+                  }]);
                 }}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Supplier
               </Button>
             </div>
-
-            {supplierList.map((supplier, index) => (
+            {suppliers.map((supplier, index) => (
               <div key={supplier.id} className="border p-4 rounded-lg">
                 <div className="flex justify-between items-center mb-4">
                   <h4 className="font-medium">SUPPLIER DETAILS :- {index + 1}</h4>
-                  {supplierList.length > 1 && (
+                  {suppliers.length > 1 && (
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={() => {
-                        supplierList = supplierList.filter(s => s.id !== supplier.id);
+                        setSuppliers(suppliers.filter(s => s.id !== supplier.id));
                       }}
                     >
                       <Trash className="h-4 w-4" />
@@ -102,48 +142,38 @@ export const SupplierDetails = ({
                   <div className="space-y-2">
                     <Label htmlFor={`name-${supplier.id}`}>NAME :</Label>
                     <Select
-                      value={selectedSupplier.supplier_name}
-                      onValueChange={(value) => setSelectedSupplier({ ...selectedSupplier, supplier_name: value })}
+                      value={supplier.name}
+                      onValueChange={(value) => handleSupplierSelect(value, supplier.id, index)}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select exporter" />
+                        <SelectValue placeholder="Select supplier" />
                       </SelectTrigger>
                       <SelectContent>
-                        {suppliers.map((supplier) => (
-                          <SelectItem key={supplier.id} value={supplier.supplier_name}>
-                            {supplier.supplier_name}
+                        {availableSuppliers.map((s) => (
+                          <SelectItem key={s.id} value={s.name}>
+                            {s.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    {/* <Input
-                      id={`name-${supplier.id}`}
-                      value={supplier.supplier_name}
-                      onChange={(e) => {
-                        const updatedSuppliers = suppliers.map(s =>
-                          s.id === supplier.id ? { ...s, supplier_name: e.target.value } : s
-                        );
-                        setSuppliers(updatedSuppliers);
-                        if (index === 0) setAuthorizedName(e.target.value);
-                      }}
-                      placeholder="Enter supplier name"
-                    /> */}
                   </div>
 
                   <div className="space-y-2">
                     <Label htmlFor={`gstin-${supplier.id}`}>GSTIN NO. :</Label>
                     <Input
                       id={`gstin-${supplier.id}`}
-                      value={suppliers.find(s => s.id === supplier.id)?.gstin_number}
+                      value={supplier.gstin_number}
+                      readOnly
                       onChange={(e) => {
-                        const updatedSuppliers = suppliers.map(s =>
-                          s.id === supplier.id ? { ...s, gstin_number: e.target.value } : s
-                        );
-                        setSuppliers(updatedSuppliers);
-                        if (index === 0) setAuthorizedGstin(e.target.value);
+                        setSelectedSupplier(suppliers.map(s =>
+                          s.id === supplier.id
+                            ? { ...s, gstin_number: e.target.value,id:supplier.id }
+                            : s
+                        ));
                       }}
-                      placeholder="Enter GSTIN number"
                     />
+                  
+                   
                   </div>
 
                   <div className="grid grid-cols-2 gap-4">
@@ -151,32 +181,40 @@ export const SupplierDetails = ({
                       <Label htmlFor={`invoiceNo-${supplier.id}`}>TAX INVOICE NO :</Label>
                       <Input
                         id={`invoiceNo-${supplier.id}`}
-                        value={supplier.tax_invoice_no}
+                        value={supplier.tax_invoice_number}
                         onChange={(e) => {
-                          const updatedSuppliers = suppliers.map(s =>
-                            s.id === supplier.id ? { ...s, tax_invoice_no: e.target.value } : s
-                          );
-                          setSuppliers(updatedSuppliers);
-                          if (index === 0) setGstInvoiceNoDate(`${e.target.value} ${supplier.date}`);
+                          setSelectedSupplier(()=>suppliers.map(s =>
+                            s.id === supplier.id
+                              ? { ...s, tax_invoice_number: e.target.value }
+                              : s
+                          ));
+                          
                         }}
-                        placeholder="Enter tax invoice number"
                       />
+                    
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor={`date-${supplier.id}`}>DATE :</Label>
                       <Input
                         id={`date-${supplier.id}`}
-                        type="date"
                         value={supplier.date}
+                        type="date"
                         onChange={(e) => {
-                          const updatedSuppliers = suppliers.map(s =>
-                            s.id === supplier.id ? { ...s, date: e.target.value } : s
-                          );
-                          setSuppliers(updatedSuppliers);
-                          if (index === 0) setGstInvoiceNoDate(`${supplier.tax_invoice_no} ${e.target.value}`);
+                          setSelectedSupplier(suppliers.map(s =>
+                            s.id === supplier.id
+                              ? { ...s, date: e.target.value }
+                              : s
+                          ));
+                          
                         }}
                       />
                     </div>
+                    <Button variant="outline" onClick={()=>{
+                      console.log(formData.invoice);
+                    }}>
+                      show
+                    </Button>
+                      
                   </div>
                 </div>
               </div>
