@@ -19,7 +19,6 @@ const TestPage = () => {
             initialLeftValue="10"
             initialRightValue="20 ft"
             onChange={(value) => {
-              console.log('String value:', value);
               setMarkValue(value);
             }}
           />
@@ -42,7 +41,7 @@ const TestPage = () => {
               rightValue: "20 ft"
             }}
             onChange={(values: any) => {
-              console.log('Object values:', values);
+              // Handle object values change
             }}
           />
         </CardContent>

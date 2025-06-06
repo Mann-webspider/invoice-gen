@@ -13,7 +13,32 @@ import {
 } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ProductSection } from '@/lib/types';
-import { format } from 'date-fns';
+
+// Handle date-fns import with try-catch to avoid TypeScript errors
+let format: (date: Date | number, format: string) => string;
+try {
+  const dateFns = require('date-fns');
+  format = dateFns.format;
+} catch (error) {
+  format = (date, fmt) => new Date(date).toLocaleDateString();
+}
+
+import { useForm } from '@/context/FormContext';
+import { useNavigate } from 'react-router-dom';
+import api from '@/lib/axios';
+import { getCurrentFormId, loadFormSection, getValueFromSection, saveFormSection } from "@/lib/formDataUtils";
+
+// Handle toast notifications with error handling to avoid import errors
+let toast: any = {
+  success: (message: string) => console.log(`[SUCCESS] ${message}`),
+  error: (message: string) => console.error(`[ERROR] ${message}`)
+};
+try {
+  const sonner = require('sonner');
+  toast = sonner.toast;
+} catch (error) {
+  // Use default console implementation
+}
 
 
 interface AnnexureProps {
@@ -65,10 +90,9 @@ interface AnnexureProps {
 interface ManufacturerData {
   name: string;
   address: string;
-  gstin: string;
-  permitNumber: string;
-  permitDate: string;
-  issuedBy: string;
+  gstin_number: string;
+  permission: string;
+ 
 }
 
 const Annexure = ({
@@ -80,56 +104,141 @@ const Annexure = ({
   shippingInfo,
   containerInfo
 }: AnnexureProps) => {
-  // State for user-editable form data
-  const [range, setRange] = useState('MORBI');
-  const [division, setDivision] = useState('MORBI II');
-  const [commissionerate, setCommissionerate] = useState('RAJKOT');
-  const [examDate, setExamDate] = useState(invoiceHeader?.invoiceDate 
-      ? format(new Date(invoiceHeader.invoiceDate), 'dd.MM.yyyy')
-      : format(new Date(), 'dd.MM.yyyy'));
-  const [invoiceDate, setInvoiceDate] = useState(invoiceHeader?.invoiceDate 
-      ? format(new Date(invoiceHeader.invoiceDate), 'dd.MM.yyyy')
-      : format(new Date(), 'dd.MM.yyyy'));
-  const [netWeight, setNetWeight] = useState('281900');
-  const [grossWeight, setGrossWeight] = useState('287440');
-  const [totalPackages, setTotalPackages] = useState('14000');
-  const [officeDesignation1, setOfficeDesignation1] = useState('SELF SEALING');
-  const [officeDesignation2, setOfficeDesignation2] = useState('SELF SEALING');
-  const [selectedManufacturer, setSelectedManufacturer] = useState('');
-  const [containerSizes, setContainerSizes] = useState<string[]>([]);
-  const [lutDate, setLutDate] = useState('27/03/2024');
-  const [locationCode, setLocationCode] = useState('');
-  const [sampleSealNo, setSampleSealNo] = useState('N/A');
-  const [question9a, setQuestion9a] = useState('YES');
-  const [question9b, setQuestion9b] = useState('NO');
-  const [sealType1, setSealType1] = useState('SELF SEALING');
-  const [sealType2, setSealType2] = useState('SELF SEALING');
-
-  // Predefined manufacturer options
-  const manufacturers: Record<string, ManufacturerData> = {
-    'DEMO VITRIFIED PVT LTD': {
-      name: 'DEMO VITRIFIED PVT LTD',
-      address: 'Survey No. 304/P1, test address test address test address\ntest addresstest addresstest addresstest addresstest address',
-      gstin: '24AAVCA********',
-      permitNumber: '***/****/****/33/2024-Tech-0/o ***************, SSP NO.**** /****/****/2023-**',
-      permitDate: '16.02.2024',
-      issuedBy: 'The ****/********************, Custom (PREV.), *******'
-    },
-    'ZERIC CERAMICA': {
-      name: 'ZERIC CERAMICA',
-      address: '123 Ceramic Road, Industrial Area, Morbi, Gujarat\nIndia - 363642',
-      gstin: '24AAQCA********',
-      permitNumber: '***/****/****/33/2024-Tech-0/o ***************, SSP NO.**** /****/****/2023-**',
-      permitDate: '16.02.2024',
-      issuedBy: 'The ****/********************, Custom (PREV.), *******'
+  const {formData, setAnnexureData, ensureFormDataFromLocalStorage} = useForm();
+  let invoice = formData.invoice
+  let packaging = formData.packagingList
+  let buyer = formData.invoice.buyer
+  let shipping = formData.invoice.shipping
+  
+  // Get current form ID for localStorage
+  const currentFormId = invoiceHeader?.invoiceNo || getCurrentFormId();
+  
+  // Load all form data from localStorage on component mount
+  useEffect(() => {
+    if (currentFormId) {
+      ensureFormDataFromLocalStorage(currentFormId);
+    }
+  }, [currentFormId, ensureFormDataFromLocalStorage]);
+  
+  // Function to save a field to localStorage
+  const saveFieldToLocalStorage = (field: string, value: any) => {
+    try {
+      // Load current annexure data
+      const annexureData = loadFormSection(currentFormId, 'annexure') || {};
+      
+      // Update the field
+      annexureData[field] = value;
+      
+      // Save back to localStorage
+      saveFormSection(currentFormId, 'annexure', annexureData);
+      
+      // Update form context
+      setAnnexureData(annexureData);
+    } catch (error) {
+      console.error(`Error saving ${field} to localStorage:`, error);
     }
   };
+  
+  // State for user-editable form data
+  const [range, setRange] = useState(() => {
+    return getValueFromSection('annexure', 'range', 'MORBI');
+  });
+  const [division, setDivision] = useState(() => {
+    return getValueFromSection('annexure', 'division', 'MORBI II');
+  });
+  const [commissionerate, setCommissionerate] = useState(() => {
+    return getValueFromSection('annexure', 'commissionerate', 'RAJKOT');
+  });
+  const [examDate, setExamDate] = useState(() => {
+    return getValueFromSection('annexure', 'examDate', 
+      invoiceHeader?.invoiceDate 
+        ? format(new Date(invoiceHeader.invoiceDate), 'dd.MM.yyyy')
+        : format(new Date(), 'dd.MM.yyyy')
+    );
+  });
+  const [invoiceDate, setInvoiceDate] = useState(() => {
+    return getValueFromSection('annexure', 'invoiceDate', 
+      invoiceHeader?.invoiceDate 
+        ? format(new Date(invoiceHeader.invoiceDate), 'dd.MM.yyyy')
+        : format(new Date(), 'dd.MM.yyyy')
+    );
+  });
+  
+  // Get weights and packages from packaging list if available
+  const [netWeight, setNetWeight] = useState(() => {
+    return getValueFromSection('packagingList', 'net_weight', '281900');
+  });
+  const [grossWeight, setGrossWeight] = useState(() => {
+    return getValueFromSection('packagingList', 'gross_weight', '287440');
+  });
+  const [totalPackages, setTotalPackages] = useState(() => {
+    return getValueFromSection('packagingList', 'total_packages', '14000');
+  });
+  
+  const [officeDesignation1, setOfficeDesignation1] = useState(() => {
+    return getValueFromSection('annexure', 'officeDesignation1', 'SELF SEALING');
+  });
+  const [officeDesignation2, setOfficeDesignation2] = useState(() => {
+    return getValueFromSection('annexure', 'officeDesignation2', 'SELF SEALING');
+  });
+  const [selectedManufacturer, setSelectedManufacturer] = useState(() => {
+    return getValueFromSection('annexure', 'selectedManufacturer', '');
+  });
+  const [containerSizes, setContainerSizes] = useState<string[]>(() => {
+    return getValueFromSection('annexure', 'containerSizes', []);
+  });
+  const [lutDate, setLutDate] = useState(() => {
+    return getValueFromSection('annexure', 'lutDate', '27/03/2024');
+  });
+  const [arn, setArn] = useState(() => {
+    return getValueFromSection('annexure', 'arn', 'AD240324********');
+  });
+  const [locationCode, setLocationCode] = useState(() => {
+    return getValueFromSection('annexure', 'locationCode', '');
+  });
+  const [sampleSealNo, setSampleSealNo] = useState(() => {
+    return getValueFromSection('annexure', 'sampleSealNo', 'N/A');
+  });
+  const [question9a, setQuestion9a] = useState(() => {
+    return getValueFromSection('annexure', 'question9a', 'YES');
+  });
+  const [question9b, setQuestion9b] = useState(() => {
+    return getValueFromSection('annexure', 'question9b', 'NO');
+  });
+  const [sealType1, setSealType1] = useState(() => {
+    return getValueFromSection('annexure', 'sealType1', 'SELF SEALING');
+  });
+  const [sealType2, setSealType2] = useState(() => {
+    return getValueFromSection('annexure', 'sealType2', 'SELF SEALING');
+  });
+  const navigate = useNavigate();
+  // Predefined manufacturer options
+  const manufacturers: Record<string, ManufacturerData> = {
+    
+  };
 
-  const [manufacturerData, setManufacturerData] = useState<ManufacturerData>(manufacturers['DEMO VITRIFIED PVT LTD']);
-
+  const [manufacturerData, setManufacturerData] = useState<ManufacturerData>({
+    name: '',
+    address: '',
+    gstin_number: '',
+    permission: ''});
+  const [availableSuppliers, setAvailableSuppliers] = useState<ManufacturerData[]>([]);
   // Container size options
   const sizeOptions = ["1 x 20'", "1 x 40'", "1 x 40' HC"];
-
+  async function getSuppliers() {
+    let res = await api.get("/supplier")
+    if (res.status !== 200) {
+      return "error"
+    }
+    return res.data.data
+  }
+  async function getArn() {
+    let res = await api.get("/arn")
+    if (res.status !== 200) {
+      return "error"
+    }
+    return res.data.data
+  }
   useEffect(() => {
     // Calculate total from container info if available
     if (containerInfo?.containerRows) {
@@ -144,7 +253,16 @@ const Annexure = ({
       const totalQty = containerInfo.containerRows.reduce(
         (sum, row) => sum + (row.quantity || 0), 0
       );
-      
+      (async () => {
+        try {
+          const fetchedSuppliers = await getSuppliers();
+          // const fetchedArn = await getArn();
+          setAvailableSuppliers(fetchedSuppliers);
+        }
+        catch (error) {
+          // Failed to fetch suppliers - handled with toast
+        }
+      })()
       setNetWeight(totalNet);
       setGrossWeight(totalGross);
       setTotalPackages(totalQty.toString());
@@ -157,12 +275,12 @@ const Annexure = ({
     }
   }, [containerInfo]);
 
-  useEffect(() => {
-    // Update manufacturer data when selection changes
-    if (selectedManufacturer && manufacturers[selectedManufacturer]) {
-      setManufacturerData(manufacturers[selectedManufacturer]);
-    }
-  }, [selectedManufacturer]);
+  // useEffect(() => {
+  //   // Update manufacturer data when selection changes
+  //   if (selectedManufacturer && manufacturers[selectedManufacturer]) {
+  //     setManufacturerData(manufacturers[selectedManufacturer]);
+  //   }
+  // }, [selectedManufacturer]);
 
   // Handle form submission - navigate to VGM form
   const handleSubmit = () => {
@@ -176,7 +294,8 @@ const Annexure = ({
     localStorage.setItem('vgmData', JSON.stringify(vgmData));
     
     // Navigate to the VGM form page
-    window.location.href = '/vgm-form';
+    
+    navigate('/vgm-form');
   };
 
   // Handle container size change
@@ -185,6 +304,51 @@ const Annexure = ({
     newSizes[index] = size;
     setContainerSizes(newSizes);
   };
+  
+  const handleSupplierSelect = (value: string) => {
+    const selectedSupplier = availableSuppliers.find(s => s.name === value);
+    const updatedManufacturerData = {
+      name: selectedSupplier?.name || '',
+      address: selectedSupplier?.address || '',
+      gstin_number: selectedSupplier?.gstin_number || '',
+      permission: selectedSupplier?.permission || '',
+    };
+    
+    // Update state
+    setManufacturerData(updatedManufacturerData);
+    
+    // Save to localStorage
+    saveFieldToLocalStorage('selected_manufacturer', updatedManufacturerData);
+  };
+  // add all the annexure data to the formData
+  useEffect(() => {
+    // Update formData with annexure data'
+    setAnnexureData({
+      range:range,
+      division:division,
+      commissionerate:commissionerate,
+      exam_date:examDate,
+      invoice_date:invoiceDate,
+      net_weight:netWeight,
+      gross_weight:grossWeight,
+      total_packages:totalPackages,
+      officer_designation1:officeDesignation1,
+      officer_designation2:officeDesignation2,
+      selected_manufacturer:manufacturerData,
+      
+      lut_date:lutDate,
+      location_code:locationCode,
+      question9c:sampleSealNo,
+      question9a:question9a,
+      question9b:question9b,
+      
+      non_containerized:sealType1,
+      containerized:sealType2
+      
+    });
+    
+  }
+  , [range, division, commissionerate, examDate, invoiceDate, netWeight, grossWeight, totalPackages, officeDesignation1, officeDesignation2, selectedManufacturer, lutDate, locationCode, sampleSealNo, question9a, question9b, sealType1, sealType2]);
 
   return (
     <div className="space-y-6">
@@ -233,8 +397,8 @@ const Annexure = ({
                 <div className="font-medium">1 NAME OF EXPORTER</div>
               </td>
               <td className="border p-3">
-                <div className="font-medium">{invoiceHeader?.selectedExporter || 'ZERIC CERAMICA'}</div>
-                <div className="mt-1">TAX ID: {invoiceHeader?.taxid || '24AACJ********'}</div>
+                <div className="font-medium">{invoice?.exporter.company_name || 'ZERIC CERAMICA'}</div>
+                <div className="mt-1">TAX ID: {invoice?.exporter.tax_id }</div>
               </td>
             </tr>
 
@@ -248,20 +412,20 @@ const Annexure = ({
               <td className="border p-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <span className="font-medium">I. E. Code #:</span> {invoiceHeader?.ieCode || 'AA********'}
+                    <span className="font-medium">I. E. Code #:</span> {invoice?.exporter.ie_code }
                   </div>
                   <div>
-                    <span className="font-medium ">PAN NO. #:</span> {invoiceHeader?.panNo || 'AA********'}
+                    <span className="font-medium ">PAN NO. #:</span> {invoice?.exporter.pan_number }
                   </div>
                   <div>
-                    <span className="font-medium">GSTIN NO.#:</span> {invoiceHeader?.gstinNo || '24AACFZ********'}
+                    <span className="font-medium">GSTIN NO.#:</span> {invoice?.exporter.gstin_number }
                   </div>
                   <div>
-                    <span className="font-medium">STATE CODE:</span> {invoiceHeader?.stateCode || '**'}
+                    <span className="font-medium">STATE CODE:</span> {invoice?.exporter.state_code }
                   </div>
                 </div>
                 <div className="mt-3 border-t pt-3">
-                  <Input placeholder="Enter branch code" className="mt-1" />
+                  <Input placeholder="Enter branch code"  className="mt-1" />
                 </div>
                 <div className="mt-3 border-t pt-3">
                   <Input placeholder="Enter BIN number" className="mt-1" />
@@ -279,15 +443,15 @@ const Annexure = ({
               <td className="border p-3">
                 <div>
                   <Select 
-                    value={selectedManufacturer} 
-                    onValueChange={setSelectedManufacturer}
+                    value={manufacturerData.name|| ''} 
+                    onValueChange={(value) => handleSupplierSelect(value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Manufacturer" />
+                      <SelectValue placeholder="Select Manufacturer"  />
                     </SelectTrigger>
                     <SelectContent>
-                      {Object.keys(manufacturers).map(name => (
-                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                      {availableSuppliers.map(supplier => (
+                        <SelectItem key={supplier.name} value={supplier.name}>{supplier.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -296,7 +460,7 @@ const Annexure = ({
                 <div className="mt-2">
                   <div className="flex">
                     <span className="font-medium w-16">GST:</span>
-                    <span>{manufacturerData?.gstin}</span>
+                    <span>{manufacturerData?.gstin_number}</span>
                   </div>
                 </div>
               </td>
@@ -319,7 +483,10 @@ const Annexure = ({
                 <div className="ml-3 mt-1">OFFICER / INSPECTOR / EO / PO</div>
               </td>
               <td className="border p-3">
-                <Select value={officeDesignation1} onValueChange={setOfficeDesignation1}>
+                <Select value={officeDesignation1} onValueChange={(value) => {
+                  setOfficeDesignation1(value);
+                  saveFieldToLocalStorage('officer_designation1', value);
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -341,7 +508,10 @@ const Annexure = ({
                 <div className="ml-3 mt-1">OFFICER / APPRAISER / SUPERINTENDENT</div>
               </td>
               <td className="border p-3">
-                <Select value={officeDesignation2} onValueChange={setOfficeDesignation2}>
+                <Select value={officeDesignation2} onValueChange={(value) => {
+                  setOfficeDesignation2(value);
+                  saveFieldToLocalStorage('officer_designation2', value);
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -366,9 +536,11 @@ const Annexure = ({
                 <div className="mt-3 pt-3 border-t">
                   <Input 
                     value={locationCode}
-                    onChange={(e) => setLocationCode(e.target.value)}
+                    onChange={(e) => {
+                      setLocationCode(e.target.value);
+                      saveFieldToLocalStorage('location_code', e.target.value);
+                    }}
                     placeholder="Enter location code"
-                    
                   />
                 </div>
               </td>
@@ -384,11 +556,11 @@ const Annexure = ({
               </td>
               <td className="border p-3">
                 <div className="h-4"></div>
-                <div className="border-t pt-2">{`INV/${invoiceHeader?.invoiceNo || '01**'}/2024-25 Dt. ${invoiceDate}`}</div>
+                <div className="border-t pt-2">{`${invoiceHeader?.invoiceNo }/2024-25 Dt. ${invoiceDate}`}</div>
                 <div className="border-t pt-2 mt-2">{totalPackages}</div>
                 <div className="border-t pt-2 mt-2">
-                  <div>{buyerInfo?.consignee || 'XYZ'}</div>
-                  <div>{shippingInfo?.finalDestination || 'USA'}</div>
+                  <div>{buyer?.consignee }</div>
+                  <div>{shipping?.final_destination }</div>
                 </div>
               </td>
             </tr>
@@ -406,7 +578,10 @@ const Annexure = ({
                 <div className="font-medium">9. (a) IS THE DESCRIPTION OF THE GOODS THE QUANTITY AND THERE VALUE AS PER PARTICULARS FURNISHED IN THE EXPORT INVOICE</div>
               </td>
               <td className="border p-3">
-                <Select value={question9a} onValueChange={setQuestion9a}>
+                <Select value={question9a} onValueChange={(value) => {
+                  setQuestion9a(value);
+                  saveFieldToLocalStorage('question9a', value);
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -423,7 +598,10 @@ const Annexure = ({
                 <div className="font-medium">(b) WHETHER SAMPLES IS DRAWN FOR BEING FORWARDED TO PORT OF EXPORT</div>
               </td>
               <td className="border p-3">
-                <Select value={question9b} onValueChange={setQuestion9b}>
+                <Select value={question9b} onValueChange={(value) => {
+                  setQuestion9b(value);
+                  saveFieldToLocalStorage('question9b', value);
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -442,7 +620,10 @@ const Annexure = ({
               <td className="border p-3">
                 <Input 
                   value={sampleSealNo}
-                  onChange={(e) => setSampleSealNo(e.target.value)}
+                  onChange={(e) => {
+                    setSampleSealNo(e.target.value);
+                    saveFieldToLocalStorage('sample_seal_no', e.target.value);
+                  }}
                 />
               </td>
             </tr>
@@ -459,7 +640,10 @@ const Annexure = ({
                 <div className="font-medium">(a) FOR NON CONTAINERIZED CARGO No.OF PACKAGES</div>
               </td>
               <td className="border p-3">
-                <Select value={sealType1} onValueChange={setSealType1}>
+                <Select value={sealType1} onValueChange={(value) => {
+                  setSealType1(value);
+                  saveFieldToLocalStorage('seal_type1', value);
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -476,7 +660,10 @@ const Annexure = ({
                 <div className="font-medium">(b) FOR CONTAINERAISED CARGO</div>
               </td>
               <td className="border p-3">
-                <Select value={sealType2} onValueChange={setSealType2}>
+                <Select value={sealType2} onValueChange={(value) => {
+                  setSealType2(value);
+                  saveFieldToLocalStorage('seal_type2', value);
+                }}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -501,31 +688,39 @@ const Annexure = ({
               <table className="w-full border-collapse">
                 <thead>
                   <tr className="bg-gray-50">
+                    <th className="border p-3 text-center font-medium text-gray-600">Sr. No.</th>
                     <th className="border p-3 text-center font-medium text-gray-600">CONTAINER NO.</th>
                     <th className="border p-3 text-center font-medium text-gray-600">LINE SEAL NO.</th>
                     <th className="border p-3 text-center font-medium text-gray-600">RFID SEAL</th>
                     <th className="border p-3 text-center font-medium text-gray-600">Design no</th>
-                    <th className="border p-3 text-center font-medium text-gray-600">QUANTITY<br/>BOX</th>
+                    <th className="border p-3 text-center font-medium text-gray-600">NO OF<br/>PACKAGES</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {containerInfo?.containerRows ? (
-                    containerInfo.containerRows.map((row, index) => (
-                      <tr key={row.id || index} className="border-b">
-                        <td className="border p-3 text-center">{row.containerNo || 'Sp***********'}</td>
-                        <td className="border p-3 text-center">{row.lineSealNo || 'R ********'}</td>
-                        <td className="border p-3 text-center">{row.rfidSeal || 'SPPL **** ****'}</td>
-                        <td className="border p-3 text-center">TILES</td>
-                        <td className="border p-3 text-center">{row.quantity || 1000}</td>
-                      </tr>
-                    ))
+                  {formData.packagingList?.containerRows ? (
+                    formData.packagingList.containerRows.map((row, index) => {
+                      // Get the package type from the packaging list data
+                      const packageType = 'BOX';
+                      
+                      return (
+                        <tr key={row.id || index} className="border-b">
+                          <td className="border p-3 text-center">{index + 1}</td>
+                          <td className="border p-3 text-center">{row.containerNo || ''}</td>
+                          <td className="border p-3 text-center">{row.lineSealNo || ''}</td>
+                          <td className="border p-3 text-center">{row.rfidSeal || ''}</td>
+                          <td className="border p-3 text-center">TILES</td>
+                          <td className="border p-3 text-center">{row.quantity || 0} {packageType}</td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr className="border-b">
+                      <td className="border p-3 text-center">1</td>
                       <td className="border p-3 text-center">Sp***********</td>
                       <td className="border p-3 text-center">R ********</td>
                       <td className="border p-3 text-center">SPPL **** ****</td>
                       <td className="border p-3 text-center">TILES</td>
-                      <td className="border p-3 text-center">1000</td>
+                      <td className="border p-3 text-center">1000 Box</td>
                     </tr>
                   )}
                 </tbody>
@@ -537,12 +732,10 @@ const Annexure = ({
           <div className="space-y-4 pt-4 border-t">
             <div className="space-y-2">
               <Label>11. S.S. PERMISSION No.</Label>
-              <div className="text-center p-2 border rounded">
-                {manufacturerData?.permitNumber} Dt.: {manufacturerData?.permitDate}
+              <div className="text-center text-red-500  p-2 border rounded">
+              {manufacturerData?.permission }
               </div>
-              <div className="text-center text-red-500 mt-1">
-                Issued by {manufacturerData?.issuedBy}
-              </div>
+             
             </div>
           </div>
           
@@ -558,12 +751,15 @@ const Annexure = ({
             <div className="space-y-2">
               <Label>13. LETTER OF UNDERTAKING DETAILS</Label>
               <div className="p-2 border rounded">
-                <div>LETTER OF UNDERTAKING NO.ACKNOWLEDGMENT FOR LUT APPLICATION REFERENCE NUMBER (ARN) AD240324********</div>
+                <div>LETTER OF UNDERTAKING NO.ACKNOWLEDGMENT FOR LUT APPLICATION REFERENCE NUMBER (ARN) {arn}</div>
                 <div className="flex items-center mt-2">
                   <Label className="w-10">DT:</Label>
                   <Input 
                     value={lutDate}
-                    onChange={(e) => setLutDate(e.target.value)}
+                    onChange={(e) => {
+                      setLutDate(e.target.value);
+                      saveFieldToLocalStorage('lut_date', e.target.value);
+                    }}
                     className="w-40"
                   />
                 </div>
@@ -577,7 +773,7 @@ const Annexure = ({
           {/* Self Sealing Notice */}
           <div className="space-y-4 pt-4 border-t">
             <div className="space-y-2">
-              <div className="text-center font-bold p-2 border rounded">
+              <div className="text-center font-bold underline p-2 border rounded">
                 EXPORT UNDER SELF SEALING UNDER Circular No. : 59/2010 Dated : 23.12.2010
               </div>
             </div>

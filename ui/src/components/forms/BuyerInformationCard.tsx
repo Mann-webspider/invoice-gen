@@ -20,21 +20,23 @@ import {
 import { cn } from "@/lib/utils";
 import { useForm } from "@/context/FormContext";
 import { useEffect } from "react";
+import { Controller, useForm as rhf ,UseFormReturn} from "react-hook-form";
 
-interface BuyerInfoProps {
+interface BuyerInformationCardProps {
   buyersOrderNo: string;
   setBuyersOrderNo: (val: string) => void;
-  buyersOrderDate: Date | undefined|string;
-  setBuyersOrderDate: (val: string) => void;
+  buyersOrderDate: Date;
+  setBuyersOrderDate: (date: Date) => void;
   poNo: string;
   setPoNo: (val: string) => void;
   consignee: string;
   setConsignee: (val: string) => void;
   notifyParty: string;
   setNotifyParty: (val: string) => void;
+  form : UseFormReturn;
 }
 
-const BuyerInformationCard: React.FC<BuyerInfoProps> = ({
+const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
   buyersOrderNo,
   setBuyersOrderNo,
   buyersOrderDate,
@@ -45,22 +47,38 @@ const BuyerInformationCard: React.FC<BuyerInfoProps> = ({
   setConsignee,
   notifyParty,
   setNotifyParty,
+  form
 }) => {
 
   const {formData, setInvoiceData} = useForm();
+  const {
+    register,
+    handleSubmit,
+    control,
+    setValue,
+    watch,
+    formState: { errors },
+  } = form;
+  const buyerForm = watch("buyer");
+  // useEffect(() => {
+  //   const subscribe = watch((value) => {
+  //     console.log(value);
+  //   });
+  //   return () => subscribe.unsubscribe();
+  // }, [watch]);
 
-  useEffect(() => {
-    setInvoiceData({
-      ...formData.invoice,
-      buyer: {
-        buyer_order_no: buyersOrderNo,
-        buyer_order_date: buyersOrderDate,
-        po_no: poNo,
-        consignee: consignee,
-        notify_party: notifyParty,
-      }
-    });
-  }, [formData, buyersOrderNo, buyersOrderDate, poNo, consignee, notifyParty]);
+  // useEffect(() => {
+  //   setInvoiceData({
+  //     ...formData.invoice,
+  //     buyer: {
+  //       buyer_order_no: buyersOrderNo,
+  //       buyer_order_date: buyersOrderDate ? format(buyersOrderDate, 'dd/MM/yyyy') : null,
+  //       po_no: poNo,
+  //       consignee: consignee,
+  //       notify_party: notifyParty,
+  //     }
+  //   });
+  // }, [formData, buyersOrderNo, buyersOrderDate, poNo, consignee, notifyParty]);
 
   return (
     <Card>
@@ -78,51 +96,65 @@ const BuyerInformationCard: React.FC<BuyerInfoProps> = ({
                     <Label htmlFor="buyersOrderNo">ORDER NO.</Label>
                     <Input
                       id="buyersOrderNo"
-                      value={buyersOrderNo}
-                      onChange={(e) => setBuyersOrderNo(e.target.value)}
+                      value={buyerForm?.buyer_order_no || ""}
+                      {...register("buyer.buyer_order_no", { required: true })}
+                      // onChange={(e) => setBuyersOrderNo(e.target.value)}
                       placeholder="Enter buyer's order number"
                     />
                   </div>
 
                   <div className="space-y-2">
                     <Label>ORDER DATE</Label>
+                    <Controller
+                  name="buyer.buyer_order_date"
+                  control={control}
+                  rules={{ required: true }}
+                  render={({ field }) => (
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
-                          id="buyersOrderDate"
                           variant="outline"
                           className={cn(
                             "w-full justify-start text-left font-normal",
-                            !buyersOrderDate && "text-muted-foreground"
+                            !field.value && "text-muted-foreground",
+                            errors.invoice_date && "border-red-500"
                           )}
                         >
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {buyersOrderDate ? format(buyersOrderDate, "dd/MM/yyyy") : <span>Pick a date</span>}
+                          {field.value ? field.value : "Pick a date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <Calendar
                           mode="single"
-                          selected={new Date(buyersOrderDate)}
+                          selected={
+                            field.value ? new Date(field.value) : undefined
+                          }
                           onSelect={(date) => {
                             if (date) {
-                              const formattedDate = format(date, 'yyyy-MM-dd');
-                              setBuyersOrderDate(formattedDate);
+                              const localeDate = date.toLocaleDateString();
+                              field.onChange(localeDate);
                             }
                           }}
                           initialFocus
-                          className={cn("p-3 pointer-events-auto")}
                         />
                       </PopoverContent>
                     </Popover>
+                  )}
+                />
+
+                {errors.buyer_order_date && (
+                  <span className="text-red-500 text-sm">Required</span>
+                )}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="poNo">PO NO.</Label>
                   <Input
                     id="poNo"
-                    value={poNo}
-                    onChange={(e) => setPoNo(e.target.value)}
+                    value={buyerForm?.po_no || ""}
+                    {...register("buyer.po_no", { required: true })}
+                    // onChange={(e) => setPoNo(e.target.value)}
                     placeholder="Enter PO number"
                   />
                 </div>
@@ -132,8 +164,9 @@ const BuyerInformationCard: React.FC<BuyerInfoProps> = ({
                     <Label htmlFor="consignee">CONSIGNEE</Label>
                     <Input
                       id="consignee"
-                      value={consignee}
-                      onChange={(e) => setConsignee(e.target.value)}
+                      value={buyerForm?.consignee || ""}
+                      {...register("buyer.consignee", { required: true })}
+                      // onChange={(e) => setConsignee(e.target.value)}
                       placeholder="Enter consignee details"
                     />
                   </div>
@@ -141,8 +174,9 @@ const BuyerInformationCard: React.FC<BuyerInfoProps> = ({
                     <Label htmlFor="notifyParty">NOTIFY PARTY</Label>
                     <Input
                       id="notifyParty"
-                      value={notifyParty}
-                      onChange={(e) => setNotifyParty(e.target.value)}
+                      value={buyerForm?.notify_party || ""}
+                      {...register("buyer.notify_party", { required: true })}
+                      // onChange={(e) => setNotifyParty(e.target.value)}
                       placeholder="Enter notify party details"
                     />
                   </div>

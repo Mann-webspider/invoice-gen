@@ -4,7 +4,6 @@
     "useDefineForClassFields": true,
     "lib": ["ES2020", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "skipLibCheck": true,
 
     /* Bundler mode */
     "moduleResolution": "bundler",
@@ -20,11 +19,15 @@
     "noUnusedParameters": false,
     "noImplicitAny": false,
     "noFallthroughCasesInSwitch": false,
+    "ignoreDeprecations": "5.0",
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "noImplicitThis": false,
 
     "baseUrl": ".",
     "paths": {
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "src/db"]
+  "include": ["src", "src/db", "src/types.d.ts"]
 }

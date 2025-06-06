@@ -3,19 +3,19 @@ import { Invoice, CompanyProfile } from '../lib/types';
 const useExport = () => {
   const exportToPDF = (invoice: Invoice, companyProfile: CompanyProfile) => {
     // TODO: Implement PDF generation logic
-    console.log('Exporting to PDF:', { invoice, companyProfile });
+    // Exporting to PDF - handled silently
     alert('PDF export functionality will be implemented here');
   };
 
   const exportToCSV = (invoice: Invoice) => {
     // TODO: Implement CSV generation logic
-    console.log('Exporting to CSV:', invoice);
+    // Exporting to CSV - handled silently
     alert('CSV export functionality will be implemented here');
   };
 
   const printInvoice = (invoice: Invoice, companyProfile: CompanyProfile) => {
     // TODO: Implement print logic
-    console.log('Printing invoice:', { invoice, companyProfile });
+    // Printing invoice - handled silently
     alert('Print functionality will be implemented here');
   };
 

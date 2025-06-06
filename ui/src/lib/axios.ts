@@ -2,7 +2,7 @@ import axios from 'axios';
 
 // Create axios instance with default config
 const api = axios.create({
-  baseURL:  'http://localhost:8000/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}:8000/api`,
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -10,55 +10,45 @@ const api = axios.create({
 });
 
 // Request interceptor
-// api.interceptors.request.use(
-//   (config) => {
-//     // You can add auth token here
-//     const token = localStorage.getItem('token');
-//     if (token) {
-//       config.headers.Authorization = `Bearer ${token}`;
-//     }
-//     return config;
-//   },
-//   (error) => {
-//     return Promise.reject(error);
-//   }
-// );
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Handle different types of errors
     if (error.response) {
-      // The request was made and the server responded with a status code
-      // that falls out of the range of 2xx
       switch (error.response.status) {
         case 401:
-          // Handle unauthorized
-          localStorage.removeItem('token');
-        //   window.location.href = '/login';
+          localStorage.removeItem('authToken');
+          window.location.href = '/login';
           break;
         case 403:
-          // Handle forbidden
-          console.error('Forbidden access');
+          // Forbidden access - handled silently
           break;
         case 404:
-          // Handle not found
-          console.error('Resource not found');
+          // Resource not found - handled silently
           break;
         case 500:
-          // Handle server error
-          console.error('Server error');
+          // Server error - handled silently
           break;
         default:
-          console.error('An error occurred');
+          // An error occurred - handled silently
       }
     } else if (error.request) {
-      // The request was made but no response was received
-      console.error('No response received from server');
+      // No response received from server - handled silently
     } else {
-      // Something happened in setting up the request that triggered an Error
-      console.error('Error setting up request');
+      // Error setting up request - handled silently
     }
     return Promise.reject(error);
   }

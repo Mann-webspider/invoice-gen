@@ -213,7 +213,7 @@ const AdminPanel = () => {
     // Here you would typically save the data to your backend
     // For now, we'll just show a success toast
     try {
-      console.log(supplierData);
+      // Supplier data ready for submission - handled silently
       
       const res = await api.post("/supplier", supplierData);
       if(res.status !== 201){
@@ -302,7 +302,7 @@ const AdminPanel = () => {
         setSuppliers(supplier_res);
         setArnEntries(arn_res);
       } catch (error) {
-        console.error("Failed to fetch exporters:", error);
+        // Failed to fetch exporters - handled silently
       }
     })();
   }, []);

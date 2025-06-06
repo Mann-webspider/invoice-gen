@@ -77,6 +77,9 @@ interface InvoicePDFPreviewProps {
   authorizedName?: string;
   authorizedGstin?: string;
   integratedTaxOption?: "WITH" | "WITHOUT";
+  currencyRate?: number;
+  taxableValue?: number;
+  gstAmount?: number;
 }
 
 const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = (props) => {
@@ -200,12 +203,21 @@ const InvoicePDFPreview: React.FC<InvoicePDFPreviewProps> = (props) => {
               {props.exportUnderDutyDrawback && <p><span className="font-semibold">Export Under:</span> Duty Drawback Scheme</p>}
               {props.ftpIncentiveDeclaration && <p className="text-[9px]">{props.ftpIncentiveDeclaration}</p>}
               {props.exportUnderGstCircular && <p className="text-[9px]">{props.exportUnderGstCircular}</p>}
-              {props.lutNo && <p className="text-[9px]">{props.lutNo}</p>}
-              {props.lutDate && <p className="text-[9px]">{props.lutDate}</p>}
+              {props.integratedTaxOption === "WITH" ? (
+                <>
+                  <p className="text-[9px]">SUPPLY MEANT FOR EXPORT ON PAYMENT OF IGST UNDER CLAIM OF REFUND RS. TOTAL : {props.gstAmount?.toFixed(2)}</p>
+                  <p className="text-[9px]">(TAXABLE CIF INR VALUE {props.taxableValue?.toFixed(2)}@ 18%)</p>
+                </>
+              ) : (
+                <>
+                  {props.lutNo && <p className="text-[9px]">{props.lutNo}</p>}
+                  {props.lutDate && <p className="text-[9px]">{props.lutDate}</p>}
+                </>
+              )}
             </div>
             <div>
-              <p><span className="font-semibold">FOB EURO:</span> {props.fobEuro || props.totalFobEuro}</p>
-              <p><span className="font-semibold">TOTAL FOB EURO:</span> {props.totalFobEuro}</p>
+              <p><span className="font-semibold">FOB {props.selectedCurrency}:</span> {props.fobEuro || props.totalFobEuro}</p>
+              <p><span className="font-semibold">TOTAL {props.paymentTerms} {props.selectedCurrency}:</span> {props.totalFobEuro}</p>
               <p><span className="font-semibold">Amount in Words:</span> {props.amountInWords}</p>
             </div>
           </div>

@@ -120,7 +120,7 @@ const ProductInformationCard = ({
                     <TableHead>SQM/BOX</TableHead>
                     <TableHead>Total SQM</TableHead>
                     <TableHead>Price</TableHead>
-                    <TableHead>Total FOB</TableHead>
+                    <TableHead>Total {paymentTerms}</TableHead>
                     <TableHead className="w-[70px]">Actions</TableHead>
                   </TableRow>
                 </TableHeader>

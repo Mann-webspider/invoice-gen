@@ -1,24 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; // Use react-router-dom for navigation
+import { useNavigate } from 'react-router-dom'; // Use react-router-dom for navigation
 import { PageHeader } from "@/components/layout/PageHeader";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  CardFooter,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Table,
@@ -29,7 +17,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Trash, Plus, FileText, Save, ArrowRight } from "lucide-react";
-import { saveInvoice } from "@/lib/dataService";
+import {
+  getClients,
+  getProducts,
+  getShippingTerms,
+  getCompanyProfile,
+  saveInvoice
+} from "@/lib/dataService";
 import {
   Client,
   Product,
@@ -37,9 +31,13 @@ import {
   CompanyProfile,
   InvoiceItem,
   Invoice,
-  ProductSection,
+  ProductSection
 } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+import {
+  generateInvoiceNumber,
+  convertAmountToWords,
+  formatCurrency
+} from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { Calendar } from "@/components/ui/calendar";
@@ -72,10 +70,15 @@ import PackageInfoSection from "@/components/forms/PackageInfoSection";
 import ProductInformation from "@/components/forms/ProductInfomation";
 import { useForm } from "@/context/FormContext";
 import api from "@/lib/axios";
-import { Controller, useForm as rhf } from "react-hook-form";
 
-// Check if invoice data exists in local storage
+
+// check the invoice data in local storage if yes then show the invoice data in the invoice generator page
 const invoiceData = localStorage.getItem("invoiceData");
+if (invoiceData) {
+  const invoiceDataObject = JSON.parse(invoiceData);
+  console.log(invoiceDataObject);
+}
+
 
 // Helper function to convert number to words for invoice use
 
@@ -102,18 +105,7 @@ function numberToWords(num: number) {
     "EIGHTEEN",
     "NINETEEN",
   ];
-  const tens = [
-    "",
-    "",
-    "TWENTY",
-    "THIRTY",
-    "FORTY",
-    "FIFTY",
-    "SIXTY",
-    "SEVENTY",
-    "EIGHTY",
-    "NINETY",
-  ];
+  const tens = ["", "", "TWENTY", "THIRTY", "FORTY", "FIFTY", "SIXTY", "SEVENTY", "EIGHTY", "NINETY"];
   const scales = ["", "THOUSAND", "MILLION", "BILLION"];
 
   if (num === 0) return "ZERO";
@@ -166,33 +158,27 @@ function numberToWords(num: number) {
 
 const InvoiceGenerator = () => {
   const navigate = useNavigate(); // Use useNavigate from react-router-dom
-  const { formData, setInvoiceData } = useForm();
+  const {formData,setInvoiceData} = useForm();
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [shippingTerms, setShippingTerms] = useState<ShippingTerm[]>([]);
-  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(
-    null
-  );
+  const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(null);
 
   const [previewOpen, setPreviewOpen] = useState(false);
   const [taxOptionDialogOpen, setTaxOptionDialogOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const form = rhf();
+  
   // State for expanded section
-  const [expandedSection, setExpandedSection] = useState<
-    "exporter" | "shipping" | "product" | "gst"
-  >("exporter");
-
+  const [expandedSection, setExpandedSection] = useState<'exporter' | 'shipping' | 'product' | 'gst'>('exporter');
+  
   // Function to toggle section expansion
-  const toggleSection = (
-    section: "exporter" | "shipping" | "product" | "gst"
-  ) => {
+  const toggleSection = (section: 'exporter' | 'shipping' | 'product' | 'gst') => {
     setExpandedSection(section);
   };
 
   //exporter details
-  const [exporterData, setExporterData] = useState([{}]);
-  const [exporter, setExporter] = useState({
+  const[exporterData,setExporterData] = useState([{}]);
+  const [exporter,setExporter] = useState({
     company_name: "",
     company_address: "",
     email: "",
@@ -211,8 +197,8 @@ const InvoiceGenerator = () => {
   });
 
   // shipping details
-  const [shippingData, setShippingData] = useState({});
-  const [shipping, setShipping] = useState({
+  const [shippingData,setShippingData] = useState({})
+  const [shipping,setShipping] = useState({
     pre_carriage_by: "",
     place_of_receipt: "",
     vessel_flight_no: "",
@@ -225,28 +211,29 @@ const InvoiceGenerator = () => {
     terms_of_delivery: "",
     payment_terms: "",
     shipping_method: "",
-  });
+    
+  })
 
   // product details
-  const [productData, setProductData] = useState([{}]);
-  const [product, setProduct] = useState({
+  const [productData,setProductData] = useState([{}]);
+  const [product,setProduct] = useState({
     marks: "",
-    nos: "",
+    nos:"",
 
     size: "",
     quantity: "",
     price: "",
-    total: "",
-  });
+    total: ""
+  })
 
-  const [gstData, setGstData] = useState([{}]);
-  const [gst, setGst] = useState({
+  const [gstData,setGstData] = useState([{}]);  
+  const [gst ,setGst] = useState({
     arn: "",
     lut_date: "",
     rate: "",
     tax: "",
-    total: "",
-  });
+    total: ""    
+  })
 
   // Invoice Header
   const [invoiceNo, setInvoiceNo] = useState<string>("");
@@ -258,15 +245,16 @@ const InvoiceGenerator = () => {
   const [gstinNo, setGstinNo] = useState("");
   const [stateCode, setStateCode] = useState("24");
   const [buyersOrderNo, setBuyersOrderNo] = useState("");
-  const [buyersOrderDate, setBuyersOrderDate] = useState<Date>(new Date());
+  const [buyersOrderDate, setBuyersOrderDate] = useState<Date>(new Date);
   const [poNo, setPoNo] = useState("");
 
   // Supplier Info
   const [authorizedName, setAuthorizedName] = useState("ABC");
   const [authorizedGstin, setAuthorizedGstin] = useState("XXXXXXXXXXXX");
-  const [gstInvoiceNoDate, setGstInvoiceNoDate] =
-    useState("GST/XXX XX.XX.XXXX");
-  const [suppliers, setSuppliers] = useState([]);
+  const [gstInvoiceNoDate, setGstInvoiceNoDate] = useState("GST/XXX XX.XX.XXXX");
+  const [suppliers, setSuppliers] = useState([
+   
+  ]);
   const [declarationText, setDeclarationText] = useState(
     "We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct."
   );
@@ -286,47 +274,49 @@ const InvoiceGenerator = () => {
   const [portOfDischarge, setPortOfDischarge] = useState("NEW YORK");
   const [finalDestination, setFinalDestination] = useState("USA");
   const [countryOfOrigin, setCountryOfOrigin] = useState("INDIA");
-  const [originDetails, setOriginDetails] = useState(
-    "DISTRICT MORBI, STATE GUJARAT"
-  );
-  const [countryOfFinalDestination, setCountryOfFinalDestination] =
-    useState("USA");
+  const [originDetails, setOriginDetails] = useState("DISTRICT MORBI, STATE GUJARAT");
+  const [countryOfFinalDestination, setCountryOfFinalDestination] = useState("USA");
   const [termsOfDelivery, setTermsOfDelivery] = useState("FOB AT MUNDRA PORT");
   const [paymentTerms, setPaymentTerms] = useState("FOB");
-  const [shippingMethod, setShippingMethod] = useState(
-    "SHIPPING - THROUGH SEA"
-  );
+  const [shippingMethod, setShippingMethod] = useState("SHIPPING - THROUGH SEA");
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [currencyRate, setCurrencyRate] = useState<number>(88.95);
 
   // Dropdown options
   const [exporters, setExporters] = useState<string[]>([]);
-  const [placesOfReceipt, setPlacesOfReceipt] = useState<string[]>([]);
-  const [portsOfLoading, setPortsOfLoading] = useState<string[]>([]);
-  const [portsOfDischarge, setPortsOfDischarge] = useState<string[]>([]);
-  const [finalDestinations, setFinalDestinations] = useState<string[]>([]);
-  const [countriesOfFinalDestination, setCountriesOfFinalDestination] =
-    useState<string[]>([]);
+  const [placesOfReceipt, setPlacesOfReceipt] = useState<string[]>([
+    
+  ]);
+  const [portsOfLoading, setPortsOfLoading] = useState<string[]>([
+    
+  ]);
+  const [portsOfDischarge, setPortsOfDischarge] = useState<string[]>([
+    
+  ]);
+  const [finalDestinations, setFinalDestinations] = useState<string[]>([
+    
+  ]);
+  const [countriesOfFinalDestination, setCountriesOfFinalDestination] = useState<string[]>([
+    
+  ]);
   const [shippingMethods, setShippingMethods] = useState<string[]>([
-    "SHIPPING - THROUGH SEA",
-    "SHIPPING - THROUGH AIR",
+    "SHIPPING - THROUGH SEA", "SHIPPING - THROUGH AIR"
   ]);
   const [currencies, setCurrencies] = useState<string[]>([
-    "USD",
-    "EUR",
-    "GBP",
-    "INR",
-    "AED",
+    "USD", "EUR", "GBP", "INR", "AED"
   ]);
-  const [sizes, setSizes] = useState<string[]>([]);
+  const [sizes, setSizes] = useState<string[]>([
+    
+  ]);
   const [units, setUnits] = useState<string[]>([
-    "Box",
-    "Pallet",
-    "Carton",
-    "Piece",
+    "Box", "Pallet", "Carton", "Piece"
   ]);
-  const [hsnCodes, setHsnCodes] = useState<{ [key: string]: string }>({});
-  const [sectionOptions, setSectionOptions] = useState<string[]>([]);
+  const [hsnCodes,setHsnCodes] = useState<{ [key: string]: string }>({
+    
+  });
+  const [sectionOptions, setSectionOptions] = useState<string[]>([
+    
+  ]);
   const [paymentTermsOptions, setPaymentTermsOptions] = useState<string[]>([
     "FOB",
     "CIF",
@@ -337,16 +327,17 @@ const InvoiceGenerator = () => {
   const [productTypeOptions, setProductTypeOptions] = useState<string[]>([
     "Sanitary",
     "Tiles",
-    "Mix",
+    "Mix"
   ]);
 
   // Product Info
   const [sections, setSections] = useState<ProductSection[]>([
     {
-      id: "",
-      title: "",
-      items: [],
-    },
+      id: '',
+      title: '',
+      items: []
+    }
+    
   ]);
 
   // Package Info
@@ -360,11 +351,11 @@ const InvoiceGenerator = () => {
   const [exportUnderGstCircular, setExportUnderGstCircular] = useState(
     "EXPORT UNDER GST CIRCULAR NO. XX/20XX Customs DT.XX/XX/20XX"
   );
-  const [lutNo, setLutNo] = useState("ACXXXXXXXXXXXXXXX");
-  const [lutDate, setLutDate] = useState<Date>(new Date());
-  const [integratedTaxOption, setIntegratedTaxOption] = useState<
-    "WITH" | "WITHOUT"
-  >("WITHOUT");
+  const [lutNo, setLutNo] = useState(
+    "ACXXXXXXXXXXXXXXX"
+  );
+  const [lutDate, setLutDate] = useState<Date>(new Date);
+  const [integratedTaxOption, setIntegratedTaxOption] = useState<"WITH" | "WITHOUT">("WITHOUT");
   const [selectedSupplier, setSelectedSupplier] = useState<Array<object>>([{}]);
 
   // Totals
@@ -376,41 +367,42 @@ const InvoiceGenerator = () => {
   const [marksAndNumbersValues, setMarksAndNumbersValues] = useState({
     containerType: "FCL",
     leftValue: "10",
-    rightValue: "20",
+    rightValue: "20"
   });
+
+  
 
   // Add additional state variables for insurance and freight
   const [insuranceAmount, setInsuranceAmount] = useState<number>(0);
   const [freightAmount, setFreightAmount] = useState<number>(0);
-  const [showInsuranceFreight, setShowInsuranceFreight] =
-    useState<boolean>(false);
+  const [showInsuranceFreight, setShowInsuranceFreight] = useState<boolean>(false);
 
-  // Add the missing markNumber state
-  const [markNumber, setMarkNumber] = useState<string>("10X20 FCL");
+  // Store markNumber in both string and object formats for compatibility
+  const [markNumber, setMarkNumber] = useState<any>({
+    formatted: "10X20 FCL",
+    containerType: "FCL",
+    leftValue: "10",
+    rightValue: "20"
+  });
 
   // Add a mapping for size to SQM/BOX values
-  const [sizeToSqmMap, setSizeToSqmMap] = useState<{ [key: string]: number }>(
-    {}
-  );
+  const [sizeToSqmMap,setSizeToSqmMap] = useState<{ [key: string]: number }>({
+   
+  });
 
   // Add new state for tracking custom section titles and HSN codes
-  const [customSectionHsnCodes, setCustomSectionHsnCodes] = useState<{
-    [key: string]: string;
-  }>({});
+  const [customSectionHsnCodes, setCustomSectionHsnCodes] = useState<{ [key: string]: string }>({});
   const [showSectionOptions, setShowSectionOptions] = useState<boolean>(false);
 
   // Replace the single showSectionOptions state with a map to track each section's dropdown state
-  const [openSectionDropdowns, setOpenSectionDropdowns] = useState<{
-    [key: string]: boolean;
-  }>({});
+  const [openSectionDropdowns, setOpenSectionDropdowns] = useState<{[key: string]: boolean}>({});
 
   // Calculate tax values
-  const taxableValue =
-    integratedTaxOption === "WITH" ? totalFOBEuro * currencyRate : 0;
+  const taxableValue = integratedTaxOption === "WITH" ? totalFOBEuro * currencyRate : 0;
   const gstAmount = taxableValue * 0.18; // 18% GST
 
   // Format date to string
-  const formattedLutDate = lutDate ? format(lutDate, "yyyy-MM-dd") : "";
+  const formattedLutDate = lutDate ? format(lutDate, 'yyyy-MM-dd') : '';
 
   // Add missing exporterRef state
   const [exporterRef, setExporterRef] = useState<string>("Exp/0001/2024-25");
@@ -419,7 +411,7 @@ const InvoiceGenerator = () => {
     // Always show the tax option dialog when component mounts
     // Force it to be open by default
     setTaxOptionDialogOpen(true);
-
+    
     // Reset localStorage value to ensure dialog shows
     localStorage.removeItem("taxDialogBox");
 
@@ -431,38 +423,30 @@ const InvoiceGenerator = () => {
     }
 
     // Check for annexure data from packaging list
-    const annexureDataStr = localStorage.getItem("annexureData");
-    const vgmFormDataStr = localStorage.getItem("vgmFormData");
-
+    const annexureDataStr = localStorage.getItem('annexureData');
+    const vgmFormDataStr = localStorage.getItem('vgmFormData');
+    
     if (annexureDataStr) {
       try {
         const annexureData = JSON.parse(annexureDataStr);
-        if (
-          annexureData.containerRows &&
-          annexureData.containerRows.length > 0
-        ) {
+        if (annexureData.containerRows && annexureData.containerRows.length > 0) {
           // Calculate total gross weight and net weight from container rows
-          const totalGrossWeight = annexureData.containerRows
-            .reduce(
-              (sum: number, row: any) =>
-                sum + parseFloat(row.grossWeight || "0"),
-              0
-            )
-            .toFixed(2);
-
-          const totalNetWeight = annexureData.containerRows
-            .reduce(
-              (sum: number, row: any) => sum + parseFloat(row.netWeight || "0"),
-              0
-            )
-            .toFixed(2);
-
+          const totalGrossWeight = annexureData.containerRows.reduce(
+            (sum: number, row: any) => sum + parseFloat(row.grossWeight || "0"), 
+            0
+          ).toFixed(2);
+          
+          const totalNetWeight = annexureData.containerRows.reduce(
+            (sum: number, row: any) => sum + parseFloat(row.netWeight || "0"), 
+            0
+          ).toFixed(2);
+          
           // Update state with the calculated values
           setGrossWeight(totalGrossWeight);
           setNetWeight(totalNetWeight);
         }
       } catch (error) {
-        // Error parsing annexure data - handled silently
+        console.error("Error parsing annexure data:", error);
       }
     } else if (vgmFormDataStr) {
       // Check if we're returning from VGM form
@@ -470,42 +454,40 @@ const InvoiceGenerator = () => {
         const vgmFormData = JSON.parse(vgmFormDataStr);
         if (vgmFormData.containers && vgmFormData.containers.length > 0) {
           // Use the gross weight from VGM form if available
-          const totalGrossWeight = vgmFormData.containers
-            .reduce(
-              (sum: number, container: any) =>
-                sum + parseFloat(container.grossWeight || "0"),
-              0
-            )
-            .toFixed(2);
-
+          const totalGrossWeight = vgmFormData.containers.reduce(
+            (sum: number, container: any) => sum + parseFloat(container.grossWeight || "0"), 
+            0
+          ).toFixed(2);
+          
           // For VGM, we might not have net weight, so only set gross weight
           if (totalGrossWeight && parseFloat(totalGrossWeight) > 0) {
             setGrossWeight(totalGrossWeight);
           }
         }
       } catch (error) {
-        // Error parsing VGM form data - handled silently
+        console.error("Error parsing VGM form data:", error);
       }
     }
 
     // Add an empty row to the first section
     addNewRow(sections[0].id);
   }, []); // Empty dependency array ensures this only runs once on mount
-
+  
+  
   useEffect(() => {
     // Calculate totals
     let sqmTotal = 0;
     let fobTotal = 0;
 
-    sections.forEach((section) => {
-      section.items.forEach((item) => {
+    sections.forEach(section => {
+      section.items.forEach(item => {
         sqmTotal += item.totalSQM;
         fobTotal += item.totalFOB;
       });
     });
 
     setTotalSQM(sqmTotal);
-
+    
     // Add insurance and freight if CIF or CNF is selected
     let finalTotal = fobTotal;
     if (paymentTerms === "CIF") {
@@ -513,61 +495,61 @@ const InvoiceGenerator = () => {
     } else if (paymentTerms === "CNF") {
       finalTotal += freightAmount;
     }
-
+    
     setTotalFOBEuro(finalTotal);
     setAmountInWords(numberToWords(Math.round(finalTotal)));
   }, [sections, insuranceAmount, freightAmount, paymentTerms]);
 
   // Add effect to update marks and nos for all items when configuration changes
   useEffect(() => {
-    setSections(
-      sections.map((section) => ({
-        ...section,
-        items: section.items.map((item) => ({
-          ...item,
-          product: {
-            ...item.product,
-            marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`,
-          },
-        })),
+    setSections(sections.map(section => ({
+      ...section,
+      items: section.items.map(item => ({
+        ...item,
+        product: {
+          ...item.product,
+          marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`
+        }
       }))
-    );
+    })));
   }, [marksAndNumbersValues, sections]);
 
   const addNewRow = (sectionId: string) => {
+    console.log("addNewRow", sectionId);
+    
     // Find the section to get its title
-    const section = sections.find((s) => s.id === sectionId);
+    const section = sections.find(s => s.id === sectionId);
     if (!section) return;
-
+    
     // Determine HSN code based on section title and custom mappings
     let hsnCode;
-
+    
     if (productType === "Sanitary") {
       hsnCode = "69101000";
     } else {
       // First check predefined hsnCodes
       hsnCode = hsnCodes[section.title];
-
+      
       // If not found in predefined codes, check custom mappings
       if (!hsnCode) {
         hsnCode = customSectionHsnCodes[section.title];
       }
-
+      
       // If still not found and there are existing items, use HSN code from the last item
       if (!hsnCode && section.items.length > 0) {
         hsnCode = section.items[section.items.length - 1].product.hsnCode;
       }
-
+      
       // Default fallback
       if (!hsnCode) {
         hsnCode = "69072100";
       }
     }
-
+    
     // Use the default size and its corresponding SQM value
-    const defaultSize = sizes[0];
+    const defaultSize = sizes[0] ;
     const defaultSqmPerBox = sizeToSqmMap[defaultSize] || 1.44;
-
+    
     const newItem: InvoiceItem = {
       id: Date.now().toString(),
       product: {
@@ -577,17 +559,17 @@ const InvoiceGenerator = () => {
         size: defaultSize,
         price: 10,
         sqmPerBox: defaultSqmPerBox,
-        marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`,
+        marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`
       },
       quantity: 1000,
       unitType: "Box",
       totalSQM: 1000 * defaultSqmPerBox,
       totalFOB: 10000,
-      sectionId,
+      sectionId
     };
 
-    setSections((currentSections) =>
-      currentSections.map((section) =>
+    setSections(currentSections =>
+      currentSections.map(section =>
         section.id === sectionId
           ? { ...section, items: [...section.items, newItem] }
           : section
@@ -597,90 +579,84 @@ const InvoiceGenerator = () => {
 
   const addNewSection = () => {
     // Use the first option from sectionOptions as the default title
-    const defaultTitle = sectionOptions[0] || "Glazed porcelain Floor Tiles";
-
+    const defaultTitle = sectionOptions[0] || 'Glazed porcelain Floor Tiles';
+    
     const newSection: ProductSection = {
       id: Date.now().toString(),
       title: defaultTitle,
-      items: [],
+      items: []
     };
     setSections([...sections, newSection]);
-
+    
     // Add an empty row to the new section
     addNewRow(newSection.id);
   };
 
   const removeRow = (sectionId: string, itemId: string) => {
-    setSections((currentSections) => {
-      const updatedSections = currentSections.map((section) => {
+    setSections(currentSections => {
+      const updatedSections = currentSections.map(section => {
         if (section.id === sectionId) {
-          const updatedItems = section.items.filter(
-            (item) => item.id !== itemId
-          );
+          const updatedItems = section.items.filter(item => item.id !== itemId);
           return { ...section, items: updatedItems };
         }
         return section;
       });
 
       // Remove section if it's empty and not the last section
-      return updatedSections.filter(
-        (section) => section.items.length > 0 || updatedSections.length === 1
+      return updatedSections.filter(section =>
+        section.items.length > 0 || updatedSections.length === 1
       );
     });
   };
 
   const handleProductSelect = (productId: string, itemId: string) => {
-    const product = products.find((p) => p.id === productId);
+    const product = products.find(p => p.id === productId);
 
     if (!product) return;
 
-    setSections(
-      sections.map((section) => ({
-        ...section,
-        items: section.items.map((item) => {
-          if (item.id === itemId) {
-            const quantity = item.quantity || 0;
-            const totalSQM = quantity * product.sqmPerBox;
-            const totalFOB = quantity * product.price;
+    setSections(sections.map(section => ({
+      ...section,
+      items: section.items.map(item => {
+        if (item.id === itemId) {
+          const quantity = item.quantity || 0;
+          const totalSQM = quantity * product.sqmPerBox;
+          const totalFOB = quantity * product.price;
 
-            return {
-              ...item,
-              product,
-              totalSQM,
-              totalFOB,
-            };
-          }
-          return item;
-        }),
-      }))
-    );
+          return {
+            ...item,
+            product,
+            totalSQM,
+            totalFOB
+          };
+        }
+        return item;
+      })
+    })));
   };
 
   const handleQuantityChange = (quantity: number, itemId: string) => {
-    setSections(
-      sections.map((section) => ({
-        ...section,
-        items: section.items.map((item) => {
-          if (item.id === itemId) {
-            const parsedQuantity = quantity || 0;
-            const totalSQM = parsedQuantity * item.product.sqmPerBox;
-            const totalFOB = parsedQuantity * item.product.price;
+    setSections(sections.map(section => ({
+      ...section,
+      items: section.items.map(item => {
+        if (item.id === itemId) {
+          const parsedQuantity = quantity || 0;
+          const totalSQM = parsedQuantity * item.product.sqmPerBox;
+          const totalFOB = parsedQuantity * item.product.price;
 
-            return {
-              ...item,
-              quantity: parsedQuantity,
-              totalSQM,
-              totalFOB,
-            };
-          }
-          return item;
-        }),
-      }))
-    );
+          return {
+            ...item,
+            quantity: parsedQuantity,
+            totalSQM,
+            totalFOB
+          };
+        }
+        return item;
+      })
+    })));
   };
 
   const handleClientSelect = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
+    const client = clients.find(c => c.id === clientId);
 
     if (client) {
       setConsignee(client.consignee);
@@ -689,13 +665,13 @@ const InvoiceGenerator = () => {
   };
 
   const handleShippingTermSelect = (termId: string) => {
-    const term = shippingTerms.find((t) => t.id === termId);
+    const term = shippingTerms.find(t => t.id === termId);
 
     if (term) {
       setSelectedShippingTerm(termId);
       setPortOfLoading(term.port);
       setCurrencyRate(parseFloat(term.euroRate.toString())); // Convert to number before setting
-
+      
       // Update Terms of Delivery based on current payment terms
       if (paymentTerms === "CIF" || paymentTerms === "CNF") {
         if (paymentTerms === "CIF") {
@@ -709,7 +685,12 @@ const InvoiceGenerator = () => {
     }
   };
 
-  const saveInvoiceData = async () => {
+  const handleExporterSelect = (exporter: string) => {
+    setSelectedExporter(exporter);
+    // You can add logic here to fetch and set other exporter details if needed
+  };
+
+  const saveInvoiceData = () => {
     // Validate required fields
     if (!invoiceNo.trim()) {
       if (formSubmitted) {
@@ -768,31 +749,45 @@ const InvoiceGenerator = () => {
       client: {
         consignee,
         notifyParty,
-        buyerOrderNoFormat: buyersOrderNo,
+        buyerOrderNoFormat: buyersOrderNo
       },
-      items: sections.flatMap((section) => section.items),
-      shippingTerm: shippingTerms.find(
-        (s) => s.id === selectedShippingTerm
-      ) as ShippingTerm,
+      items: sections.flatMap(section => section.items),
+      shippingTerm: shippingTerms.find(s => s.id === selectedShippingTerm) as ShippingTerm,
       totalSQM,
       totalFOBEuro,
-      amountInWords,
+      amountInWords
     };
 
-    // Save invoice to backend
-    try {
-      const response = await api.post("/invoice", invoice);
-      toast.success("Invoice saved successfully");
-      if (response.status === 200) {
-        // Invoice saved successfully
-        return response.data;
-      }
-    } catch (error) {
-      // Error saving invoice - handled silently
-      toast.error("Error saving invoice");
-      throw error;
-    }
+    // Save invoice
+    const savedInvoice = saveInvoice(invoice);
+
+    toast.success("Invoice saved successfully");
+    return savedInvoice;
   };
+
+  
+ 
+  const handleSaveInvoice =async ()=>{
+    try {
+      // logic for saving invoice in backend api POST /api/invoice from formData.invoice with api
+      console.log(formData.invoice);
+      
+      const response = await api.post("/invoice",formData.invoice)
+      console.log("Invoice saved successfully:", response.data);
+      toast.success("Invoice saved successfully");
+     if(response.status === 200){
+        
+        // navigate to packaging list page
+        navigate('/packaging-list');
+      }
+
+     
+    } catch (error) {
+      console.error("Error saving invoice:", error);
+      toast.error("Error saving invoice");
+    }
+  }
+ 
 
   // Add validation state to track which fields are invalid
   const [validationErrors, setValidationErrors] = useState<{
@@ -848,30 +843,26 @@ const InvoiceGenerator = () => {
   useEffect(() => {
     // Create a new validation errors object
     const newValidationErrors = { ...validationErrors };
-
+    
     // Check each field and reset its validation error if it's now filled
-    if (formData.invoice?.invoice_number)
-      newValidationErrors.invoiceNumber = false;
+    if (formData.invoice?.invoice_number) newValidationErrors.invoiceNumber = false;
     if (formData.invoice?.invoice_date) newValidationErrors.invoiceDate = false;
-    if (formData.invoice?.exporter?.company_name)
-      newValidationErrors.exporter = false;
-    if (formData.invoice?.buyer?.consignee)
-      newValidationErrors.consignee = false;
+    if (formData.invoice?.exporter?.company_name) newValidationErrors.exporter = false;
+    if (formData.invoice?.buyer?.consignee) newValidationErrors.consignee = false;
     if (portOfLoading) newValidationErrors.portOfLoading = false;
     if (portOfDischarge) newValidationErrors.portOfDischarge = false;
     if (finalDestination) newValidationErrors.finalDestination = false;
     if (countryOfOrigin) newValidationErrors.countryOfOrigin = false;
-    if (countryOfFinalDestination)
-      newValidationErrors.countryOfFinalDestination = false;
+    if (countryOfFinalDestination) newValidationErrors.countryOfFinalDestination = false;
     if (termsOfDelivery) newValidationErrors.termsOfDelivery = false;
     if (paymentTerms) newValidationErrors.paymentTerms = false;
     if (selectedCurrency) newValidationErrors.selectedCurrency = false;
-
+    
     // Check if sections have at least one item
     const hasSections = sections.length > 0;
-    const hasItems = sections.some((section) => section.items.length > 0);
+    const hasItems = sections.some(section => section.items.length > 0);
     if (hasSections && hasItems) newValidationErrors.productItems = false;
-
+    
     // Update validation errors state if any changes were made
     setValidationErrors(newValidationErrors);
   }, [
@@ -887,17 +878,15 @@ const InvoiceGenerator = () => {
     termsOfDelivery,
     paymentTerms,
     selectedCurrency,
-    sections,
+    sections
   ]);
 
   // Update the handleNext function to pass data to PackagingList
-  const handleNext = (data) => {
+  const handleNext = () => {
     // Track if any validation errors occurred
     let hasErrors = false;
     const errorMessages: string[] = [];
     const newValidationErrors = { ...validationErrors };
-    console.log(data);
-    localStorage.setItem(`invoiceData`, JSON.stringify(data));
     
     // VALIDATION CHECKS COMMENTED OUT AS REQUESTED
     /*
@@ -1040,178 +1029,181 @@ const InvoiceGenerator = () => {
       return;
     }
     */
-
+    
     // Prepare supplier data for WITHOUT PAYMENT OF INTEGRATED TAX option
-    // const supplierData =
-    //   integratedTaxOption === "WITHOUT"
-    //     ? suppliers.map((s) => ({
-    //         id: s.id,
-    //         name: s.name,
-    //         gstin_number: s.gstin_number,
-    //         tax_invoice_number: s.tax_invoice_number || "",
-    //         date: s.date || "",
-    //         authorizedName: s.name || "ABC",
-    //         authorizedGstin: s.gstin_number || "XXXXXXXXXXXX",
-    //         contactNo: s.contactNo || "",
-    //       }))
-    //     : [];
-
-    // // Create a complete invoice data object
-    // const completeInvoiceData = {
-    //   invoice_number: invoiceNo,
-    //   invoice_date: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : "",
-    //   currency_type: selectedCurrency,
-    //   currency_rate: currencyRate,
-    //   integrated_tax: integratedTaxOption,
-    //   payment_term: paymentTerms,
-    //   product_type: productType,
-    //   exporter: {
-    //     company_name: selectedExporter,
-    //     company_address: companyAddress,
-    //     email: email,
-    //     tax_id: taxid,
-    //     ie_code: ieCode,
-    //     pan_number: panNo,
-    //     gstin_number: gstinNo,
-    //     state_code: stateCode,
-    //   },
-    //   buyer: {
-    //     consignee: consignee,
-    //     notify_party: notifyParty,
-    //     buyers_order_no: buyersOrderNo,
-    //     buyers_order_date: buyersOrderDate
-    //       ? format(buyersOrderDate, "yyyy-MM-dd")
-    //       : "",
-    //     po_no: poNo,
-    //   },
-    //   shipping: {
-    //     pre_carriage_by: preCarriageBy,
-    //     place_of_receipt: placeOfReceipt,
-    //     vessel_flight_no: vesselFlightNo,
-    //     port_of_loading: portOfLoading,
-    //     port_of_discharge: portOfDischarge,
-    //     final_destination: finalDestination,
-    //     country_of_origin: countryOfOrigin,
-    //     origin_details: originDetails,
-    //     country_of_final_destination: countryOfFinalDestination,
-    //     terms_of_delivery: termsOfDelivery,
-    //     payment_terms: paymentTerms,
-    //     shipping_method: shippingMethod,
-    //   },
-    //   products: sections,
-    //   package: {
-    //     no_of_packages: noOfPackages,
-    //     gross_weight: grossWeight,
-    //     net_weight: netWeight,
-    //   },
-    //   supplier: supplierData,
-    //   sections: sections,
-    //   markNumber: markNumber,
-    // };
-
-    // // Update the form context with the complete invoice data
-    // setInvoiceData(completeInvoiceData);
-
-    // // Save the current state before navigating
-    // const formData2 = {
-    //   sections: sections,
-    //   markNumber: markNumber, // Use the markNumber from state
-    //   readOnly: true,
-    //   // Add invoice header information
-    //   invoiceHeader: {
-    //     invoiceNo,
-    //     invoiceDate,
-    //     email,
-    //     taxid,
-    //     ieCode,
-    //     panNo,
-    //     gstinNo,
-    //     stateCode,
-    //     selectedExporter,
-    //     companyAddress,
-    //     invoice_number: invoiceNo,
-    //     invoice_date: invoiceDate,
-    //     exporter: completeInvoiceData.exporter,
-    //     buyer: completeInvoiceData.buyer,
-    //     shipping: completeInvoiceData.shipping,
-    //     // Include supplier information for WITHOUT PAYMENT OF INTEGRATED TAX
-    //     supplier: supplierData,
-    //     integratedTaxOption: integratedTaxOption,
-    //     authorizedName: authorizedName,
-    //     authorizedGstin: authorizedGstin,
-    //     gstInvoiceNoDate: gstInvoiceNoDate,
-    //   },
-    //   // Add buyer information
-    //   buyerInfo: {
-    //     consignee,
-    //     notifyParty,
-    //     buyersOrderNo,
-    //     buyersOrderDate,
-    //     poNo,
-    //   },
-    //   // Add shipping information
-    //   shippingInfo: {
-    //     preCarriageBy,
-    //     placeOfReceipt,
-    //     vesselFlightNo,
-    //     portOfLoading,
-    //     portOfDischarge,
-    //     finalDestination,
-    //     countryOfOrigin,
-    //     originDetails,
-    //     countryOfFinalDestination,
-    //     termsOfDelivery,
-    //     paymentTerms,
-    //     shippingMethod,
-    //     selectedCurrency,
-    //     currencyRate,
-    //   },
-    // };
-
-    // // Store the data in localStorage with a direct structure that's easier to access
-    // // This is a more reliable approach for passing data between components
-    // const directExporterData = {
-    //   company_name: selectedExporter,
-    //   company_address: companyAddress,
-    //   email: email,
-    //   tax_id: taxid,
-    //   ie_code: ieCode,
-    //   pan_number: panNo,
-    //   gstin_number: gstinNo,
-    //   state_code: stateCode,
-    // };
-
-    // // Store order details explicitly
-    // const orderData = {
-    //   order_no: buyersOrderNo,
-    //   order_date: buyersOrderDate ? format(buyersOrderDate, "yyyy-MM-dd") : "",
-    //   po_no: poNo,
-    //   consignee: consignee,
-    //   notify_party: notifyParty,
-    // };
-
-    // // Store the original form data
-    // localStorage.setItem("invoiceFormData", JSON.stringify(formData2));
-
-    // // Store simplified versions of the data for direct access
-    // localStorage.setItem(
-    //   "directExporterData",
-    //   JSON.stringify(directExporterData)
-    // );
-    // localStorage.setItem("orderData", JSON.stringify(orderData));
-
-    // // Navigate to the packaging list page
-    navigate("/packaging-list");
+    const supplierData = integratedTaxOption === 'WITHOUT' ? 
+      suppliers.map(s => ({
+        id: s.id,
+        name: s.name,
+        gstin_number: s.gstin_number,
+        tax_invoice_number: s.tax_invoice_number || '',
+        date: s.date || '',
+        authorizedName: s.name || 'ABC',
+        authorizedGstin: s.gstin_number || 'XXXXXXXXXXXX',
+        contactNo: s.contactNo || ''
+      })) : [];
+    
+    // Create a complete invoice data object
+    const completeInvoiceData = {
+      invoice_number: invoiceNo,
+      invoice_date: invoiceDate ? format(invoiceDate, 'yyyy-MM-dd') : '',
+      currency_type: selectedCurrency,
+      currency_rate: currencyRate,
+      integrated_tax: integratedTaxOption,
+      payment_term: paymentTerms,
+      product_type: productType,
+      exporter: {
+        company_name: selectedExporter,
+        company_address: companyAddress,
+        email: email,
+        tax_id: taxid,
+        ie_code: ieCode,
+        pan_number: panNo,
+        gstin_number: gstinNo,
+        state_code: stateCode
+      },
+      buyer: {
+        consignee: consignee,
+        notify_party: notifyParty,
+        buyers_order_no: buyersOrderNo,
+        buyers_order_date: buyersOrderDate ? format(buyersOrderDate, 'yyyy-MM-dd') : '',
+        po_no: poNo
+      },
+      shipping: {
+        pre_carriage_by: preCarriageBy,
+        place_of_receipt: placeOfReceipt,
+        vessel_flight_no: vesselFlightNo,
+        port_of_loading: portOfLoading,
+        port_of_discharge: portOfDischarge,
+        final_destination: finalDestination,
+        country_of_origin: countryOfOrigin,
+        origin_details: originDetails,
+        country_of_final_destination: countryOfFinalDestination,
+        terms_of_delivery: termsOfDelivery,
+        payment_terms: paymentTerms,
+        shipping_method: shippingMethod
+      },
+      products: sections,
+      package: {
+        no_of_packages: noOfPackages,
+        gross_weight: grossWeight,
+        net_weight: netWeight
+      },
+      supplier: supplierData,
+      sections: sections,
+      // Save markNumber as a complete object with containerType, leftValue, rightValue and formatted string
+      markNumber: {
+        containerType: marksAndNumbersValues.containerType,
+        leftValue: marksAndNumbersValues.leftValue,
+        rightValue: marksAndNumbersValues.rightValue,
+        formatted: marksAndNumbersValues.containerType === 'LCL' 
+          ? 'LCL' 
+          : `${marksAndNumbersValues.leftValue}X${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`
+      }
+    };
+    
+    // Update the form context with the complete invoice data
+    setInvoiceData(completeInvoiceData);
+    
+    // Save the current state before navigating
+    const formData2 = {
+      sections: sections,
+      markNumber: markNumber, // Use the markNumber from state
+      readOnly: true,
+      // Add invoice header information
+      invoiceHeader: {
+        invoiceNo,
+        invoiceDate,
+        email,
+        taxid,
+        ieCode,
+        panNo,
+        gstinNo,
+        stateCode,
+        selectedExporter,
+        companyAddress,
+        invoice_number: invoiceNo,
+        invoice_date: invoiceDate,
+        exporter: completeInvoiceData.exporter,
+        buyer: completeInvoiceData.buyer,
+        shipping: completeInvoiceData.shipping,
+        // Include supplier information for WITHOUT PAYMENT OF INTEGRATED TAX
+        supplier: supplierData,
+        integratedTaxOption: integratedTaxOption,
+        authorizedName: authorizedName,
+        authorizedGstin: authorizedGstin,
+        gstInvoiceNoDate: gstInvoiceNoDate,
+      },
+      // Add buyer information
+      buyerInfo: {
+        consignee,
+        notifyParty,
+        buyersOrderNo,
+        buyersOrderDate,
+        poNo
+      },
+      // Add shipping information
+      shippingInfo: {
+        preCarriageBy,
+        placeOfReceipt,
+        vesselFlightNo,
+        portOfLoading,
+        portOfDischarge,
+        finalDestination,
+        countryOfOrigin,
+        originDetails,
+        countryOfFinalDestination,
+        termsOfDelivery,
+        paymentTerms,
+        shippingMethod,
+        selectedCurrency,
+        currencyRate
+      }
+    };
+    
+    // Store the data in localStorage with a direct structure that's easier to access
+    // This is a more reliable approach for passing data between components
+    const directExporterData = {
+      company_name: selectedExporter,
+      company_address: companyAddress,
+      email: email,
+      tax_id: taxid,
+      ie_code: ieCode,
+      pan_number: panNo,
+      gstin_number: gstinNo,
+      state_code: stateCode
+    };
+    
+    // Store order details explicitly
+    const orderData = {
+      order_no: buyersOrderNo,
+      order_date: buyersOrderDate ? format(buyersOrderDate, 'yyyy-MM-dd') : '',
+      po_no: poNo,
+      consignee: consignee,
+      notify_party: notifyParty
+    };
+    
+    console.log('Storing order data:', orderData);
+    
+    // Store the original form data
+    localStorage.setItem('invoiceFormData', JSON.stringify(formData2));
+    
+    // Store simplified versions of the data for direct access
+    localStorage.setItem('directExporterData', JSON.stringify(directExporterData));
+    localStorage.setItem('orderData', JSON.stringify(orderData));
+    
+    // Navigate to the packaging list page
+    navigate('/packaging-list');
   };
 
   // Update the paymentTerms handler to show/hide insurance and freight fields
   const handlePaymentTermsChange = (value: string) => {
     setPaymentTerms(value);
-
+    
     // Show insurance and freight fields for CIF and CNF
     if (value === "CIF" || value === "CNF") {
       setShowInsuranceFreight(true);
-
+      
       // Update Terms of Delivery based on payment terms
       if (value === "CIF") {
         setTermsOfDelivery(`CIF AT ${portOfDischarge}`);
@@ -1223,73 +1215,85 @@ const InvoiceGenerator = () => {
       // For FOB, use port of loading
       setTermsOfDelivery(`FOB AT ${portOfLoading}`);
     }
-  };
+  }, [incoterms, portOfDischarge, portOfLoading]);
 
+  // Update markNumber when marksAndNumbersValues changes
   useEffect(() => {
-    const markNumber =
-      marksAndNumbersValues.containerType === "LCL"
-        ? `LCL`
-        : `${marksAndNumbersValues.leftValue}X${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`;
+    // Create both string and object formats of markNumber for compatibility
+    const markNumberString = marksAndNumbersValues && marksAndNumbersValues.containerType === 'LCL' 
+      ? 'LCL' 
+      : `${marksAndNumbersValues?.leftValue || ''}X${marksAndNumbersValues?.rightValue || ''} ${marksAndNumbersValues?.containerType || 'FCL'}`;
 
-    setMarkNumber(markNumber);
-  }, [sections]);
-
-  // Add handler for product type change
+    // Store both formats to ensure compatibility with all components
+    const markNumberObject = {
+      formatted: markNumberString,
+      containerType: marksAndNumbersValues.containerType,
+      leftValue: marksAndNumbersValues.leftValue,
+      rightValue: marksAndNumbersValues.rightValue
+    };
+    
+    // Update the markNumber state
+    setMarkNumber(markNumberObject);
+  }, [marksAndNumbersValues]);
+  
+  // Handle product type changes
   const handleProductTypeChange = (newType: string) => {
     setProductType(newType);
-
+    
     // If Sanitary is selected, update the section title to CERAMIC SANITARYWARE
     if (newType === "Sanitary") {
-      setSections((currentSections) =>
-        currentSections.map((section) => {
+      setSections(currentSections => 
+        currentSections.map(section => {
           // Update section title to CERAMIC SANITARYWARE
           return {
             ...section,
             title: "CERAMIC SANITARYWARE",
-            items: section.items.map((item) => ({
+            items: section.items.map(item => ({
               ...item,
               product: {
                 ...item.product,
-                hsnCode: "69101000",
-              },
-            })),
+                hsnCode: "69101000"
+              }
+            }))
           };
         })
       );
-    }
+    } 
     // If Faucets is selected, update the section title to BRASS FAUCETS
     else if (newType === "Faucets") {
-      setSections((currentSections) =>
-        currentSections.map((section) => {
+      setSections(currentSections => 
+        currentSections.map(section => {
           // Update section title to BRASS FAUCETS
           return {
             ...section,
             title: "BRASS FAUCETS",
-            items: section.items.map((item) => ({
-              ...item,
+            items: section.items.map(item => ({
               product: {
                 ...item.product,
-                hsnCode: "84818090",
-              },
-            })),
+                hsnCode: "84818090"
+              }
+            }))
           };
         })
       );
     }
   };
 
-  const COMMON_SUPPLIERS = [];
+  const COMMON_SUPPLIERS = [
+    
+  ];
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
+       
+
         <div className="space-y-6">
           <Card className="w-full">
             <CardHeader>
               <CardTitle className="text-center">CUSTOMS INVOICE</CardTitle>
               <p className="text-center text-sm">
-                SUPPLY MEANT FOR EXPORT UNDER BOND & LUT- LETTER OF UNDERTAKING{" "}
-                {integratedTaxOption} PAYMENT OF INTEGRATED TAX
+                SUPPLY MEANT FOR EXPORT UNDER BOND & LUT- LETTER OF UNDERTAKING {integratedTaxOption} PAYMENT OF INTEGRATED TAX
               </p>
             </CardHeader>
           </Card>
@@ -1301,36 +1305,31 @@ const InvoiceGenerator = () => {
             handleExporterSelect={(value) => {
               // Set the selected exporter name
               setSelectedExporter(value);
-
+              
               // Find the selected exporter object
-              const selectedExporterObj = exporters.find(
-                (e) => e.company_name === value
-              );
-
+              const selectedExporterObj = exporters.find(e => e.company_name === value);
+              
               if (selectedExporterObj) {
                 // Update all related fields
-                setCompanyAddress(selectedExporterObj.company_address || "");
-                setEmail(selectedExporterObj.email || "");
-                setTaxid(selectedExporterObj.tax_id || "");
-                setIeCode(selectedExporterObj.ie_code || "");
-                setPanNo(selectedExporterObj.pan_number || "");
-                setGstinNo(selectedExporterObj.gstin_number || "");
-                setStateCode(selectedExporterObj.state_code || "");
-
+                setCompanyAddress(selectedExporterObj.company_address || '');
+                setEmail(selectedExporterObj.email || '');
+                setTaxid(selectedExporterObj.tax_id || '');
+                setIeCode(selectedExporterObj.ie_code || '');
+                setPanNo(selectedExporterObj.pan_number || '');
+                setGstinNo(selectedExporterObj.gstin_number || '');
+                setStateCode(selectedExporterObj.state_code || '');
+                
                 // Save this data to localStorage for direct access by PackagingList
-                localStorage.setItem(
-                  "selectedExporterData",
-                  JSON.stringify({
-                    company_name: value,
-                    company_address: selectedExporterObj.company_address || "",
-                    email: selectedExporterObj.email || "",
-                    tax_id: selectedExporterObj.tax_id || "",
-                    ie_code: selectedExporterObj.ie_code || "",
-                    pan_number: selectedExporterObj.pan_number || "",
-                    gstin_number: selectedExporterObj.gstin_number || "",
-                    state_code: selectedExporterObj.state_code || "",
-                  })
-                );
+                localStorage.setItem('selectedExporterData', JSON.stringify({
+                  company_name: value,
+                  company_address: selectedExporterObj.company_address || '',
+                  email: selectedExporterObj.email || '',
+                  tax_id: selectedExporterObj.tax_id || '',
+                  ie_code: selectedExporterObj.ie_code || '',
+                  pan_number: selectedExporterObj.pan_number || '',
+                  gstin_number: selectedExporterObj.gstin_number || '',
+                  state_code: selectedExporterObj.state_code || ''
+                }));
               }
             }}
             companyAddress={companyAddress}
@@ -1354,7 +1353,6 @@ const InvoiceGenerator = () => {
             hasInvoiceNumberError={validationErrors.invoiceNumber}
             hasInvoiceDateError={validationErrors.invoiceDate}
             hasExporterError={validationErrors.exporter}
-            form={form}
           />
 
           {/* Buyer Information */}
@@ -1370,7 +1368,6 @@ const InvoiceGenerator = () => {
             notifyParty={notifyParty}
             setNotifyParty={setNotifyParty}
             hasConsigneeError={validationErrors.consignee}
-            form={form}
           />
 
           {/* Shipping Information */}
@@ -1418,13 +1415,10 @@ const InvoiceGenerator = () => {
             hasPortOfDischargeError={validationErrors.portOfDischarge}
             hasFinalDestinationError={validationErrors.finalDestination}
             hasCountryOfOriginError={validationErrors.countryOfOrigin}
-            hasCountryOfFinalDestinationError={
-              validationErrors.countryOfFinalDestination
-            }
+            hasCountryOfFinalDestinationError={validationErrors.countryOfFinalDestination}
             hasTermsOfDeliveryError={validationErrors.termsOfDelivery}
             hasPaymentTermsError={validationErrors.paymentTerms}
             hasCurrencyError={validationErrors.selectedCurrency}
-            form={form}
           />
 
           {/* Product Information */}
@@ -1457,7 +1451,6 @@ const InvoiceGenerator = () => {
             setOpenSectionDropdowns={setOpenSectionDropdowns}
             productType={productType}
             sizeToSqmMap={sizeToSqmMap}
-            form={form}
           />
 
           {/* Package Information */}
@@ -1479,7 +1472,6 @@ const InvoiceGenerator = () => {
             totalFOBEuro={totalFOBEuro}
             amountInWords={amountInWords}
             currencyRate={currencyRate}
-            form={form}
           />
           {/* Supplier Information */}
           <SupplierDetails
@@ -1491,23 +1483,22 @@ const InvoiceGenerator = () => {
             setAuthorizedName={setAuthorizedName}
             setAuthorizedGstin={setAuthorizedGstin}
             setGstInvoiceNoDate={setGstInvoiceNoDate}
-            form={form}
           />
 
           {/* Footer Buttons */}
           <Card className="mt-6">
             <CardFooter className="flex justify-end gap-4">
-              <Button
-                onClick={() => {
-                  // setFormSubmitted(true);
-                  // handleSaveInvoice();
-                  // localStorage.setItem("taxDialogBox", "false");
-                }}
-              >
+              <Button onClick={() => {
+                // setFormSubmitted(true);
+                // handleSaveInvoice();
+                // localStorage.setItem("taxDialogBox", "false");
+                console.log(formData);
+                
+              }}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Invoice
               </Button>
-              <Button onClick={form.handleSubmit(handleNext)}>
+              <Button onClick={handleNext}>
                 <ArrowRight className="mr-2 h-4 w-4" />
                 Next
               </Button>
@@ -1526,7 +1517,7 @@ const InvoiceGenerator = () => {
               <InvoicePDFPreview
                 // Invoice Header
                 invoiceNo={invoiceNo}
-                date={format(invoiceDate, "yyyy-MM-dd")}
+                date={format(invoiceDate, 'yyyy-MM-dd')}
                 exporterRef={exporterRef}
                 ieCode={ieCode}
                 companyName={selectedExporter}
@@ -1537,10 +1528,11 @@ const InvoiceGenerator = () => {
                 panNo={panNo}
                 gstinNo={gstinNo}
                 buyersOrderNo={buyersOrderNo}
-                buyersOrderDate={format(buyersOrderDate, "yyyy-MM-dd")}
+                buyersOrderDate={format(buyersOrderDate, 'yyyy-MM-dd')}
                 poNo={poNo}
                 consignee={consignee}
                 notifyParty={notifyParty}
+
                 // Shipping Information
                 termsOfDelivery={termsOfDelivery}
                 paymentTerms={paymentTerms}
@@ -1556,23 +1548,23 @@ const InvoiceGenerator = () => {
                 countryOfFinalDestination={countryOfFinalDestination}
                 euroRate={currencyRate.toString()}
                 selectedCurrency={selectedCurrency}
+
                 // Product Information
-                items={sections.flatMap((section) =>
-                  section.items.map((item, index) => ({
-                    id: parseInt(item.id),
-                    srNo: index + 1,
-                    marks: item.product.marksAndNos,
-                    description: item.product.description,
-                    quantity: item.quantity,
-                    unitType: "BOX",
-                    sqmPerBox: item.product.sqmPerBox,
-                    size: item.product.size,
-                    hsnCode: item.product.hsnCode,
-                    totalSqm: item.totalSQM,
-                    price: item.product.price,
-                    totalAmount: item.totalFOB,
-                  }))
-                )}
+                items={sections.flatMap(section => section.items.map((item, index) => ({
+                  id: parseInt(item.id),
+                  srNo: index + 1,
+                  marks: item.product.marksAndNos,
+                  description: item.product.description,
+                  quantity: item.quantity,
+                  unitType: "BOX",
+                  sqmPerBox: item.product.sqmPerBox,
+                  size: item.product.size,
+                  hsnCode: item.product.hsnCode,
+                  totalSqm: item.totalSQM,
+                  price: item.product.price,
+                  totalAmount: item.totalFOB
+                })))}
+
                 // Package and Declaration
                 noOfPackages={noOfPackages}
                 grossWeight={grossWeight}
@@ -1586,20 +1578,11 @@ const InvoiceGenerator = () => {
                 totalFobEuro={totalFOBEuro.toFixed(2)}
                 amountInWords={amountInWords}
                 integratedTaxOption={integratedTaxOption}
+
                 // Supplier Details
-                supplierDetails1={`SUPPLIER DETAILS :- 1\nNAME: ${
-                  suppliers[0]?.name || ""
-                }\nGSTIN: ${suppliers[0]?.gstin || ""}`}
-                supplierDetails2={
-                  suppliers[1]
-                    ? `SUPPLIER DETAILS :- 2\nNAME: ${suppliers[1].name}\nGSTIN: ${suppliers[1].gstin}`
-                    : ""
-                }
-                supplierDetails3={
-                  suppliers[2]
-                    ? `SUPPLIER DETAILS :- 3\nNAME: ${suppliers[2].name}\nGSTIN: ${suppliers[2].gstin}`
-                    : ""
-                }
+                supplierDetails1={`SUPPLIER DETAILS :- 1\nNAME: ${suppliers[0]?.name || ''}\nGSTIN: ${suppliers[0]?.gstin || ''}`}
+                supplierDetails2={suppliers[1] ? `SUPPLIER DETAILS :- 2\nNAME: ${suppliers[1].name}\nGSTIN: ${suppliers[1].gstin}` : ''}
+                supplierDetails3={suppliers[2] ? `SUPPLIER DETAILS :- 3\nNAME: ${suppliers[2].name}\nGSTIN: ${suppliers[2].gstin}` : ''}
                 gstInvoiceNoDate={gstInvoiceNoDate}
                 companyNameFooter={companyProfile?.name}
                 declarationText={declarationText}
@@ -1611,11 +1594,10 @@ const InvoiceGenerator = () => {
               />
             </div>
             <div className="flex justify-end mt-4">
-              <Button
-                onClick={() => {
-                  const printWindow = window.open("", "_blank");
-                  if (printWindow) {
-                    printWindow.document.write(`
+              <Button onClick={() => {
+                const printWindow = window.open('', '_blank');
+                if (printWindow) {
+                  printWindow.document.write(`
                     <html>
                       <head>
                         <title>Invoice ${invoiceNo}</title>
@@ -1633,10 +1615,7 @@ const InvoiceGenerator = () => {
                       </head>
                       <body>
                         <div class="container">
-                          ${
-                            document.querySelector(".dialog-content")
-                              ?.innerHTML || ""
-                          }
+                          ${document.querySelector('.dialog-content')?.innerHTML || ''}
                         </div>
                         <script>
                           window.onload = function() { window.print(); }
@@ -1644,49 +1623,37 @@ const InvoiceGenerator = () => {
                       </body>
                     </html>
                   `);
-                    printWindow.document.close();
-                  }
-                }}
-              >
-                Print PDF
-              </Button>
+                  printWindow.document.close();
+                }
+              }}>Print PDF</Button>
             </div>
           </DialogContent>
         </Dialog>
 
         {/* Tax Option Dialog */}
-        <Dialog
-          open={taxOptionDialogOpen}
+        <Dialog 
+          open={taxOptionDialogOpen} 
           onOpenChange={(open) => {
             // Only allow closing if all fields are filled
-            if (
-              !open &&
-              (!integratedTaxOption || !paymentTerms || !productType)
-            ) {
-              toast.error(
-                "Please fill all required fields in the Tax Option form"
-              );
+            if (!open && (!integratedTaxOption || !paymentTerms || !productType)) {
+              toast.error("Please fill all required fields in the Tax Option form");
               return; // Prevent closing
             }
             setTaxOptionDialogOpen(open);
           }}
           modal={true}
         >
-          <DialogContent
+          <DialogContent 
             className="max-w-5xl max-h-[80vh] overflow-y-auto"
             onInteractOutside={(e) => {
               // Prevent any interaction outside the dialog
               e.preventDefault();
-              toast.error(
-                "Please fill and submit the Tax Option form to continue"
-              );
+              toast.error("Please fill and submit the Tax Option form to continue");
             }}
             onEscapeKeyDown={(e) => {
               // Prevent closing with Escape key
               e.preventDefault();
-              toast.error(
-                "Please fill and submit the Tax Option form to continue"
-              );
+              toast.error("Please fill and submit the Tax Option form to continue");
             }}
             // Hide the close button
             hideCloseButton={true}
@@ -1698,121 +1665,79 @@ const InvoiceGenerator = () => {
               <div className="space-y-6">
                 <div>
                   <h3 className="font-medium text-lg mb-3">Tax Option</h3>
-
+                  
                   <div className="space-y-5">
                     <div className="space-y-2">
-                      <Label htmlFor="integratedTaxOption">
-                        Integrated Tax Option
-                      </Label>
-                      <Controller
-                        control={form.control}
-                        name="integrated_tax_option" // change this path based on your form structure
-                        defaultValue={integratedTaxOption}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value}
-                            onValueChange={(value: "WITH" | "WITHOUT") => {
-                              field.onChange(value);
-                              setIntegratedTaxOption(value); // still updates local state if needed
-                            }}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select integrated tax option" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="WITHOUT">
-                                WITHOUT PAYMENT OF INTEGRATED TAX
-                              </SelectItem>
-                              <SelectItem value="WITH">
-                                WITH PAYMENT OF INTEGRATED TAX
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
+                      <Label htmlFor="integratedTaxOption">Integrated Tax Option</Label>
+                      <Select
+                        value={integratedTaxOption}
+                        onValueChange={(value: "WITH" | "WITHOUT") => setIntegratedTaxOption(value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select integrated tax option" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="WITHOUT">WITHOUT PAYMENT OF INTEGRATED TAX</SelectItem>
+                          <SelectItem value="WITH">WITH PAYMENT OF INTEGRATED TAX</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
-
+                    
                     <div className="space-y-2">
                       <Label htmlFor="paymentTerms">Payment Terms</Label>
-                      <Controller
-                        control={form.control}
-                        name="payment_terms" // Update the name based on your form structure
-                        defaultValue={paymentTerms}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value}
-                            onValueChange={(value) => {
-                              field.onChange(value);
-                              handlePaymentTermsChange(value); // still call your handler if needed
-                            }}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select payment terms" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {paymentTermsOptions.map((option) => (
-                                <SelectItem key={option} value={option}>
-                                  {option}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
+                      <Select
+                        value={paymentTerms}
+                        onValueChange={handlePaymentTermsChange}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select payment terms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {paymentTermsOptions.map((option) => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-
+                    
                     <div className="space-y-2">
                       <Label htmlFor="productType">Product Type</Label>
-                      <Controller
-                        control={form.control}
-                        name="product_type" // Change to match your schema
-                        defaultValue={productType}
-                        render={({ field }) => (
-                          <Select
-                            value={field.value}
-                            onValueChange={(value: string) => {
-                              field.onChange(value);
-                              handleProductTypeChange(value); // Optional: for local side effects
-                            }}
-                          >
-                            <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select product type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Sanitary">Sanitary</SelectItem>
-                              <SelectItem value="Faucets">Faucets</SelectItem>
-                              <SelectItem value="Tiles">Tiles</SelectItem>
-                              <SelectItem value="Mix">Mix</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        )}
-                      />
+                      <Select
+                        value={productType}
+                        onValueChange={(value: string) => handleProductTypeChange(value)}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Select product type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Sanitary">Sanitary</SelectItem>
+                          <SelectItem value="Faucets">Faucets</SelectItem>
+                          <SelectItem value="Tiles">Tiles</SelectItem>
+                          <SelectItem value="Mix">Mix</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             <div className="flex justify-end mt-4">
-              <Button
-                onClick={() => {
-                  // Validate that all required fields are filled
-                  if (!integratedTaxOption || !paymentTerms || !productType) {
-                    toast.error(
-                      "Please fill all required fields in the Tax Option form"
-                    );
-                    return;
-                  }
-
-                  localStorage.setItem("taxDialogBox", "false");
-                  setTaxOptionDialogOpen(false);
-                  setInvoiceData({
-                    ...formData.invoice,
-                    integrated_tax: integratedTaxOption,
-                    payment_term: paymentTerms,
-                    product_type: productType,
-                  });
-                }}
-              >
+              <Button onClick={() => {
+                // Validate that all required fields are filled
+                if (!integratedTaxOption || !paymentTerms || !productType) {
+                  toast.error("Please fill all required fields in the Tax Option form");
+                  return;
+                }
+                
+                localStorage.setItem("taxDialogBox", "false");
+                setTaxOptionDialogOpen(false);
+                setInvoiceData({
+                  ...formData.invoice,
+                  integrated_tax: integratedTaxOption,
+                  payment_term: paymentTerms,
+                  product_type: productType,
+                })
+              }}>
                 Submit
               </Button>
             </div>

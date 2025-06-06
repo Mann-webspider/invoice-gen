@@ -16,15 +16,21 @@ import ProductInformationCard from "./ProductInformationCard";
 import MarksAndNumbers from "../MarksAndNumbers";
 import { useForm } from "@/context/FormContext";
 import { useEffect } from "react";
-
+import api from "@/lib/axios";
+import { set } from "date-fns";
+import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
 const ProductInformation = ({
   addNewSection,
   
-  sections = [],
+  sections ,
   setSections,
   hsnCodes,
   sectionOptions,
+  setSectionOptions,
+  setHsnCodes,
   sizes,
+  setSizes,
+  setSizeToSqmMap,
   units,
   removeRow,
   addNewRow,
@@ -42,37 +48,145 @@ const ProductInformation = ({
   openSectionDropdowns,
   setOpenSectionDropdowns,
   productType,
-  sizeToSqmMap
+  sizeToSqmMap,
+  form
 }) => {
-  const {formData, setInvoiceData} = useForm();
-  useEffect(() => {
-    const formattedProducts = sections.map(section => ({
-      category_id: section.id || "",
-      category_name: section.title || "",
-      hsn_code: section.items[0]?.product.hsnCode || "",
-      product_name: section.items[0]?.product.description || "",
-      size: section.items[0]?.product.size || "",
-      quantity: section.items.reduce((sum, item) => sum + (item.quantity || 0), 0),
-      sqm: section.items[0]?.product.sqmPerBox || 0,
-      total_sqm: section.items.reduce((sum, item) => sum + (item.totalSQM || 0), 0),
-      price: section.items[0]?.product.price || 0,
-      net_weight: section.items.reduce((sum, item) => sum + (item.product.netWeight || 0), 0),
-      gross_weight: section.items.reduce((sum, item) => sum + (item.product.grossWeight || 0), 0)
-    }));
+ const { formData, setInvoiceData } = useForm();
+const {
+  register,
+  handleSubmit,
+  control,
+  setValue,
+  watch,
+  formState: { errors },
+} = form;
 
-    setInvoiceData({
-      ...formData.invoice,
-      products: {
-        marks: marksAndNumbersValues.leftValue +" X "+ marksAndNumbersValues.rightValue,
-        nos: marksAndNumbersValues.containerType,
-        frieght: freightAmount,
-        insurance: insuranceAmount,
-        total_price: totalFOBEuro,
-        product_list: formattedProducts,
-        containers: []
+useEffect(() => {
+  const subscription = watch((allValues) => {
+    const newProductList = sections.flatMap((section) =>
+      section.items.map((item) => ({
+        category_id: section.id || "",
+        category_name: section.title || "",
+        hsn_code: item.product.hsnCode,
+        product_name: item.product.description || "",
+        size: item.product.size || "",
+        quantity: item.quantity || 0,
+        sqm: item.product.sqmPerBox || 0,
+        total_sqm: item.totalSQM || 0,
+        price: item.product.price || 0,
+        unit: item.unitType,
+        total: item.totalFOB,
+        net_weight: item.product.netWeight || 0,
+        gross_weight: item.product.grossWeight || 0,
+      }))
+    );
+    
+    
+
+    // Only update if the product list has changed
+    const current = allValues?.products?.product_list || [];
+    const isSame = JSON.stringify(current) === JSON.stringify(newProductList);
+    if (!isSame) {
+      setValue("products.product_list", newProductList);
+      setValue("products.total_price",totalFOBEuro);
+    }
+  });
+
+  return () => subscription.unsubscribe();
+}, [sections,  setValue]);
+
+
+
+  useEffect(() => {
+    async function fetchCategory() {
+      try {
+        const response = await api.get("/product-category");
+        
+        return response.data.data;
+      } catch (error) {
+        // Error fetching data - handled silently
+        return [];
       }
-    });
-  }, [formData, sections, marksAndNumbersValues, freightAmount, insuranceAmount, totalFOBEuro]);
+    }
+    async function fetchSize() {
+      try {
+        const response = await api.get("/product-size");
+        
+        return response.data;
+      } catch (error) {
+        // Error fetching data - handled silently
+        return [];
+      }
+    }
+    async function fetchUnit() {
+      try {
+        const response = await api.get("/dropdown-options/unit");
+        return response.data.data;
+      } catch (error) {
+        // Error fetching data - handled silently
+        return [];
+      }
+    }
+    const fetchData = async () => {
+      const category = await fetchCategory();
+      const size = await fetchSize();
+      // Fetched data
+      
+      // category
+      setSectionOptions(category.map(item => item.description));
+      setHsnCodes(category.reduce((acc, item) => {
+        acc[item.description] = item.hsnCode;
+        return acc;
+      }, {}));
+
+      // size
+      // Fetched size
+      setSizeToSqmMap(size.reduce((acc, item) => {
+        acc[item.size] = item.sqm;
+        return acc;
+      }, {}));
+      setSizes(size.map(item => item.size));
+      
+    };
+    fetchData();
+  }, []);
+    
+  // useEffect(() => {
+  //   const formattedProducts = sections.map(section => (
+  //     section.items.map(item => ({
+  //       category_id: section.id || "",
+  //       category_name: section.title || "",
+  //       hsnCode: item.product.hsnCode ,
+  //       product_name: item.product.description || "",
+  //       size: item.product.size || "",
+  //       quantity: item.quantity || 0,
+  //       sqm: item.product.sqmPerBox || 0,
+  //       total_sqm: item.totalSQM || 0,
+  //       price: item.product.price || 0,
+  //       unit: item.unitType,
+  //       total: item.totalFOB ,
+  //       net_weight: item.product.netWeight || 0,
+  //       gross_weight: item.product.grossWeight || 0
+  //     }))
+  //   )).flat();
+    
+    
+      
+      
+
+  //   setInvoiceData({
+  //     ...formData.invoice,
+  //     products: {
+  //       marks: marksAndNumbersValues.leftValue +" X "+ marksAndNumbersValues.rightValue,
+  //       nos: marksAndNumbersValues.containerType,
+  //       frieght: freightAmount,
+  //       insurance: insuranceAmount,
+  //       total_price: totalFOBEuro,
+  //       product_list: formattedProducts,
+  //       containers: []
+  //     }
+  //   });
+  // }, [formData, sections, marksAndNumbersValues, freightAmount, insuranceAmount, totalFOBEuro]);
   return (
     <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -89,6 +203,7 @@ const ProductInformation = ({
                   initialContainerType={marksAndNumbersValues.containerType}
                   initialLeftValue={marksAndNumbersValues.leftValue}
                   initialRightValue={marksAndNumbersValues.rightValue}
+                  form={form}
                   onChange={(value: string | any) => {
                     // Handle both string and object formats
                     if (typeof value === 'string') {
@@ -118,7 +233,7 @@ const ProductInformation = ({
                       });
                     }
                     
-                    // console.log("MarksAndNumbers updated:", 
+                    // MarksAndNumbers updated: 
                     //   typeof value === 'string' ? value : JSON.stringify(value));
                   }}
                 />
@@ -133,41 +248,50 @@ const ProductInformation = ({
                       <Input
                         type="text"
                         value={section.title}
+                        
                         onChange={(e) => {
                           const newTitle = e.target.value;
                           // Check if the title exists in predefined options or in custom mappings
                           const hsnCode = hsnCodes[newTitle] || customSectionHsnCodes[newTitle] || "";
                           
-                          setSections(currentSections =>
-                            currentSections.map(s => {
-                              if (s.id === section.id) {
-                                // If HSN code is empty and there are items, use the first item's HSN code
-                                const firstItemHsnCode = s.items[0]?.product.hsnCode;
-                                const effectiveHsnCode = hsnCode || firstItemHsnCode || "";
-                                
-                                // If using a custom title not in our predefined map, store its HSN code
-                                if (!hsnCodes[newTitle] && effectiveHsnCode) {
-                                  setCustomSectionHsnCodes(prev => ({
-                                    ...prev,
-                                    [newTitle]: effectiveHsnCode
-                                  }));
+                          // Create a new copy of the sections array
+                          const newSections = [...sections];
+                          
+                          // Find the specific section to update by ID (not by title)
+                          const sectionIndex = newSections.findIndex(s => s.id === section.id);
+                          
+                          if (sectionIndex !== -1) {
+                            // Get the current section
+                            const currentSection = newSections[sectionIndex];
+                            
+                            // If HSN code is empty and there are items, use the first item's HSN code
+                            const firstItemHsnCode = currentSection.items[0]?.product.hsnCode;
+                            const effectiveHsnCode = hsnCode || firstItemHsnCode || "";
+                            
+                            // If using a custom title not in our predefined map, store its HSN code
+                            if (!hsnCodes[newTitle] && effectiveHsnCode) {
+                              setCustomSectionHsnCodes(prev => ({
+                                ...prev,
+                                [newTitle]: effectiveHsnCode
+                              }));
+                            }
+                            
+                            // Update only this specific section
+                            newSections[sectionIndex] = {
+                              ...currentSection,
+                              title: newTitle,
+                              items: currentSection.items.map(item => ({
+                                ...item,
+                                product: {
+                                  ...item.product,
+                                  hsnCode: effectiveHsnCode || item.product.hsnCode
                                 }
-                                
-                                return {
-                                  ...s,
-                                  title: newTitle,
-                                  items: s.items.map(item => ({
-                                    ...item,
-                                    product: {
-                                      ...item.product,
-                                      hsnCode: effectiveHsnCode || item.product.hsnCode
-                                    }
-                                  }))
-                                };
-                              }
-                              return s;
-                            })
-                          );
+                              }))
+                            };
+                            
+                            // Update the state with the new sections array
+                            setSections(newSections);
+                          }
                         }}
                         onFocus={() => {
                           // Close all other dropdowns first
@@ -198,25 +322,35 @@ const ProductInformation = ({
                               key={index} 
                               className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                               onMouseDown={() => {
-                                setSections(currentSections =>
-                                  currentSections.map(s => {
-                                    if (s.id === section.id) {
-                                      const hsnCode = hsnCodes[option] || "69072100";
-                                      return {
-                                        ...s,
-                                        title: option,
-                                        items: s.items.map(item => ({
-                                          ...item,
-                                          product: {
-                                            ...item.product,
-                                            hsnCode: hsnCode
-                                          }
-                                        }))
-                                      };
-                                    }
-                                    return s;
-                                  })
-                                );
+                                // Create a new copy of the sections array
+                                const newSections = [...sections];
+                                
+                                // Find the specific section to update by ID
+                                const sectionIndex = newSections.findIndex(s => s.id === section.id);
+                                
+                                if (sectionIndex !== -1) {
+                                  // Get the current section
+                                  const currentSection = newSections[sectionIndex];
+                                  
+                                  // Get the HSN code for the selected option
+                                  const hsnCode = hsnCodes[option];
+                                  
+                                  // Update only this specific section
+                                  newSections[sectionIndex] = {
+                                    ...currentSection,
+                                    title: option,
+                                    items: currentSection.items.map(item => ({
+                                      ...item,
+                                      product: {
+                                        ...item.product,
+                                        hsnCode: hsnCode
+                                      }
+                                    }))
+                                  };
+                                  
+                                  // Update the state with the new sections array
+                                  setSections(newSections);
+                                }
                               }}
                             >
                               {option}
@@ -259,7 +393,7 @@ const ProductInformation = ({
                         </TableHead>
                         <TableHead className="border font-bold">Total SQM</TableHead>
                         <TableHead className="border font-bold">Price</TableHead>
-                        <TableHead className="border font-bold">Total FOB</TableHead>
+                        <TableHead className="border font-bold">Total {paymentTerms}</TableHead>
                         <TableHead className="w-[70px] border font-bold">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -412,23 +546,23 @@ const ProductInformation = ({
                                 value={item.unitType || "BOX"}
                                 onValueChange={(value) => {
                                   // Update the sections state with the new unit type
-                                  setSections(
-                                    sections.map((s) =>
-                                      s.id === section.id
-                                        ? {
-                                            ...s,
-                                            items: s.items.map((i) =>
-                                              i.id === item.id
-                                                ? {
-                                                    ...i,
-                                                    unitType: value,
-                                                  }
-                                                : i
-                                            ),
-                                          }
-                                        : s
-                                    )
-                                  );
+                                  // Create a new copy of the sections array to avoid reference issues
+                                  const newSections = [...sections];
+                                  
+                                  // Find the specific section and item to update
+                                  const sectionIndex = newSections.findIndex(s => s.id === section.id);
+                                  if (sectionIndex !== -1) {
+                                    const itemIndex = newSections[sectionIndex].items.findIndex(i => i.id === item.id);
+                                    if (itemIndex !== -1) {
+                                      // Only update this specific item's unitType
+                                      newSections[sectionIndex].items[itemIndex] = {
+                                        ...newSections[sectionIndex].items[itemIndex],
+                                        unitType: value
+                                      };
+                                      // Set the updated sections array
+                                      setSections(newSections);
+                                    }
+                                  }
                                 }}
                               >
                                 <SelectTrigger className="h-8">
@@ -479,6 +613,7 @@ const ProductInformation = ({
                             <TableCell>
                               <Input
                                 type="number"
+                                
                                 value={item.totalSQM?.toFixed(2) || ""}
                                 readOnly
                                 className="h-8 text-right bg-gray-50"
@@ -583,7 +718,9 @@ const ProductInformation = ({
                           <Input
                             type="number"
                             value={insuranceAmount}
-                            onChange={(e) => setInsuranceAmount(Number(e.target.value) || 0)}
+                            {...register("products.insurance", { required: true })}
+                            placeholder="Enter insurance amount"
+                            onChange={(e) => setInsuranceAmount(parseInt(e.target.value))}
                             className="text-right border-0 p-0 h-6"
                           />
                         )}
@@ -597,7 +734,9 @@ const ProductInformation = ({
                         <Input
                           type="number"
                           value={freightAmount}
-                          onChange={(e) => setFreightAmount(Number(e.target.value) || 0)}
+                          {...register("products.freight", { required: true })}
+                          placeholder="Enter freight amount"
+                          onChange={(e) => setFreightAmount(parseInt(e.target.value) )}
                           className="text-right border-0 p-0 h-6"
                         />
                       </div>

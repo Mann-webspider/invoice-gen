@@ -1,0 +1,14 @@
+FROM node:18-alpine
+
+# Required for native packages like rollup
+RUN apk add python3 make g++ 
+
+WORKDIR /app
+COPY package.json  ./
+RUN yarn install 
+
+COPY . .
+RUN yarn add -D vite
+EXPOSE 8080
+
+CMD ["yarn", "run","dev"]

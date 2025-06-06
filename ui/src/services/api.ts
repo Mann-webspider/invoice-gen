@@ -32,11 +32,48 @@ export const shippingApi = {
 
 // Invoice API
 export const invoiceApi = {
-  generate: (data: any) => api.post('/invoice/generate', data),
-  getTemplates: () => api.get('/invoice/templates'),
+  generate: (data: any) => api.post('/invoice', data),
+  getSpecific: (id:string) => api.get(`/invoice/${id}`),
   saveTemplate: (data: any) => api.post('/invoice/templates', data),
   getHistory: () => api.get('/invoice/history'),
 };
+
+export const filesApi = {
+  uploadAndDownloadPdf : async (file: File) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const response = await api.post('/upload/excel', formData, {
+      responseType: 'blob', // 👈 important for binary download
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+
+    const blob = new Blob([response.data], { type: 'application/pdf' });
+    const url = window.URL.createObjectURL(blob);
+
+    const a = document.createElement('a');
+    a.href = url;
+
+    // Optional: Read filename from content-disposition header
+    const disposition = response.headers['content-disposition'];
+    const match = disposition && disposition.match(/filename="?(.+)"?/);
+    const filename = match?.[1] || 'converted_invoice.pdf';
+
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+
+    console.log('✅ PDF downloaded successfully');
+  } catch (error) {
+    console.error('❌ Error downloading PDF:', error);
+  }
+}
+}
 
 // Admin API
 export const adminApi = {
