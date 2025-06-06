@@ -38,7 +38,7 @@ const PackagingListWrapper = () => {
 
   useEffect(() => {
     // Retrieve data from localStorage
-    const storedData = localStorage.getItem('invoiceData');
+    const storedData = localStorage.getItem('invoiceFormData');
     // Retrieved localStorage data
     
     if (storedData) {
@@ -132,7 +132,7 @@ const PackagingListWrapper = () => {
       importedSections={formData.sections}
       markNumber={formData.markNumber || ''}
       readOnly={formData.readOnly || false}
-      invoiceHeader={formData || {}}
+      invoiceHeader={formData.invoiceHeader || {}}
       buyerInfo={formData.buyerInfo || {}}
       shippingInfo={formData.shippingInfo || {}}
     />

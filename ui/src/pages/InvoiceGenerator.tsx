@@ -1041,164 +1041,164 @@ const InvoiceGenerator = () => {
     }
     */
 
-    // Prepare supplier data for WITHOUT PAYMENT OF INTEGRATED TAX option
-    // const supplierData =
-    //   integratedTaxOption === "WITHOUT"
-    //     ? suppliers.map((s) => ({
-    //         id: s.id,
-    //         name: s.name,
-    //         gstin_number: s.gstin_number,
-    //         tax_invoice_number: s.tax_invoice_number || "",
-    //         date: s.date || "",
-    //         authorizedName: s.name || "ABC",
-    //         authorizedGstin: s.gstin_number || "XXXXXXXXXXXX",
-    //         contactNo: s.contactNo || "",
-    //       }))
-    //     : [];
+    //Prepare supplier data for WITHOUT PAYMENT OF INTEGRATED TAX option
+    const supplierData =
+      integratedTaxOption === "WITHOUT"
+        ? suppliers.map((s) => ({
+            id: s.id,
+            name: s.name,
+            gstin_number: s.gstin_number,
+            tax_invoice_number: s.tax_invoice_number || "",
+            date: s.date || "",
+            authorizedName: s.name || "ABC",
+            authorizedGstin: s.gstin_number || "XXXXXXXXXXXX",
+            contactNo: s.contactNo || "",
+          }))
+        : [];
 
-    // // Create a complete invoice data object
-    // const completeInvoiceData = {
-    //   invoice_number: invoiceNo,
-    //   invoice_date: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : "",
-    //   currency_type: selectedCurrency,
-    //   currency_rate: currencyRate,
-    //   integrated_tax: integratedTaxOption,
-    //   payment_term: paymentTerms,
-    //   product_type: productType,
-    //   exporter: {
-    //     company_name: selectedExporter,
-    //     company_address: companyAddress,
-    //     email: email,
-    //     tax_id: taxid,
-    //     ie_code: ieCode,
-    //     pan_number: panNo,
-    //     gstin_number: gstinNo,
-    //     state_code: stateCode,
-    //   },
-    //   buyer: {
-    //     consignee: consignee,
-    //     notify_party: notifyParty,
-    //     buyers_order_no: buyersOrderNo,
-    //     buyers_order_date: buyersOrderDate
-    //       ? format(buyersOrderDate, "yyyy-MM-dd")
-    //       : "",
-    //     po_no: poNo,
-    //   },
-    //   shipping: {
-    //     pre_carriage_by: preCarriageBy,
-    //     place_of_receipt: placeOfReceipt,
-    //     vessel_flight_no: vesselFlightNo,
-    //     port_of_loading: portOfLoading,
-    //     port_of_discharge: portOfDischarge,
-    //     final_destination: finalDestination,
-    //     country_of_origin: countryOfOrigin,
-    //     origin_details: originDetails,
-    //     country_of_final_destination: countryOfFinalDestination,
-    //     terms_of_delivery: termsOfDelivery,
-    //     payment_terms: paymentTerms,
-    //     shipping_method: shippingMethod,
-    //   },
-    //   products: sections,
-    //   package: {
-    //     no_of_packages: noOfPackages,
-    //     gross_weight: grossWeight,
-    //     net_weight: netWeight,
-    //   },
-    //   supplier: supplierData,
-    //   sections: sections,
-    //   markNumber: markNumber,
-    // };
+    // Create a complete invoice data object
+    const completeInvoiceData = {
+      invoice_number: invoiceNo,
+      invoice_date: invoiceDate ? format(invoiceDate, "yyyy-MM-dd") : "",
+      currency_type: selectedCurrency,
+      currency_rate: currencyRate,
+      integrated_tax: integratedTaxOption,
+      payment_term: paymentTerms,
+      product_type: productType,
+      exporter: {
+        company_name: selectedExporter,
+        company_address: companyAddress,
+        email: email,
+        tax_id: taxid,
+        ie_code: ieCode,
+        pan_number: panNo,
+        gstin_number: gstinNo,
+        state_code: stateCode,
+      },
+      buyer: {
+        consignee: consignee,
+        notify_party: notifyParty,
+        buyers_order_no: buyersOrderNo,
+        buyers_order_date: buyersOrderDate
+          ? format(buyersOrderDate, "yyyy-MM-dd")
+          : "",
+        po_no: poNo,
+      },
+      shipping: {
+        pre_carriage_by: preCarriageBy,
+        place_of_receipt: placeOfReceipt,
+        vessel_flight_no: vesselFlightNo,
+        port_of_loading: portOfLoading,
+        port_of_discharge: portOfDischarge,
+        final_destination: finalDestination,
+        country_of_origin: countryOfOrigin,
+        origin_details: originDetails,
+        country_of_final_destination: countryOfFinalDestination,
+        terms_of_delivery: termsOfDelivery,
+        payment_terms: paymentTerms,
+        shipping_method: shippingMethod,
+      },
+      products: sections,
+      package: {
+        no_of_packages: noOfPackages,
+        gross_weight: grossWeight,
+        net_weight: netWeight,
+      },
+      supplier: supplierData,
+      sections: sections,
+      markNumber: markNumber,
+    };
 
-    // // Update the form context with the complete invoice data
-    // setInvoiceData(completeInvoiceData);
+    // Update the form context with the complete invoice data
+    setInvoiceData(completeInvoiceData);
 
-    // // Save the current state before navigating
-    // const formData2 = {
-    //   sections: sections,
-    //   markNumber: markNumber, // Use the markNumber from state
-    //   readOnly: true,
-    //   // Add invoice header information
-    //   invoiceHeader: {
-    //     invoiceNo,
-    //     invoiceDate,
-    //     email,
-    //     taxid,
-    //     ieCode,
-    //     panNo,
-    //     gstinNo,
-    //     stateCode,
-    //     selectedExporter,
-    //     companyAddress,
-    //     invoice_number: invoiceNo,
-    //     invoice_date: invoiceDate,
-    //     exporter: completeInvoiceData.exporter,
-    //     buyer: completeInvoiceData.buyer,
-    //     shipping: completeInvoiceData.shipping,
-    //     // Include supplier information for WITHOUT PAYMENT OF INTEGRATED TAX
-    //     supplier: supplierData,
-    //     integratedTaxOption: integratedTaxOption,
-    //     authorizedName: authorizedName,
-    //     authorizedGstin: authorizedGstin,
-    //     gstInvoiceNoDate: gstInvoiceNoDate,
-    //   },
-    //   // Add buyer information
-    //   buyerInfo: {
-    //     consignee,
-    //     notifyParty,
-    //     buyersOrderNo,
-    //     buyersOrderDate,
-    //     poNo,
-    //   },
-    //   // Add shipping information
-    //   shippingInfo: {
-    //     preCarriageBy,
-    //     placeOfReceipt,
-    //     vesselFlightNo,
-    //     portOfLoading,
-    //     portOfDischarge,
-    //     finalDestination,
-    //     countryOfOrigin,
-    //     originDetails,
-    //     countryOfFinalDestination,
-    //     termsOfDelivery,
-    //     paymentTerms,
-    //     shippingMethod,
-    //     selectedCurrency,
-    //     currencyRate,
-    //   },
-    // };
+    // Save the current state before navigating
+    const formData2 = {
+      sections: sections,
+      markNumber: markNumber, // Use the markNumber from state
+      readOnly: true,
+      // Add invoice header information
+      invoiceHeader: {
+        invoiceNo,
+        invoiceDate,
+        email,
+        taxid,
+        ieCode,
+        panNo,
+        gstinNo,
+        stateCode,
+        selectedExporter,
+        companyAddress,
+        invoice_number: invoiceNo,
+        invoice_date: invoiceDate,
+        exporter: completeInvoiceData.exporter,
+        buyer: completeInvoiceData.buyer,
+        shipping: completeInvoiceData.shipping,
+        // Include supplier information for WITHOUT PAYMENT OF INTEGRATED TAX
+        supplier: supplierData,
+        integratedTaxOption: integratedTaxOption,
+        authorizedName: authorizedName,
+        authorizedGstin: authorizedGstin,
+        gstInvoiceNoDate: gstInvoiceNoDate,
+      },
+      // Add buyer information
+      buyerInfo: {
+        consignee,
+        notifyParty,
+        buyersOrderNo,
+        buyersOrderDate,
+        poNo,
+      },
+      // Add shipping information
+      shippingInfo: {
+        preCarriageBy,
+        placeOfReceipt,
+        vesselFlightNo,
+        portOfLoading,
+        portOfDischarge,
+        finalDestination,
+        countryOfOrigin,
+        originDetails,
+        countryOfFinalDestination,
+        termsOfDelivery,
+        paymentTerms,
+        shippingMethod,
+        selectedCurrency,
+        currencyRate,
+      },
+    };
 
-    // // Store the data in localStorage with a direct structure that's easier to access
-    // // This is a more reliable approach for passing data between components
-    // const directExporterData = {
-    //   company_name: selectedExporter,
-    //   company_address: companyAddress,
-    //   email: email,
-    //   tax_id: taxid,
-    //   ie_code: ieCode,
-    //   pan_number: panNo,
-    //   gstin_number: gstinNo,
-    //   state_code: stateCode,
-    // };
+    // Store the data in localStorage with a direct structure that's easier to access
+    // This is a more reliable approach for passing data between components
+    const directExporterData = {
+      company_name: selectedExporter,
+      company_address: companyAddress,
+      email: email,
+      tax_id: taxid,
+      ie_code: ieCode,
+      pan_number: panNo,
+      gstin_number: gstinNo,
+      state_code: stateCode,
+    };
 
-    // // Store order details explicitly
-    // const orderData = {
-    //   order_no: buyersOrderNo,
-    //   order_date: buyersOrderDate ? format(buyersOrderDate, "yyyy-MM-dd") : "",
-    //   po_no: poNo,
-    //   consignee: consignee,
-    //   notify_party: notifyParty,
-    // };
+    // Store order details explicitly
+    const orderData = {
+      order_no: buyersOrderNo,
+      order_date: buyersOrderDate ? format(buyersOrderDate, "yyyy-MM-dd") : "",
+      po_no: poNo,
+      consignee: consignee,
+      notify_party: notifyParty,
+    };
 
-    // // Store the original form data
-    // localStorage.setItem("invoiceFormData", JSON.stringify(formData2));
+    // Store the original form data
+    localStorage.setItem("invoiceFormData", JSON.stringify(formData2));
 
-    // // Store simplified versions of the data for direct access
-    // localStorage.setItem(
-    //   "directExporterData",
-    //   JSON.stringify(directExporterData)
-    // );
-    // localStorage.setItem("orderData", JSON.stringify(orderData));
+    // Store simplified versions of the data for direct access
+    localStorage.setItem(
+      "directExporterData",
+      JSON.stringify(directExporterData)
+    );
+    localStorage.setItem("orderData", JSON.stringify(orderData));
 
     // // Navigate to the packaging list page
     navigate("/packaging-list");
