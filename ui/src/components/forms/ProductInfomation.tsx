@@ -89,6 +89,8 @@ useEffect(() => {
     if (!isSame) {
       setValue("products.product_list", newProductList);
       setValue("products.total_price",totalFOBEuro);
+      setValue("products.insurance", insuranceAmount);
+      setValue("products.frieght", freightAmount);
     }
   });
 

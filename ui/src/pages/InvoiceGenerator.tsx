@@ -177,7 +177,109 @@ const InvoiceGenerator = () => {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [taxOptionDialogOpen, setTaxOptionDialogOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
-  const form = rhf();
+  const form = rhf({
+  "invoice_number": "",
+  "exporter": {
+    "id": "",
+    "company_name": "",
+    "company_address": "",
+    "contact_number": "",
+    "email": "",
+    "tax_id": "",
+    "ie_code": "",
+    "pan_number": "",
+    "gstin_number": "",
+    "state_code": "",
+    "authorized_name": "",
+    "authorized_designation": "",
+    "company_prefix": "",
+    "last_invoice_number": 0,
+    "invoice_year": "",
+    "letterhead_top_image": "",
+    "letterhead_bottom_image": "",
+    "stamp_image": "",
+    "next_invoice_number": ""
+  },
+  "invoice_date": "",
+  "buyer": {
+    "buyer_order_no": "",
+    "po_no": "",
+    "consignee": "",
+    "notify_party": "",
+    "buyer_order_date": ""
+  },
+  "shipping": {
+    "pre_carriage_by": "",
+    "vessel_flight_no": "",
+    "country_of_origin": "",
+    "origin_details": "",
+    "terms_of_delivery": "",
+    "payment": "",
+    "place_of_receipt": "",
+    "place_of_loading": "",
+    "place_of_discharge": "",
+    "final_destination": "",
+    "country_of_final_destination": "",
+    "shipping_method": ""
+  },
+  "currency_rate": 0,
+  "currancy_type": "",
+  "products": {
+    "nos": "",
+    "marks": "",
+    "rightValue": "",
+    "leftValue": "",
+    "insurance":0,
+    "freight": 0,
+    "product_list": [
+      {
+        "category_id": "",
+        "category_name": "",
+        "product_name": "",
+        "size": "",
+        "quantity": 0,
+        "sqm": 0,
+        "total_sqm": 0,
+        "price": 0,
+        "unit": "",
+        "total": 0,
+        "net_weight": 0,
+        "gross_weight": 0
+      }
+    ],
+    "total_price": 0,
+    "containers": []
+  },
+  "package": {
+    "no_of_packages": "",
+    "no_of_sqm": "",
+    "gross_weight": "",
+    "net_weight": "",
+    "gst_circular": "",
+    "arn_no": "",
+    "lut_date": "",
+    "total_fob": "",
+    "amount_in_words": "",
+    "gst_amount":0,
+    "taxable_value":0
+  },
+  "invoice": {
+    "integrated_tax": "",
+    "product_type": ""
+  },
+  "integrated_tax_option": "",
+  "payment_terms": "",
+  "product_type": "",
+  "suppliers": [
+    {
+      "tax_invoice_number": "",
+      "date": "",
+      "name": "",
+      "gstin_number": ""
+    }
+  ]
+}
+);
   // State for expanded section
   const [expandedSection, setExpandedSection] = useState<
     "exporter" | "shipping" | "product" | "gst"
@@ -897,7 +999,7 @@ const InvoiceGenerator = () => {
     const errorMessages: string[] = [];
     const newValidationErrors = { ...validationErrors };
     console.log(data);
-    localStorage.setItem(`invoiceData`, JSON.stringify(data));
+    localStorage.setItem(`invoiceData2`, JSON.stringify(data));
     
     // VALIDATION CHECKS COMMENTED OUT AS REQUESTED
     /*
@@ -1706,7 +1808,7 @@ const InvoiceGenerator = () => {
                       </Label>
                       <Controller
                         control={form.control}
-                        name="integrated_tax_option" // change this path based on your form structure
+                        name="integrated_tax" // change this path based on your form structure
                         defaultValue={integratedTaxOption}
                         render={({ field }) => (
                           <Select
@@ -1736,7 +1838,7 @@ const InvoiceGenerator = () => {
                       <Label htmlFor="paymentTerms">Payment Terms</Label>
                       <Controller
                         control={form.control}
-                        name="payment_terms" // Update the name based on your form structure
+                        name="payment_term" // Update the name based on your form structure
                         defaultValue={paymentTerms}
                         render={({ field }) => (
                           <Select

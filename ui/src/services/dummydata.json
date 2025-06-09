@@ -1,0 +1,200 @@
+{
+    "invoice": {
+        "package": {
+            "no_of_packages": "14000 BOX",
+            "gross_weight": "250000.00",
+            "net_weight": "241236.00",
+            "gst_circular": "As per Circular No. 123/45/2025-GST dated 05-05-2025, supply of packing material with industrial goods shall be treated as a composite supply, taxed at the rate applicable to the principal supply.",
+            "integrated_tax_option": "WITH",
+            "arn_no": "AA240505005678W",
+            "lut_date": "08/05/2025",
+            "total_fob": 20000,
+            "amount_in_words": "TWENTY THOUSAND ONLY",
+            "payment_terms": "FOB",
+            "selected_currency": "USD",
+            "total_sqm": 2880,
+            "taxable_value": 1779000,
+            "gst_amount": 320220
+        },
+        "integrated_tax": "WITH",
+        "payment_term": "FOB",
+        "product_type": "Tiles",
+        "invoice_number": "INV/025/2025",
+        "invoice_date": "08/05/2025",
+        "exporter": {
+            "id": "9f08c509-d7c9-4c91-8465-8ae92116361c",
+            "company_name": "SkyPort Global Exports",
+            "company_address": "89 Cargo Complex, Ahmedabad, Gujarat, India",
+            "contact_number": "+91-9123456780",
+            "email": "support@skyportglobal.com",
+            "tax_id": "TAX3456789",
+            "ie_code": "IEC5678901234",
+            "pan_number": "LMNOP6789Z",
+            "gstin_number": "24LMNOP6789Z1Z2",
+            "state_code": "24",
+            "authorized_name": "Amit Doshi",
+            "authorized_designation": "Logistics Head",
+            "company_prefix": "SGE",
+            "last_invoice_number": 0,
+            "invoice_year": "2025",
+            "letterhead_top_image": "/upload/header/9f08c509-d7c9-4c91-8465-8ae92116361c",
+            "letterhead_bottom_image": "/upload/footer/9f08c509-d7c9-4c91-8465-8ae92116361c",
+            "stamp_image": "/upload/signature/9f08c509-d7c9-4c91-8465-8ae92116361c",
+            "next_invoice_number": "SGE/0001/2025"
+        },
+        "buyer": {
+            "buyer_order_no": "2587493266",
+            "buyer_order_date": "08/05/2025",
+            "po_no": "linvifnvpin",
+            "consignee": "mmmmm",
+            "notify_party": ",,,,,,,mmmmmmmmm"
+        },
+        "currency_type": "USD",
+        "currency_rate": 88.95,
+        "shipping": {
+            "pre_carriage_by": "Truck",
+            "shipping_method": "SHIPPING - THROUGH SEA",
+            "place_of_receipt": "KUTCH",
+            "port_of_loading": "KUTCH",
+            "port_of_discharge": "MUNDRA",
+            "final_destination": "USA",
+            "country_of_origin": "INDIA",
+            "origin_details": "DISTRICT MORBI, STATE GUJARAT",
+            "country_of_final_destination": "USA",
+            "terms_of_delivery": "FOB AT KUTCH",
+            "payment": "dd",
+            "vessel_flight_no": "GJ 04 CJ 1542"
+        },
+        "products": {
+            "marks": "10 X 20 ft",
+            "nos": "FCL",
+            "frieght": 0,
+            "insurance": 0,
+            "total_price": 20000,
+            "product_list": [
+                {
+                    "category_id": "",
+                    "category_name": "Glazed porcelain Floor Tiles",
+                    "hsn_code":6254100,
+                    "product_name": "mkkmm",
+                    "size": "600 X 1200",
+                    "quantity": 1000,
+                    "sqm": 1.44,
+                    "total_sqm": 1440,
+                    "price": 10,
+                    "unit": "Box",
+                    "total": 10000,
+                    "net_weight": 0,
+                    "gross_weight": 0
+                },
+                {
+                    "category_id": "1746652161923",
+                    "category_name": "Polished Vitrified Tiles",
+                    "hsn_code":6254400,
+                    "product_name": "siwsvniwv",
+                    "size": "600 X 1200",
+                    "quantity": 1000,
+                    "sqm": 1.44,
+                    "total_sqm": 1440,
+                    "price": 10,
+                    "unit": "Box",
+                    "total": 10000,
+                    "net_weight": 0,
+                    "gross_weight": 0
+                }
+            ],
+            "containers": [
+                {
+                    "id": "1",
+                    "container_no": "ehbvaebv",
+                    "line_seal_no": "lkebveb",
+                    "rfid_seal": ";jkrnsb",
+                    "design_no": "kajdvd",
+                    "quantity": 100,
+                    "net_weight": "241236",
+                    "gross_weight": "250000"
+                }
+            ]
+        }
+    },
+    "packagingList": {
+        "containerRows": [
+            {
+                "id": "1",
+                "container_no": "ehbvaebv",
+                "line_seal_no": "lkebveb",
+                "rfid_seal": ";jkrnsb",
+                "design_no": "kajdvd",
+                "quantity": 100,
+                "net_weight": "241236",
+                "gross_weight": "250000"
+            }
+        ],
+        "totalPalletCount": "000",
+        "sections": [
+            {
+                "id": "1",
+                "title": "Glazed porcelain Floor Tiles",
+                "items": []
+            },
+            {
+                "id": "2",
+                "title": "Glazed Ceramic Wall tiles",
+                "items": []
+            }
+        ],
+        "markNumber": "10X20 FCLLCL"
+    },
+    "annexure": {
+        "range": "MORBI",
+        "division": "MORBI II",
+        "commissionerate": "RAJKOT",
+        "exam_date": "08.05.2025",
+        "invoice_date": "08.05.2025",
+        "net_weight": "241236",
+        "gross_weight": "250000",
+        "total_packages": "100",
+        "officer_designation1": "SELF SEALING",
+        "officer_designation2": "SELF SEALING",
+        "selected_manufacturer": {
+            "name": "Shree Components Ltd.",
+            "address": "Plot No. 21, Industrial Estate, Rajkot, Gujarat, India",
+            "gstin_number": "24SHRCM1234X1Z1",
+            "permission": "Valid for export"
+        },
+        "lut_date": "27/03/2024",
+        "location_code": "365",
+        "question9c": "N/A",
+        "question9a": "YES",
+        "question9b": "NO",
+        "non_containerized": "SELF SEALING",
+        "containerized": "SELF SEALING"
+    },
+    "vgm": {
+        "shipper_name": "SkyPort Global Exports",
+        "ie_code": "IEC5678901234",
+        "authorized_name": "Amit Doshi",
+        "authorized_contact": "+91-9123456780",
+        "container_number": "AS PER ANNEXURE",
+        "container_size": "20'",
+        "permissible_weight": "AS PER ANNEXURE",
+        "weighbridge_registration": "AS PER ANNEXURE",
+        "verified_gross_mass": "method-1",
+        "unit_of_measurement": "KG",
+        "dt_weighing": "08.05.2025 02:39",
+        "weighing_slip_no": "AS PER ANNEXURE",
+        "type": "NORMAL",
+        "IMDG_class": "NA",
+        "containers": [
+            {
+                "booking_no": "EI*********",
+                "container_no": "ehbvaebv",
+                "gross_weight": "250000",
+                "tare_weight": "2180",
+                "total_vgm": "252180.00"
+            }
+        ]
+    },
+    "status": "draft",
+    "lastSaved": "2025-05-07T21:10:01.129Z"
+}

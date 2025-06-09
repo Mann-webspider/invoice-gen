@@ -78,6 +78,9 @@ const packageForm = watch("package");
   
   setValue("package.total_fob", totalFOBEuro.toFixed(2));
   setValue("package.amount_in_words", amountInWords);
+  setValue("package.gst_amount", gstAmount.toFixed(2));
+  setValue("package.taxable_value", taxableValue.toFixed(2));
+  setValue("package.total_sqm", totalSQM.toFixed(2));
 }, [totalFOBEuro, amountInWords, setValue]);
   // useEffect(() => {
   //   setInvoiceData({
@@ -156,8 +159,8 @@ const packageForm = watch("package");
                 <Label htmlFor="noOfPackages">No. of SQMs</Label>
                 <Input
                   id="noOfSQMs"
-                  {...register("package.no_of_sqm",{required: "No. of SQMs is required"})}
-                  value={`${packageForm?.no_of_sqm}` || `${totalSQM.toFixed(2)} SQM`}
+                  {...register("package.no_of_sqm",{required: "No. of SQMs is required",defaultValue: totalSQM})}
+                  value={packageForm?.no_of_sqm?`${packageForm?.no_of_sqm}` : `${totalSQM.toFixed(2)} SQM`}
                   readOnly
                   className="cursor-default"
                   placeholder="e.g., 20.16 SQM"

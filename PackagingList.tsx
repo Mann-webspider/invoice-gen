@@ -17,27 +17,26 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Save, Trash } from 'lucide-react';
 import { Product, InvoiceItem, ProductSection } from '@/lib/types';
 import { Controller, useForm as rhf } from "react-hook-form";
-import { parse, isValid, format } from 'date-fns';
 // Handle date-fns import with proper TypeScript handling
 let format: (date: Date | number, format: string) => string;
 
 // Using dynamic import for TypeScript compatibility
-// const importDateFns = async () => {
-//   try {
-//     const dateFns = await import('date-fns');
-//     return dateFns.format;
-//   } catch (error) {
-//     return (date: Date | number, fmt: string) => new Date(date).toLocaleDateString();
-//   }
-// };
+const importDateFns = async () => {
+  try {
+    const dateFns = await import('date-fns');
+    return dateFns.format;
+  } catch (error) {
+    return (date: Date | number, fmt: string) => new Date(date).toLocaleDateString();
+  }
+};
 
 // Default implementation until the import resolves
 format = (date, fmt) => new Date(date).toLocaleDateString();
 
 // Initialize format function
-// importDateFns().then(formatFn => {
-//   format = formatFn;
-// });
+importDateFns().then(formatFn => {
+  format = formatFn;
+});
 
 import MarksAndNumbers from '@/components/MarksAndNumbers';
 import { useForm } from '@/context/FormContext';
@@ -67,7 +66,6 @@ importSonner().then(toastFn => {
 
 import api from '@/lib/axios';
 import { getCurrentFormId, loadFormSection, getValueFromSection, saveFormSection } from "@/lib/formDataUtils";
-import { register } from 'module';
 
 // Update the props interface to receive data from InvoiceGenerator
 interface PackagingListProps {
@@ -122,19 +120,8 @@ const PackagingList = ({
   buyerInfo,
   shippingInfo
 }: PackagingListProps) => {
-  const {  setInvoiceData, setPackagingListData, ensureFormDataFromLocalStorage } = useForm();
-   const {register,watch,handleSubmit} = rhf();
-  let formData = JSON.parse(localStorage.getItem('invoiceData2') || "null");
-  // console.log("Form Data:", formData);
-
-  useEffect(() => {
-    const subscribe = watch((value) => {
-      console.log(value);
-    });
-    return () => subscribe.unsubscribe();
-  }, [watch]);
-  
-  
+  const { formData, setInvoiceData, setPackagingListData, ensureFormDataFromLocalStorage } = useForm();
+   const form = rhf();
   
   // Add missing state variables
   const [productSections, setProductSections] = useState<ProductSection[]>(importedSections || []);
@@ -178,140 +165,140 @@ const PackagingList = ({
 
   // Process incoming props and context
   // Fetch exporter data directly from API if needed
-  // useEffect(() => {
-  //   const fetchExporterData = async () => {
-  //     try {
-  //       // First try to get exporter data from localStorage
-  //       const invoiceData = loadFormSection(currentFormId, 'invoice');
+  useEffect(() => {
+    const fetchExporterData = async () => {
+      try {
+        // First try to get exporter data from localStorage
+        const invoiceData = loadFormSection(currentFormId, 'invoice');
         
-  //       // Check if we need to fetch exporter data
-  //       if (!invoiceData?.exporter || !invoiceData.exporter.company_name) {
-  //         const response = await api.get("/exporter");
-  //         if (response.status === 200 && response.data.data) {
+        // Check if we need to fetch exporter data
+        if (!invoiceData?.exporter || !invoiceData.exporter.company_name) {
+          const response = await api.get("/exporter");
+          if (response.status === 200 && response.data.data) {
 
             
-  //           // Find the exporter that matches the one in localStorage if available
-  //           const savedInvoiceData = localStorage.getItem('invoiceFormData');
-  //           let selectedExporterName = '';
+            // Find the exporter that matches the one in localStorage if available
+            const savedInvoiceData = localStorage.getItem('invoiceFormData');
+            let selectedExporterName = '';
             
-  //           if (savedInvoiceData) {
-  //             const parsedData = JSON.parse(savedInvoiceData);
-  //             selectedExporterName = parsedData.invoiceHeader?.selectedExporter || '';
-  //           }
+            if (savedInvoiceData) {
+              const parsedData = JSON.parse(savedInvoiceData);
+              selectedExporterName = parsedData.invoiceHeader?.selectedExporter || '';
+            }
             
-  //           // Find the matching exporter or use the first one
-  //           const matchingExporter = response.data.data.find(e => e.company_name === selectedExporterName) || response.data.data[0];
+            // Find the matching exporter or use the first one
+            const matchingExporter = response.data.data.find(e => e.company_name === selectedExporterName) || response.data.data[0];
             
-  //           if (matchingExporter) {
-  //             // Update form context with the exporter data
-  //             setInvoiceData({
-  //               ...formData?,
-  //               exporter: matchingExporter
-  //             });
-  //           }
-  //         }
-  //       }
-  //     } catch (error) {
-  //       // Error fetching exporter data - handled with toast
-  //     }
-  //   };
+            if (matchingExporter) {
+              // Update form context with the exporter data
+              setInvoiceData({
+                ...formData.invoice,
+                exporter: matchingExporter
+              });
+            }
+          }
+        }
+      } catch (error) {
+        // Error fetching exporter data - handled with toast
+      }
+    };
     
-  //   fetchExporterData();
-  // }, []);
+    fetchExporterData();
+  }, []);
 
   // Load saved packaging list data if available
-  // useEffect(() => {
-  //   if (currentFormId) {
-  //     try {
-  //       // Load packaging list data from localStorage
-  //       const packagingListData = loadFormSection(currentFormId, 'packagingList');
+  useEffect(() => {
+    if (currentFormId) {
+      try {
+        // Load packaging list data from localStorage
+        const packagingListData = loadFormSection(currentFormId, 'packagingList');
         
-  //       if (packagingListData) {
-  //         setPackagingListData(packagingListData);
+        if (packagingListData) {
+          setPackagingListData(packagingListData);
           
-  //         // Update state with saved data
-  //         if (packagingListData.sections) setProductSections(packagingListData.sections);
-  //         if (packagingListData.markNumber) setMarkNumber(packagingListData.markNumber);
-  //         if (packagingListData.containerNumber) setContainerNumber(packagingListData.containerNumber);
-  //         if (packagingListData.containerSize) setContainerSize(packagingListData.containerSize);
+          // Update state with saved data
+          if (packagingListData.sections) setProductSections(packagingListData.sections);
+          if (packagingListData.markNumber) setMarkNumber(packagingListData.markNumber);
+          if (packagingListData.containerNumber) setContainerNumber(packagingListData.containerNumber);
+          if (packagingListData.containerSize) setContainerSize(packagingListData.containerSize);
           
-  //         // Load other fields from packaging list data
-  //         if (packagingListData.grossWeight) setGrossWeight(packagingListData.grossWeight);
-  //         if (packagingListData.netWeight) setNetWeight(packagingListData.netWeight);
-  //         if (packagingListData.totalPackages) setTotalPackages(packagingListData.totalPackages);
-  //       } else {
-  //         // If no packaging list data, try to populate from invoice data
-  //         const invoiceData = loadFormSection(currentFormId, 'invoice');
-  //         if (invoiceData) {
-  //           // Set container info from invoice if available
-  //           if (invoiceData.containerNumber) setContainerNumber(invoiceData.containerNumber);
-  //           if (invoiceData.containerSize) setContainerSize(invoiceData.containerSize || '20\'');
+          // Load other fields from packaging list data
+          if (packagingListData.grossWeight) setGrossWeight(packagingListData.grossWeight);
+          if (packagingListData.netWeight) setNetWeight(packagingListData.netWeight);
+          if (packagingListData.totalPackages) setTotalPackages(packagingListData.totalPackages);
+        } else {
+          // If no packaging list data, try to populate from invoice data
+          const invoiceData = loadFormSection(currentFormId, 'invoice');
+          if (invoiceData) {
+            // Set container info from invoice if available
+            if (invoiceData.containerNumber) setContainerNumber(invoiceData.containerNumber);
+            if (invoiceData.containerSize) setContainerSize(invoiceData.containerSize || '20\'');
             
-  //           // Set mark number from invoice if available
-  //           if (invoiceData.markNumber) setMarkNumber(invoiceData.markNumber);
+            // Set mark number from invoice if available
+            if (invoiceData.markNumber) setMarkNumber(invoiceData.markNumber);
             
-  //           // Set product sections from invoice items if available
-  //           if (invoiceData.items && invoiceData.items.length > 0) {
-  //             const sectionsFromInvoice = invoiceData.items.map((item: any, index: number) => ({
-  //               id: index.toString(),
-  //               title: item.product_name || `Section ${index + 1}`,
-  //               items: [{
-  //                 id: `${index}-0`,
-  //                 product_name: item.product_name || '',
-  //                 description: item.description || '',
-  //                 quantity: item.quantity || 0,
-  //                 unit: item.unit || 'PCS',
-  //                 net_weight: item.net_weight || 0,
-  //                 gross_weight: item.gross_weight || 0,
-  //                 dimensions: item.dimensions || { length: 0, width: 0, height: 0 }
-  //               }]
-  //             }));
-  //             setProductSections(sectionsFromInvoice);
-  //           }
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error("Error loading saved packaging list data:", error);
-  //     }
-  //   }
-  // }, [currentFormId]);
+            // Set product sections from invoice items if available
+            if (invoiceData.items && invoiceData.items.length > 0) {
+              const sectionsFromInvoice = invoiceData.items.map((item: any, index: number) => ({
+                id: index.toString(),
+                title: item.product_name || `Section ${index + 1}`,
+                items: [{
+                  id: `${index}-0`,
+                  product_name: item.product_name || '',
+                  description: item.description || '',
+                  quantity: item.quantity || 0,
+                  unit: item.unit || 'PCS',
+                  net_weight: item.net_weight || 0,
+                  gross_weight: item.gross_weight || 0,
+                  dimensions: item.dimensions || { length: 0, width: 0, height: 0 }
+                }]
+              }));
+              setProductSections(sectionsFromInvoice);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading saved packaging list data:", error);
+      }
+    }
+  }, [currentFormId]);
 
   // Load saved data from localStorage if available
   const [savedInvoiceData, setSavedInvoiceData] = useState<any>(null);
   
-  // useEffect(() => {
-  //   const storedData = localStorage.getItem('invoiceFormData');
-  //   if (storedData) {
-  //     try {
-  //       const parsedData = JSON.parse(storedData);
-  //       setSavedInvoiceData(parsedData);
+  useEffect(() => {
+    const storedData = localStorage.getItem('invoiceFormData');
+    if (storedData) {
+      try {
+        const parsedData = JSON.parse(storedData);
+        setSavedInvoiceData(parsedData);
         
-  //       // If we have invoice data in localStorage but not in formData, update formData
-  //       if (parsedData.invoiceHeader && (!formData?.invoice?.exporter || !formData.invoice.exporter.company_name)) {
-  //         setInvoiceData({
-  //           ...formData.invoice,
-  //           invoice_number: parsedData.invoiceHeader.invoiceNo || '',
-  //           invoice_date: parsedData.invoiceHeader.invoiceDate ? format(new Date(parsedData.invoiceHeader.invoiceDate), 'dd/MM/yyyy') : '',
-  //           exporter: {
-  //             company_name: parsedData.invoiceHeader.selectedExporter || '',
-  //             company_address: parsedData.invoiceHeader.companyAddress || '',
-  //             email: parsedData.invoiceHeader.email || '',
-  //             tax_id: parsedData.invoiceHeader.taxid || '',
-  //             ie_code: parsedData.invoiceHeader.ieCode || '',
-  //             pan_number: parsedData.invoiceHeader.panNo || '',
-  //             gstin_number: parsedData.invoiceHeader.gstinNo || '',
-  //             state_code: parsedData.invoiceHeader.stateCode || ''
-  //           },
-  //           buyer: parsedData.buyerInfo || {},
-  //           shipping: parsedData.shippingInfo || {},
-  //           products: parsedData.sections || []
-  //         });
-  //       }
-  //     } catch (error) {
-  //       // Error parsing invoice data from localStorage
-  //     }
-  //   }
-  // }, [formData, setInvoiceData]);
+        // If we have invoice data in localStorage but not in formData, update formData
+        if (parsedData.invoiceHeader && (!formData?.invoice?.exporter || !formData.invoice.exporter.company_name)) {
+          setInvoiceData({
+            ...formData.invoice,
+            invoice_number: parsedData.invoiceHeader.invoiceNo || '',
+            invoice_date: parsedData.invoiceHeader.invoiceDate ? format(new Date(parsedData.invoiceHeader.invoiceDate), 'dd/MM/yyyy') : '',
+            exporter: {
+              company_name: parsedData.invoiceHeader.selectedExporter || '',
+              company_address: parsedData.invoiceHeader.companyAddress || '',
+              email: parsedData.invoiceHeader.email || '',
+              tax_id: parsedData.invoiceHeader.taxid || '',
+              ie_code: parsedData.invoiceHeader.ieCode || '',
+              pan_number: parsedData.invoiceHeader.panNo || '',
+              gstin_number: parsedData.invoiceHeader.gstinNo || '',
+              state_code: parsedData.invoiceHeader.stateCode || ''
+            },
+            buyer: parsedData.buyerInfo || {},
+            shipping: parsedData.shippingInfo || {},
+            products: parsedData.sections || []
+          });
+        }
+      } catch (error) {
+        // Error parsing invoice data from localStorage
+      }
+    }
+  }, [formData, setInvoiceData]);
 
   // Define data structure types
   interface ExporterData {
@@ -388,18 +375,18 @@ const PackagingList = ({
   
   // Create a merged exporter object that prioritizes the selected exporter data
   const exporter = {
-    company_name: selectedExporterData?.company_name || formData?.exporter?.company_name || savedInvoiceData?.invoiceHeader?.selectedExporter || '',
-    company_address: selectedExporterData?.company_address || formData?.exporter?.company_address || savedInvoiceData?.invoiceHeader?.companyAddress || '',
-    email: selectedExporterData?.email || formData?.exporter?.email || savedInvoiceData?.invoiceHeader?.email || '',
-    tax_id: selectedExporterData?.tax_id || formData?.exporter?.tax_id || savedInvoiceData?.invoiceHeader?.taxid || '',
-    ie_code: selectedExporterData?.ie_code || formData?.exporter?.ie_code || savedInvoiceData?.invoiceHeader?.ieCode || '',
-    pan_number: selectedExporterData?.pan_number || formData?.exporter?.pan_number || savedInvoiceData?.invoiceHeader?.panNo || '',
-    gstin_number: selectedExporterData?.gstin_number || formData?.exporter?.gstin_number || savedInvoiceData?.invoiceHeader?.gstinNo || '',
-    state_code: selectedExporterData?.state_code || formData?.exporter?.state_code || savedInvoiceData?.invoiceHeader?.stateCode || ''
+    company_name: selectedExporterData?.company_name || formData?.invoice?.exporter?.company_name || savedInvoiceData?.invoiceHeader?.selectedExporter || '',
+    company_address: selectedExporterData?.company_address || formData?.invoice?.exporter?.company_address || savedInvoiceData?.invoiceHeader?.companyAddress || '',
+    email: selectedExporterData?.email || formData?.invoice?.exporter?.email || savedInvoiceData?.invoiceHeader?.email || '',
+    tax_id: selectedExporterData?.tax_id || formData?.invoice?.exporter?.tax_id || savedInvoiceData?.invoiceHeader?.taxid || '',
+    ie_code: selectedExporterData?.ie_code || formData?.invoice?.exporter?.ie_code || savedInvoiceData?.invoiceHeader?.ieCode || '',
+    pan_number: selectedExporterData?.pan_number || formData?.invoice?.exporter?.pan_number || savedInvoiceData?.invoiceHeader?.panNo || '',
+    gstin_number: selectedExporterData?.gstin_number || formData?.invoice?.exporter?.gstin_number || savedInvoiceData?.invoiceHeader?.gstinNo || '',
+    state_code: selectedExporterData?.state_code || formData?.invoice?.exporter?.state_code || savedInvoiceData?.invoiceHeader?.stateCode || ''
   };
   
-  const buyer = formData?.buyer || (savedInvoiceData?.buyerInfo || {});
-  const shipping = formData?.shipping || (savedInvoiceData?.shippingInfo || {});
+  const buyer = formData?.invoice?.buyer || (savedInvoiceData?.buyerInfo || {});
+  const shipping = formData?.invoice?.shipping || (savedInvoiceData?.shippingInfo || {});
   
   // Get invoice number based on all possible sources with explicit type checking
   let invoiceNumber = '';
@@ -525,7 +512,7 @@ const PackagingList = ({
   const [showCustomInput, setShowCustomInput] = useState<{[key: string]: boolean}>({});
 
   // Initialize state with imported sections or defaults
-  const [sections, setSections] = useState<any[]>([
+  const [sections, setSections] = useState<ProductSection[]>([
     {
       id: '1',
       title: 'Glazed porcelain Floor Tiles',
@@ -539,100 +526,100 @@ const PackagingList = ({
   ]);
 
   // Use effect to update sections when importedSections changes
-  // useEffect(() => {
-  //   try {
+  useEffect(() => {
+    try {
 
       
-  //     // Always initialize with default sections if none are provided
-  //     if (!importedSections || importedSections.length === 0) {
+      // Always initialize with default sections if none are provided
+      if (!importedSections || importedSections.length === 0) {
 
-  //       setSections([
-  //         {
-  //           id: '1',
-  //           title: 'Glazed porcelain Floor Tiles',
-  //           items: []
-  //         },
-  //         {
-  //           id: '2',
-  //           title: 'Mann',
-  //           items: []
-  //         }
-  //       ]);
-  //       return;
-  //     }
+        setSections([
+          {
+            id: '1',
+            title: 'Glazed porcelain Floor Tiles',
+            items: []
+          },
+          {
+            id: '2',
+            title: 'Mann',
+            items: []
+          }
+        ]);
+        return;
+      }
       
-  //     if (importedSections && importedSections.length > 0) {
-  //       // Process imported sections to ensure they have the required properties
-  //       const processedSections = importedSections.map(section => {
-  //         if (!section) {
-  //           // Encountered null or undefined section
-  //           return {
-  //             id: Date.now().toString(),
-  //             title: 'Glazed porcelain Floor Tiles',
-  //             items: []
-  //           };
-  //         }
+      if (importedSections && importedSections.length > 0) {
+        // Process imported sections to ensure they have the required properties
+        const processedSections = importedSections.map(section => {
+          if (!section) {
+            // Encountered null or undefined section
+            return {
+              id: Date.now().toString(),
+              title: 'Glazed porcelain Floor Tiles',
+              items: []
+            };
+          }
           
-  //         // Get the HSN code for the section title
-  //         const sectionTitle = section.title || 'Glazed porcelain Floor Tiles';
-  //         const sectionHsnCode = hsnCodes[sectionTitle] || "69072100";
+          // Get the HSN code for the section title
+          const sectionTitle = section.title || 'Glazed porcelain Floor Tiles';
+          const sectionHsnCode = hsnCodes[sectionTitle] || "69072100";
 
-  //         // Process items to ensure they have net weight and gross weight and correct HSN codes
-  //         const processedItems = Array.isArray(section.items) ? section.items.map(item => {
-  //           if (!item || !item.product) {
-  //             // Encountered invalid item in section
-  //             return {
-  //               id: Date.now().toString(),
-  //               quantity: 0,
-  //               price: 0,
-  //               product: {
-  //                 name: '',
-  //                 hsnCode: sectionHsnCode,
-  //                 netWeight: '',
-  //                 grossWeight: ''
-  //               }
-  //             };
-  //           }
+          // Process items to ensure they have net weight and gross weight and correct HSN codes
+          const processedItems = Array.isArray(section.items) ? section.items.map(item => {
+            if (!item || !item.product) {
+              // Encountered invalid item in section
+              return {
+                id: Date.now().toString(),
+                quantity: 0,
+                price: 0,
+                product: {
+                  name: '',
+                  hsnCode: sectionHsnCode,
+                  netWeight: '',
+                  grossWeight: ''
+                }
+              };
+            }
             
-  //           return {
-  //             ...item,
-  //             product: {
-  //               ...item.product,
-  //               // Keep the original HSN code if it exists, otherwise use the section's HSN code
-  //               hsnCode: item.product.hsnCode || sectionHsnCode,
-  //               netWeight: item.product.netWeight || calculateNetWeight(item),
-  //               grossWeight: item.product.grossWeight || calculateGrossWeight(item)
-  //             }
-  //           };
-  //         }) : [];
+            return {
+              ...item,
+              product: {
+                ...item.product,
+                // Keep the original HSN code if it exists, otherwise use the section's HSN code
+                hsnCode: item.product.hsnCode || sectionHsnCode,
+                netWeight: item.product.netWeight || calculateNetWeight(item),
+                grossWeight: item.product.grossWeight || calculateGrossWeight(item)
+              }
+            };
+          }) : [];
 
-  //         return {
-  //           ...section,
-  //           title: sectionTitle,
-  //           items: processedItems
-  //         };
-  //       });
+          return {
+            ...section,
+            title: sectionTitle,
+            items: processedItems
+          };
+        });
 
 
-  //       setSections(processedSections);
-  //     }
-  //   } catch (error) {
-  //     // Error processing sections
-  //     // Set default sections if there's an error
-  //     setSections([
-  //       {
-  //         id: '1',
-  //         title: 'Glazed porcelain Floor Tiles',
-  //         items: []
-  //       },
-  //       {
-  //         id: '2',
-  //         title: 'Mann',
-  //         items: []
-  //       }
-  //     ]);
-  //   }
-  // }, [importedSections, hsnCodes]);
+        setSections(processedSections);
+      }
+    } catch (error) {
+      // Error processing sections
+      // Set default sections if there's an error
+      setSections([
+        {
+          id: '1',
+          title: 'Glazed porcelain Floor Tiles',
+          items: []
+        },
+        {
+          id: '2',
+          title: 'Mann',
+          items: []
+        }
+      ]);
+    }
+  }, [importedSections, hsnCodes]);
 
   // Helper functions to calculate weights if they are not provided
   const calculateNetWeight = (item: InvoiceItem): string => {
@@ -1096,130 +1083,41 @@ const PackagingList = ({
   };
 
   // whenever the containerRows changes then update the invoiceFormData.products.containers
-  // useEffect(() => {
-  //   const updatedContainers = containerRows.map(row => ({
-  //     id: row.id,
-  //     container_no: row.containerNo,
-  //     line_seal_no: row.lineSealNo,
-  //     rfid_seal: row.rfidSeal,
-  //     design_no: row.designNo,
-  //     quantity: row.quantity,
-  //     net_weight: row.netWeight,
-  //     gross_weight: row.grossWeight
-  //   }));
+  useEffect(() => {
+    const updatedContainers = containerRows.map(row => ({
+      id: row.id,
+      container_no: row.containerNo,
+      line_seal_no: row.lineSealNo,
+      rfid_seal: row.rfidSeal,
+      design_no: row.designNo,
+      quantity: row.quantity,
+      net_weight: row.netWeight,
+      gross_weight: row.grossWeight
+    }));
 
-  //   setPackagingListData({
-  //     ...formData.packagingList,
-  //     containerRows: updatedContainers,
-  //     totalPalletCount: totalPalletCount,
-  //     sections: sections,
-  //     markNumber: `${markParts[0]}X${markParts[1]} ${markParts[2]}`
-  //   });
-  //   setInvoiceData({
-  //     ...formData.invoice,
-  //     products: {
-  //       ...formData.invoice.products,
-  //       containers: updatedContainers
+    setPackagingListData({
+      ...formData.packagingList,
+      containerRows: updatedContainers,
+      totalPalletCount: totalPalletCount,
+      sections: sections,
+      markNumber: `${markParts[0]}X${markParts[1]} ${markParts[2]}`
+    });
+    setInvoiceData({
+      ...formData.invoice,
+      products: {
+        ...formData.invoice.products,
+        containers: updatedContainers
         
-  //     }
-  //   });
-  // }, [containerRows]);
+      }
+    });
+  }, [containerRows]);
   
   
   
   // Debug state before rendering
-  // useEffect(() => {
+  useEffect(() => {
 
-  // }, [sections, invoiceNumber, markParts, containerType]);
-
-  function formatCustomDate(
-  inputDate: string | null | undefined,
-  outputFormat: string = 'PP'
-): string {
-  if (!inputDate) return '';
-
-  const parsed = parse(inputDate, 'dd/MM/yyyy', new Date());
-
-  if (!isValid(parsed)) return '';
-
-  return format(parsed, outputFormat);
-}
-
-
-function convertProductsToSections(productsData) {
-  return [
-    {
-      id: "section-1",
-      title: productsData.product_list[0]?.category_name || "Untitled Section",
-      items: productsData.product_list.map((product, index) => ({
-        id: `item-${index + 1}`,
-        quantity: product.quantity,
-        product: {
-          hsnCode: product.hsn_code || "", // You can add this if needed
-          description: product.product_name,
-          size: product.size,
-          netWeight: product.net_weight == 0?"": product.net_weight,
-          grossWeight: product.gross_weight == 0?"": product.gross_weight,
-          
-        },
-      }))
-    }
-  ];
-}
-useEffect(() => {
-  const productData = JSON.parse(localStorage.getItem("invoiceData2"));
-  if (productData?.products) {
-    const transformedSections = convertProductsToSections(productData.products);
-    setSections(transformedSections);
-  }
-}, []);
-
-function updateInvoiceProducts(formData, newObject) {
-  const updatedForm = { ...formData };
-
-  // ✅ Update weights
-  const newItem = newObject.products?.product_list?.[0]?.items?.[0];
-  if (newItem) {
-    updatedForm.products.product_list = updatedForm.products.product_list.map((product) => ({
-      ...product,
-      net_weight: parseFloat(newItem.net_weight),
-      gross_weight: parseFloat(newItem.gross_weight),
-    }));
-  }
-
-  // ✅ Copy containers
-  if (Array.isArray(newObject.products?.containers)) {
-    updatedForm.products.containers = [...newObject.products.containers];
-  }
-
-  // ✅ Calculate total weights
-  let totalNetWeight = 0;
-  let totalGrossWeight = 0;
-
-  updatedForm.products.product_list.forEach((product) => {
-    totalNetWeight += parseFloat(product.net_weight || 0);
-    totalGrossWeight += parseFloat(product.gross_weight || 0);
-  });
-
-  // ✅ Store totals in formData.package
-  if (!updatedForm.package) updatedForm.package = {};
-  updatedForm.package.net_weight = totalNetWeight.toFixed(2);
-  updatedForm.package.gross_weight = totalGrossWeight.toFixed(2);
-
-  return updatedForm;
-}
-
-
-
-function handleNext(data){
-  let finalData = updateInvoiceProducts(formData, data);
-  console.log(finalData);
-  localStorage.setItem("invoiceData2", JSON.stringify(finalData));
-  
-  
-  navigate("/annexure")
-}
-
+  }, [sections, invoiceNumber, markParts, containerType]);
 
   // Handle potential rendering errors
   try {
@@ -1241,24 +1139,24 @@ function handleNext(data){
               <div className="space-y-4">
                 <div className="space-y-2">
                   <Label>Exporter</Label>
-                  <Input value={formData.exporter.company_name} readOnly className="bg-gray-50" />
+                  <Input value={exporter.company_name} readOnly className="bg-gray-50" />
                 </div>
                 <div className="space-y-2">
                   <Label>Company Address</Label>
                   <textarea 
                     className="w-full p-2 rounded-md border bg-gray-50" 
-                    value={formData.exporter.company_address} 
+                    value={exporter.company_address} 
                     readOnly 
                     rows={3}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Email</Label>
-                  <Input value={formData.exporter.email} readOnly className="bg-gray-50" />
+                  <Input value={exporter.email} readOnly className="bg-gray-50" />
                 </div>
                 <div className="space-y-2">
                   <Label>Tax ID</Label>
-                  <Input value={formData.exporter.tax_id} readOnly className="bg-gray-50" />
+                  <Input value={exporter.tax_id} readOnly className="bg-gray-50" />
                 </div>
               </div>
               <div className="space-y-4">
@@ -1266,19 +1164,19 @@ function handleNext(data){
                   <div className="space-y-2">
                     <Label>Invoice Number</Label>
                     <Input 
-                      value={formData.invoice_number || ''} 
+                      value={invoiceNumber || ''} 
                       readOnly 
                       className="bg-gray-50 font-medium" 
                       placeholder="No invoice number available"
                     />
-                    {!formData.invoice_number && (
+                    {!invoiceNumber && (
                       <p className="text-xs text-red-500 mt-1">Invoice number not found</p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label>Invoice Date</Label>
                     <Input 
-                      value={formData?.invoice_date ? formatCustomDate(formData?.invoice_date) : ''} 
+                      value={formData.invoice?.invoice_date ? format(new Date(formData.invoice.invoice_date), 'PP') : ''} 
                       readOnly 
                       className="bg-gray-50" 
                     />
@@ -1290,21 +1188,21 @@ function handleNext(data){
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>I.E. Code #</Label>
-                    <Input value={formData?.exporter.ie_code} readOnly className="bg-gray-50" />
+                    <Input value={exporter.ie_code} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>PAN No. #</Label>
-                    <Input value={formData?.exporter.pan_number} readOnly className="bg-gray-50" />
+                    <Input value={exporter.pan_number} readOnly className="bg-gray-50" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label>GSTIN No. #</Label>
-                    <Input value={formData?.exporter.gstin_number} readOnly className="bg-gray-50" />
+                    <Input value={exporter.gstin_number} readOnly className="bg-gray-50" />
                   </div>
                   <div className="space-y-2">
                     <Label>State Code</Label>
-                    <Input value={formData?.exporter.state_code} readOnly className="bg-gray-50" />
+                    <Input value={exporter.state_code} readOnly className="bg-gray-50" />
                   </div>
                 </div>
               </div>
@@ -1330,7 +1228,9 @@ function handleNext(data){
                     <Label>Order No.</Label>
                     <Input 
                       value={
-                        buyer.buyer_order_no 
+                        orderData.order_no || 
+                        buyer.buyer_order_no || 
+                        (buyerInfo?.buyersOrderNo || '')
                       } 
                       readOnly 
                       className="bg-gray-50" 
@@ -1340,8 +1240,9 @@ function handleNext(data){
                     <Label>Order Date</Label>
                     <Input 
                       value={
-                        (buyer.buyer_order_date ? formatCustomDate(buyer.buyer_order_date) : '')
-                        
+                        (orderData.order_date ? format(new Date(orderData.order_date), 'dd/MM/yyyy') : '') ||
+                        (buyer.buyer_order_date ? format(new Date(buyer.buyer_order_date), 'dd/MM/yyyy') : '') || 
+                        (buyerInfo?.buyersOrderDate ? format(new Date(buyerInfo.buyersOrderDate), 'dd/MM/yyyy') : '')
                       } 
                       readOnly 
                       className="bg-gray-50" 
@@ -1352,9 +1253,9 @@ function handleNext(data){
                   <Label>PO No.</Label>
                   <Input 
                     value={
-                      
-                      buyer?.po_no || "unavailable"
-                      
+                      orderData.po_no || 
+                      buyer.po_no || 
+                      (buyerInfo?.poNo || '')
                     } 
                     readOnly 
                     className="bg-gray-50" 
@@ -1437,11 +1338,11 @@ function handleNext(data){
               </div>
               <div className="space-y-2">
                 <Label>Currency</Label>
-                <Input value={formData.currancy_type} readOnly className="bg-gray-50" />
+                <Input value={formData.invoice.currency_type} readOnly className="bg-gray-50" />
               </div>
               <div className="space-y-2">
                 <Label>Currency Rate</Label>
-                <Input value={formData?.currency_rate} readOnly className="bg-gray-50" />
+                <Input value={formData.invoice?.currency_rate} readOnly className="bg-gray-50" />
               </div>
             </div>
           </CardContent>
@@ -1622,8 +1523,6 @@ function handleNext(data){
                             {/* NET.WT. IN KGS. column - Always editable */}
                             <Input
                               value={item.product.netWeight ?? '0.00'}
-                              {...register(`products.product_list.${sectionIndex}.items.${itemIndex}.net_weight`, {
-                                required: true})}
                               onChange={(e) => {
 
                                 handleNetWeightChange(section.id, item.id, e.target.value, item.product.description);
@@ -1638,8 +1537,6 @@ function handleNext(data){
                             {/* GRS.WT. IN KGS. column - Always editable */}
                             <Input
                               value={item.product.grossWeight ?? '0.00'}
-                              {...register(`products.product_list.${sectionIndex}.items.${itemIndex}.gross_weight`, {
-                                required: true})}
                               onChange={(e) => {
 
                                 handleGrossWeightChange(section.id, item.id, e.target.value,item.product.description);
@@ -1734,9 +1631,6 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.containerNo}
-                          {...register(`products.containers.${row.id-1}.container_no`, {
-                            required: true
-                          })}
                           onChange={(e) => updateContainerField(row.id, 'containerNo', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter container no."
@@ -1745,9 +1639,6 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.lineSealNo}
-                          {...register(`products.containers.${row.id-1}.line_seal_no`, {
-                            required: true
-                          })} 
                           onChange={(e) => updateContainerField(row.id, 'lineSealNo', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter line seal no."
@@ -1756,9 +1647,6 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.rfidSeal}
-                          {...register(`products.containers.${row.id-1}.rfid_seal`, {
-                            required: true
-                          })}
                           onChange={(e) => updateContainerField(row.id, 'rfidSeal', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter RFID seal"
@@ -1767,9 +1655,6 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.designNo}
-                          {...register(`products.containers.${row.id-1}.design_no`, {
-                            required: true
-                          })}
                           onChange={(e) => updateContainerField(row.id, 'designNo', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter design no."
@@ -1779,9 +1664,6 @@ function handleNext(data){
                         <Input
                           type="number"
                           value={row.quantity}
-                          {...register(`products.containers.${row.id-1}.quantity`, {
-                            required: true
-                          })}
                           onChange={(e) => updateContainerField(row.id, 'quantity', parseInt(e.target.value) || '')}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter quantity"
@@ -1790,9 +1672,6 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.netWeight}
-                          {...register(`products.containers.${row.id-1}.net_weight`, {
-                            required: true
-                          })}
                           onChange={(e) => updateContainerField(row.id, 'netWeight', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter net weight"
@@ -1801,9 +1680,6 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.grossWeight}
-                          {...register(`products.containers.${row.id-1}.gross_weight`, {
-                            required: true
-                          })}
                           onChange={(e) => updateContainerField(row.id, 'grossWeight', e.target.value)}
                           className="h-10 border-0 text-center bg-white w-full"
                           placeholder="Enter gross weight"
@@ -1898,7 +1774,30 @@ function handleNext(data){
                 <Save className="mr-2 h-4 w-4" />
                 Save Invoice
               </Button>
-            <Button variant="default" onClick={handleSubmit(handleNext)}>Next</Button>
+            <Button variant="default" onClick={() => {
+              // Store container data and other necessary data in localStorage
+              const annexureData = {
+                containerRows,
+                totalPalletCount,
+                sections,
+                markNumber,
+                invoiceHeader,
+                buyerInfo,
+                shippingInfo
+              };
+              localStorage.setItem('annexureData', JSON.stringify(annexureData));
+              
+              // Save container data to form context before navigating
+              setPackagingListData({
+                containerRows,
+                totalPalletCount,
+                sections,
+                markNumber
+              });
+              
+              // Navigate to the annexure page
+              navigate("/annexure")
+            }}>Next</Button>
           </div>
       </CardContent>
       </Card>
@@ -1906,8 +1805,6 @@ function handleNext(data){
   );
   } catch (error) {
     // Error rendering PackagingList
-    console.log(error);
-    
     return (
       <div className="p-6 bg-white shadow rounded-lg">
         <h2 className="text-xl font-bold text-red-600">Error Rendering Packaging List</h2>

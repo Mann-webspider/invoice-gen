@@ -184,7 +184,7 @@ const ShippingInformationPage = ({
           <div className="space-y-2">
             <Label htmlFor="portOfLoading">Port of Loading</Label>
             <Controller
-              name="shipping.place_of_loading" // this must match your form field name
+              name="shipping.port_of_loading" // this must match your form field name
               control={control}
               rules={{ required: true }} // optional: validation rule
               render={({ field }) => (
@@ -201,7 +201,7 @@ const ShippingInformationPage = ({
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select place of loading" />
+                    <SelectValue placeholder="Select port of loading" />
                   </SelectTrigger>
                   <SelectContent>
                     {portsOfLoading.map((place) => (
@@ -218,7 +218,7 @@ const ShippingInformationPage = ({
           <div className="space-y-2">
             <Label htmlFor="portOfDischarge">Port of Discharge</Label>
             <Controller
-              name="shipping.place_of_discharge" // this must match your form field name
+              name="shipping.port_of_discharge" // this must match your form field name
               control={control}
               rules={{ required: true }} // optional: validation rule
               render={({ field }) => (
@@ -237,7 +237,7 @@ const ShippingInformationPage = ({
                   }}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select place of discharge" />
+                    <SelectValue placeholder="Select port of discharge" />
                   </SelectTrigger>
                   <SelectContent>
                     {portsOfDischarge.map((place) => (
@@ -414,7 +414,7 @@ const ShippingInformationPage = ({
             <div className="space-y-2">
               <Label htmlFor="selectedCurrency">Currency</Label>
               <Controller
-                name="currancy_type" // this must match your form field name
+                name="currency_type" // this must match your form field name
                 control={control}
                 rules={{ required: true }} // optional: validation rule
                 render={({ field }) => (

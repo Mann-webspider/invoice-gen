@@ -40,7 +40,7 @@ import { generateInvoiceExcel } from "@/lib/excelGenerator";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { generateInvoigenerateDocxceExcel } from "@/lib/wordGenerator";
-
+import { useForm as rhf, Controller } from "react-hook-form";
 // Handle date-fns import with proper TypeScript handling
 let format: (date: Date | number, format: string) => string = (date, fmt) =>
   new Date(date).toLocaleDateString();
@@ -186,8 +186,25 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
   // State for form data
   const { formData, setVGMData, ensureFormDataFromLocalStorage } =
     useForm() as FormContextType;
+  const {
+    register,
+    watch,
+    setValue,
+    formState: { errors },
+    handleSubmit,
+    control,
+  } = rhf();
+  const vgnForm = watch();
   const navigate = useNavigate();
-
+  useEffect(() => {
+    const subscribe = watch((data) => {
+      // Save the form data to localStorage whenever it changes
+      console.log(data);
+    });
+    return () => {
+      subscribe.unsubscribe();
+    };
+  }, [watch, invoiceHeader]);
   // Get current form ID for localStorage
   const currentFormId = invoiceHeader?.invoiceNo || getCurrentFormId();
 
@@ -365,14 +382,18 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
       default:
         break;
     }
-    
   };
 
   const handleSupplierSelect = (value: string) => {
     const selectedSupplier = availableSuppliers.find(
       (s) => s.company_name === value
     );
-
+    setValue("ie_code", selectedSupplier?.ie_code || "");
+    setValue("authorized_name", selectedSupplier?.authorized_name || "");
+    setValue("authorized_contact", selectedSupplier?.contact_number || "");
+    setValue("permissible_weight", "AS PER ANNEXURE");
+    setValue("weighing_slip_no", "AS PER ANNEXURE");
+    setValue("dt_weighing", weighingDate);
     setSelectedShipper(selectedSupplier);
 
     // Check if the supplier has letterhead images
@@ -382,7 +403,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
       // Set letterhead top image
       if (selectedSupplier.letterhead_top_image) {
         getImageUrl(selectedSupplier.id, "header");
-        setLetterheadTopImage(()=>getImageUrl(selectedSupplier.id, "header"));
+        setLetterheadTopImage(() => getImageUrl(selectedSupplier.id, "header"));
         setImagesLoaded(true);
       } else {
         setLetterheadTopImage("");
@@ -390,7 +411,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
       // Set letterhead bottom image
       if (selectedSupplier.letterhead_bottom_image) {
-        setLetterheadBottomImage(()=>getImageUrl(selectedSupplier.id, "footer"));
+        setLetterheadBottomImage(() =>
+          getImageUrl(selectedSupplier.id, "footer")
+        );
         setImagesLoaded(true);
       } else {
         setLetterheadBottomImage("");
@@ -398,7 +421,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
       // Set stamp image
       if (selectedSupplier.stamp_image) {
-        setStampImage(()=>getImageUrl(selectedSupplier.id, "signature"));
+        setStampImage(() => getImageUrl(selectedSupplier.id, "signature"));
       } else {
         setStampImage("");
       }
@@ -500,50 +523,66 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
       );
     }
   };
-  const handleSubmit = async () => {
+  const handleSave = async (data) => {
     try {
+      localStorage.setItem("taxDialogBox", "false");
       // Update the form context with the current VGM data
-      setVGMData({
-        shipperRegistration,
-        shipperOfficial,
-        contactDetails,
-        weighingDate,
-        containerNumber,
-        bookingNumbers,
-        tareWeights,
-        selectedExporter,
-        selectedShipperName,
-        containerSize,
-        weighBridgeNo,
-        verifiedGrossMass,
-        unitOfMeasure,
-        weighingSlipNo,
-        containerType,
-        hazardousClass,
-      });
+      // setVGMData({
+      //   shipperRegistration,
+      //   shipperOfficial,
+      //   contactDetails,
+      //   weighingDate,
+      //   containerNumber,
+      //   bookingNumbers,
+      //   tareWeights,
+      //   selectedExporter,
+      //   selectedShipperName,
+      //   containerSize,
+      //   weighBridgeNo,
+      //   verifiedGrossMass,
+      //   unitOfMeasure,
+      //   weighingSlipNo,
+      //   containerType,
+      //   hazardousClass,
+      // });
 
       // Collect all form data from localStorage
-      const allFormData = collectFormDataFromLocalStorage();
+      // const allFormData = collectFormDataFromLocalStorage();
+      
       // Use JSON.stringify with replacer function to handle circular references and pretty print
-      console.log(
-        "Form data for submission:",
-        JSON.stringify(
-          allFormData,
-          (key, value) => {
-            // Prevent circular references by not including fullForm in the logged output
-            if (key === "fullForm") return "[Circular Reference - Not Shown]";
-            return value;
-          },
-          2
-        )
-      );
+      // console.log(
+        //   "Form data for submission:",
+        //   JSON.stringify(
+          //     allFormData,
+          //     (key, value) => {
+            //       // Prevent circular references by not including fullForm in the logged output
+      //       if (key === "fullForm") return "[Circular Reference - Not Shown]";
+      //       return value;
+      //     },
+      //     2
+      //   )
+      // );
       // Send the data to the PHP backend API
+      let invoiceData = JSON.parse(localStorage.getItem("invoiceData2") || "null");
+      let packagingData = JSON.parse(localStorage.getItem("packagingList") || "null");
+      let annexureData = JSON.parse(localStorage.getItem("annexureData2") || "null");
+      
+      const allFormData = {
+        invoice: {...invoiceData},
+        
+        annexure: {...annexureData},
+        vgm:{...data,}
+      }
+      console.log(allFormData);
       const response = await invoiceApi.generate(allFormData);
       console.log(response.data);
       const actualData = await invoiceApi.getSpecific(response.data.id);
       console.log(actualData.data);
-      
-      if (response.status === 200 || response.status === 201 && actualData.status === 200) {
+
+      if (
+        response.status === 200 ||
+        (response.status === 201 && actualData.status === 200)
+      ) {
         await handleFiles(actualData.data);
         // Clear localStorage on successful submission
         clearLocalStorage();
@@ -577,9 +616,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
       // Collect all form sections from localStorage
       // First try to get from section-specific storage, then fall back to full form data
-      let invoice = loadFormSection(formId, "invoice");
+      let invoice = loadFormSection(formId, "invoiceData2");
       let packagingList = loadFormSection(formId, "packagingList");
-      let annexure = loadFormSection(formId, "annexure");
+      let annexure = loadFormSection(formId, "annexureData2");
       let vgm = loadFormSection(formId, "vgm");
 
       // If invoice is null but exists in parsedFullForm, use that
@@ -1309,21 +1348,33 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 border-t pt-4">
               <div className="space-y-2">
                 <Label className="font-medium">1. Name of the shipper</Label>
-                <Select
-                  value={selectedShipper?.company_name || ""}
-                  onValueChange={(value) => handleSupplierSelect(value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select supplier" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {availableSuppliers.map((s) => (
-                      <SelectItem key={s.id} value={s.company_name}>
-                        {s.company_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="shipper_name"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value); // update RHF form state
+                        handleSupplierSelect(value); // your custom logic (e.g., update full supplier object)
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select supplier" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableSuppliers.map((supplier) => (
+                          <SelectItem
+                            key={supplier.id}
+                            value={supplier.company_name}
+                          >
+                            {supplier.company_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
                 <div className="font-medium text-red-600">
@@ -1391,6 +1442,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Label className="font-medium">5. Container No.</Label>
                 <Input
                   value={containerNumber}
+                  {...register("container_number")}
                   onChange={(e) => {
                     setContainerNumber(e.target.value);
                     saveFieldToLocalStorage("container_number", e.target.value);
@@ -1407,25 +1459,28 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Label className="font-medium">
                   6. Container Size ( TEU/FEU/other)
                 </Label>
-                <Select
-                  value={containerSize}
-                  onValueChange={(value) => {
-                    setContainerSize(value);
-                    saveFieldToLocalStorage("container_size", value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="20'">20'</SelectItem>
-                    <SelectItem value="40'">40'</SelectItem>
-                    <SelectItem value="40' HC">40' HC</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="container_size"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => field.onChange(value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select container size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="20'">20'</SelectItem>
+                        <SelectItem value="40'">40'</SelectItem>
+                        <SelectItem value="40' HC">40' HC</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{containerSize}</div>
+                <div className="font-medium">{containerSize?vgnForm.container_size:""}</div>
               </div>
             </div>
 
@@ -1449,6 +1504,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 </Label>
                 <Input
                   value={weighBridgeNo}
+                  {...register("weighbridge_registration")}
                   onChange={(e) => {
                     setWeighBridgeNo(e.target.value);
                     saveFieldToLocalStorage(
@@ -1468,24 +1524,30 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Label className="font-medium">
                   9. Verified gross mass of container (method-1/method-2)
                 </Label>
-                <Select
-                  value={verifiedGrossMass}
-                  onValueChange={(value) => {
-                    setVerifiedGrossMass(value);
-                    saveFieldToLocalStorage("verified_gross_mass", value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="method-1">method-1</SelectItem>
-                    <SelectItem value="method-2">method-2</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="verified_gross_mass"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value); // RHF state update
+                        saveFieldToLocalStorage("verified_gross_mass", value); // custom local storage logic
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select method" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="method-1">method-1</SelectItem>
+                        <SelectItem value="method-2">method-2</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{verifiedGrossMass}</div>
+                <div className="font-medium">{verifiedGrossMass?vgnForm.verified_gross_mass:""}</div>
               </div>
             </div>
 
@@ -1494,25 +1556,31 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Label className="font-medium">
                   10. Unit of measure (KG / MT/ LBS)
                 </Label>
-                <Select
-                  value={unitOfMeasure}
-                  onValueChange={(value) => {
-                    setUnitOfMeasure(value);
-                    saveFieldToLocalStorage("unit_of_measurement", value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="KG">KG</SelectItem>
-                    <SelectItem value="MT">MT</SelectItem>
-                    <SelectItem value="LBS">LBS</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="unit_of_measurement"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value); // Update RHF state
+                        saveFieldToLocalStorage("unit_of_measurement", value); // Persist to local storage
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select unit" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="KG">KG</SelectItem>
+                        <SelectItem value="MT">MT</SelectItem>
+                        <SelectItem value="LBS">LBS</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{unitOfMeasure}</div>
+                <div className="font-medium">{unitOfMeasure?vgnForm.unit_of_measurement:""}</div>
               </div>
             </div>
 
@@ -1530,7 +1598,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="font-medium">Dt. {weighingDate}</div>
+                <div className="font-medium">Dt. {weighingDate?vgnForm.dt_weighing:""}</div>
               </div>
             </div>
 
@@ -1555,26 +1623,32 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Label className="font-medium">
                   13. Type (Normal/Reefer/Hazardous/others)
                 </Label>
-                <Select
-                  value={containerType}
-                  onValueChange={(value) => {
-                    setContainerType(value);
-                    saveFieldToLocalStorage("type", value);
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="NORMAL">NORMAL</SelectItem>
-                    <SelectItem value="REEFER">REEFER</SelectItem>
-                    <SelectItem value="HAZARDOUS">HAZARDOUS</SelectItem>
-                    <SelectItem value="OTHER">OTHER</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Controller
+                  name="type"
+                  control={control}
+                  render={({ field }) => (
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => {
+                        field.onChange(value); // Update RHF state
+                        saveFieldToLocalStorage("type", value); // Save to local storage
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select container type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NORMAL">NORMAL</SelectItem>
+                        <SelectItem value="REEFER">REEFER</SelectItem>
+                        <SelectItem value="HAZARDOUS">HAZARDOUS</SelectItem>
+                        <SelectItem value="OTHER">OTHER</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{containerType}</div>
+                <div className="font-medium">{containerType?vgnForm.type:""}</div>
               </div>
             </div>
 
@@ -1585,6 +1659,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 </Label>
                 <Input
                   value={hazardousClass}
+                  {...register("IMDG_class", { defaultValue: "NA" })}
                   onChange={(e) => {
                     setHazardousClass(e.target.value);
                     saveFieldToLocalStorage("IMDG_class", e.target.value);
@@ -1634,6 +1709,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                       <TableCell className="border p-0">
                         <Input
                           value={bookingNumbers[index] || ""}
+                          {...register(`containers.${index}.booking_no`, {required: true})}
                           onChange={(e) =>
                             handleBookingNumberChange(index, e.target.value)
                           }
@@ -1642,16 +1718,33 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                         />
                       </TableCell>
                       <TableCell className="border text-center">
-                        {row.containerNo || "S***********"}
+                        <Input
+                          value={row.containerNo || ""}
+                          {...register(`containers.${index}.container_no`, {required: true,defaultValue: row.containerNo})}
+                          
+                          readonly
+                          disabled
+                          className="h-10 border-0 text-center"
+                        />
+                        {/* {row.containerNo {...register(`containers.${index}.container_no`)}|| "S***********"} */}
                       </TableCell>
                       <TableCell className="border">
                         <div className="flex items-center justify-center">
                           <div className="text-right pr-2 w-1/3">
-                            {row.grossWeight || "0.00"}
+                            
+                            <Input
+                            value={row.grossWeight || "0.00"}
+                            {...register(`containers.${index}.gross_weight`,{required: true, defaultValue: row.grossWeight || "0.00"})}
+                            disabled
+                            readOnly
+                            placeholder="Enter Tare Weight"
+                            className="h-10 border-0 text-center w-20"
+                          />
                           </div>
                           <div className="px-2">+</div>
                           <Input
                             value={tareWeights[index] || ""}
+                            {...register(`containers.${index}.tare_weight`, {required: true})}
                             onChange={(e) =>
                               handleTareWeightChange(index, e.target.value)
                             }
@@ -1660,10 +1753,18 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                           />
                           <div className="px-2">=</div>
                           <div className="text-right pl-2 w-1/3 font-medium">
-                            {calculateTotalVGM(
+                          <Input
+                            value={calculateTotalVGM(
                               row.grossWeight || "0",
                               tareWeights[index] || "0"
                             )}
+                            {...register(`containers.${index}.total_vgm`,{required: true, defaultValue: calculateTotalVGM(row.grossWeight || "0", tareWeights[index] || "0")})}
+                            disabled
+                            readOnly
+                            placeholder="Enter Tare Weight"
+                            className="h-10 border-0 text-center w-20"
+                          />
+                            
                           </div>
                         </div>
                       </TableCell>
@@ -1712,10 +1813,8 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
           Back
         </Button>
         <Button
-          onClick={() => {
-            localStorage.setItem("taxDialogBox", "false");
-            handleSubmit();
-          }}
+          onClick={
+            handleSubmit(handleSave)}
         >
           Submit
         </Button>
