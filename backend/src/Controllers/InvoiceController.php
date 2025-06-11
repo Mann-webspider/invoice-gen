@@ -116,23 +116,31 @@ class InvoiceController
                 'marks' => $data['products']['marks'],
                 'nos' => $data['products']['nos'],
                 'frieght' => $data['products']['frieght'],
+                'total_pallet_count' => $data['products']['total_pallet_count'],
                 'insurance' => $data['products']['insurance'],
                 'total_price' => $data['products']['total_price'],
                 'product_ids' => json_encode($productIds),
                 'container_ids' => json_encode($containerIds)
             ]);
 
-            // Create supplier record
-            if (isset($data['supplier'])) {
-                $supplier = SupplierDetails::create([
-                    'supplier_name' => $data['supplier']['supplier_name'],
-                    'supplier_address' => $data['supplier']['supplier_address'],
-                    'gstin_number' => $data['supplier']['gstin_number'],
-                    'tax_invoice_no' => $data['supplier']['tax_invoice_no'],
-                    'date' => $data['supplier']['date']
-                ]);
+            // Create supplier records
+            $supplierIds = [];
 
+            if (isset($data['suppliers']) && is_array($data['suppliers'])) {
+                foreach ($data['suppliers'] as $supplierData) {
+                    $supplierRecord = SupplierDetails::create([
+                        'supplier_name' => $supplierData['name'] ?? '',
+                        'supplier_address' => $supplierData['address'] ?? '',
+                        'gstin_number' => $supplierData['gstin_number'] ?? '',
+                        'tax_invoice_no' => $supplierData['tax_invoice_number'] ?? '',
+                        'date' => $supplierData['date'] ?? null,
+                    ]);
+
+                    $supplierIds[] = $supplierRecord->id;
+                }
             }
+
+
 
             // Create shipping record
             $shipping = ShippingDetail::create([
@@ -231,11 +239,11 @@ class InvoiceController
             $lastInvoiceNumber = $exporterDropdown->last_invoice_number + 1;
             // Update the exporterDropdown with the new last invoice number
             $exporterDropdown->last_invoice_number = $lastInvoiceNumber;
-            
+
             $exporterDropdown->save();
-            
+
             // Finally, create the invoice record
-            if (isset($data['supplier'])) {
+            if (isset($data['suppliers'])) {
 
                 $invoice = Invoice::create([
                     'invoice_number' => $data['invoice_number'],
@@ -248,9 +256,11 @@ class InvoiceController
                     'exporter_id' => $exporter->id,
                     'buyer_id' => $buyer->id,
                     'product_id' => $productDetails->id,
-                    'supplier_id' => $supplier->id,
+                    'supplier_ids' => json_encode($supplierIds),
                     'shipping_id' => $shipping->id,
-                    'package_id' => $package->id
+                    'package_id' => $package->id,
+                    'annexure_id' => $anx->id,
+                    'vgm_id' => $vgm->id
                 ]);
                 DB::commit();
 
@@ -267,7 +277,7 @@ class InvoiceController
                     'buyer_id' => $buyer->id,
                     'product_id' => $productDetails->id,
 
-                    'supplier_id' => $supplier->id,
+                    'supplier_ids' => json_encode($supplierIds),
                     'shipping_id' => $shipping->id,
                     'package_id' => $package->id,
                     'annexure_id' => $anx->id,
@@ -338,166 +348,180 @@ class InvoiceController
 
     // READ all invoices with related data
     public function getInvoices(Request $request, Response $response)
-{
-    try {
-        // Fetch counts
-        $exporterCount = ExporterDropdown::count();
-        $invoiceCount = Invoice::count();
-        $productCount = ProductCategory::count();
-        $products = ProductCategory::select('id', 'category_name')->get();
-         // Get query parameter 'limit' (optional)
-        $queryParams = $request->getQueryParams();
-        $limit = isset($queryParams['limit']) ? (int)$queryParams['limit'] : null;
-        // Fetch list of invoices with joins
-        $invoiceQuery = Invoice::select(
-            'invoice.id',
-            'invoice.invoice_number as invoiceNo',
-            'invoice.invoice_date as date',
-            'exporter_details.company_name as exporter_name',
-            'supplier_details.supplier_name as supplier_name',
-            'buyer_details.order_number as buyer_order_number',
-            'product_details.total_price as totalFOBEuro',
-            'invoice.product_id as product_id',
-            'shipping_details.port_of_loading as portOfLoading',
-            'shipping_details.final_destination as finalDestination',
-            'shipping_details.port_of_discharge as portOfDischarge',
-            'shipping_details.terms_of_delivery as shippingTerm',
-            
-        )
-        ->leftJoin('exporter_details', 'exporter_details.id', '=', 'invoice.exporter_id')
-        ->leftJoin('supplier_details', 'supplier_details.id', '=', 'invoice.supplier_id')
-        ->leftJoin('buyer_details', 'buyer_details.id', '=', 'invoice.buyer_id')
-       ->leftJoin('product_details', 'product_details.id', '=', 'invoice.product_id')
-        ->leftJoin('shipping_details', 'shipping_details.id', '=', 'invoice.shipping_id');
-        
+    {
+        try {
+            // Fetch counts
+            $exporterCount = ExporterDropdown::count();
+            $invoiceCount = Invoice::count();
+            $productCount = ProductCategory::count();
+            $products = ProductCategory::select('id', 'category_name')->get();
+            // Get query parameter 'limit' (optional)
+            $queryParams = $request->getQueryParams();
+            $limit = isset($queryParams['limit']) ? (int) $queryParams['limit'] : null;
+            // Fetch list of invoices with joins
+            $invoiceQuery = Invoice::select(
+                'invoice.id',
+                'invoice.invoice_number as invoiceNo',
+                'invoice.invoice_date as date',
+                'exporter_details.company_name as exporter_name',
+                // 'supplier_details.supplier_name as supplier_name',
+                'buyer_details.order_number as buyer_order_number',
+                'product_details.total_price as totalFOBEuro',
+                'invoice.product_id as product_id',
+                'shipping_details.port_of_loading as portOfLoading',
+                'shipping_details.final_destination as finalDestination',
+                'shipping_details.port_of_discharge as portOfDischarge',
+                'shipping_details.terms_of_delivery as shippingTerm',
 
-        
-        if ($limit) {
-            $invoiceQuery->limit($limit)->orderBy("invoice_date",'desc');
-        }
-        $invoices = $invoiceQuery->get();
-        $invoicesWithProducts = $invoices->map(function ($invoice) {
-            $invoice->status = 'completed';
+            )
+                ->leftJoin('exporter_details', 'exporter_details.id', '=', 'invoice.exporter_id')
+                // ->leftJoin('supplier_details', 'supplier_details.id', '=', 'invoice.supplier_id')
+                ->leftJoin('buyer_details', 'buyer_details.id', '=', 'invoice.buyer_id')
+                ->leftJoin('product_details', 'product_details.id', '=', 'invoice.product_id')
+                ->leftJoin('shipping_details', 'shipping_details.id', '=', 'invoice.shipping_id');
 
-            // Fetch product details row for this invoice
-            $productDetailRow = ProductDetails::where('id', $invoice->product_id)->first();
 
-            if ($productDetailRow && !empty($productDetailRow->product_ids)) {
-                // Decode product_ids from JSON string
-                $productIdsArray = json_decode($productDetailRow->product_ids, true);
 
-                if (is_array($productIdsArray) && !empty($productIdsArray)) {
-                    // Query ProductCategory (or ProductList) with those IDs
-                    $products = ProductLists::whereIn('id', $productIdsArray)
-                        ->select('id', 'product_name as description', 'quantity','unit', 'price','total_price as total') // Adjust fields as needed
-                        ->get();
+            if ($limit) {
+                $invoiceQuery->limit($limit)->orderBy("invoice_date", 'desc');
+            }
+            $invoices = $invoiceQuery->get();
+            $invoicesWithProducts = $invoices->map(function ($invoice) {
+                $invoice->status = 'completed';
+
+                // Fetch product details row for this invoice
+                $productDetailRow = ProductDetails::where('id', $invoice->product_id)->first();
+
+                if ($productDetailRow && !empty($productDetailRow->product_ids)) {
+                    // Decode product_ids from JSON string
+                    $productIdsArray = json_decode($productDetailRow->product_ids, true);
+
+                    if (is_array($productIdsArray) && !empty($productIdsArray)) {
+                        // Query ProductCategory (or ProductList) with those IDs
+                        $products = ProductLists::whereIn('id', $productIdsArray)
+                            ->select('id', 'product_name as description', 'quantity', 'unit', 'price', 'total_price as total') // Adjust fields as needed
+                            ->get();
+                    } else {
+                        $products = [];
+                    }
                 } else {
                     $products = [];
                 }
-            } else {
-                $products = [];
-            }
 
-            // Add to invoice
-            $invoice->items = $products;
+                // Add to invoice
+                $invoice->items = $products;
 
-            return $invoice;
-        });
-         // Apply limit if provided
-        // Build response
-        $responseData = [
-            'status' => 'success',
-            'counts' => [
-                'exporterCount' => $exporterCount,
-                'invoiceCount' => $invoiceCount,
-                'productCount' => $productCount
-            ],
-            'invoices' => $invoicesWithProducts,
-            
-        ];
+                return $invoice;
+            });
+            // Apply limit if provided
+            // Build response
+            $responseData = [
+                'status' => 'success',
+                'counts' => [
+                    'exporterCount' => $exporterCount,
+                    'invoiceCount' => $invoiceCount,
+                    'productCount' => $productCount
+                ],
+                'invoices' => $invoicesWithProducts,
 
-        $response->getBody()->write(json_encode($responseData));
+            ];
+
+            $response->getBody()->write(json_encode($responseData));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (\Exception $e) {
+            $response->getBody()->write(json_encode([
+                'status' => 'error',
+                'message' => 'Failed to fetch invoices',
+                'error' => $e->getMessage()
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
+
+
+    // READ invoice by ID with related data
+    public function getInvoiceById(Request $request, Response $response, $args)
+{
+    try {
+        $invoice = Invoice::with([
+            'exporter',
+            'buyer',
+            'productDetails',
+            'shipping',
+            'package',
+            'annexure',
+            'vgm'
+        ])->find($args['id']);
+
+        if (!$invoice) {
+            $response->getBody()->write(json_encode(['message' => 'Invoice not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // === Safely extract related data ===
+        $products = optional($invoice->productDetails)->products ?? collect();
+        $containers = optional($invoice->productDetails)->containers ?? collect();
+        $vgmContainers = optional($invoice->vgm)->containers ?? collect();
+
+        // Ensure collections
+        $products = is_array($products) ? collect($products) : $products;
+        $containers = is_array($containers) ? collect($containers) : $containers;
+        $vgmContainers = is_array($vgmContainers) ? collect($vgmContainers) : $vgmContainers;
+
+        // === Group Products into Sections ===
+        $productSection = $products->groupBy('category_id')->map(function ($groupedProducts, $categoryId) {
+            $category = ProductCategory::find($categoryId);
+
+            return [
+                'id' => $categoryId,
+                'category_id' => $categoryId,
+                'category_name' => $category->description ?? null,
+                'hsn_code' => $category->hsn_code ?? null,
+                'products' => $groupedProducts->values()->toArray()
+            ];
+        })->values();
+
+        // === Add Supplier Info ===
+        $suppliers = $invoice->suppliers ?? collect();
+        $formattedSuppliers = collect($suppliers)->map(function ($supplier) {
+            return [
+                'id' => $supplier->id,
+                'name' => $supplier->supplier_name,
+                'address' => $supplier->supplier_address,
+                'gstin_number' => $supplier->gstin_number,
+                'tax_invoice_number' => $supplier->tax_invoice_no,
+                'date' => $supplier->date,
+            ];
+        })->values();
+
+        $invoice->setAttribute('suppliers', $formattedSuppliers);
+
+        // === Exporter Letterhead Images ===
+        $expDrop = ExporterDropdown::where('company_name', $invoice->exporter->company_name)->first();
+        if ($expDrop) {
+            $invoice->exporter->setAttribute('header', $expDrop['letterhead_top_image']);
+            $invoice->exporter->setAttribute('footer', $expDrop['letterhead_bottom_image']);
+            $invoice->exporter->setAttribute('signature', $expDrop['stamp_image']);
+        }
+
+        // === Set Data to Object for Frontend ===
+        $invoice->productDetails?->setAttribute('products', $products);
+        $invoice->productDetails?->setAttribute('containers', $containers);
+        $invoice->productDetails?->setAttribute('product_section', $productSection);
+        $invoice->vgm?->setAttribute('containers', $vgmContainers);
+
+        $response->getBody()->write(json_encode($invoice));
         return $response->withHeader('Content-Type', 'application/json');
+
     } catch (\Exception $e) {
         $response->getBody()->write(json_encode([
-            'status' => 'error',
-            'message' => 'Failed to fetch invoices',
-            'error' => $e->getMessage()
+            'error' => 'Failed to fetch invoice',
+            'message' => $e->getMessage()
         ]));
         return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     }
 }
 
-
-    // READ invoice by ID with related data
-    public function getInvoiceById(Request $request, Response $response, $args)
-    {
-        try {
-            $invoice = Invoice::with([
-                'exporter',
-                'buyer',
-                'productDetails',
-                'supplier',
-                'shipping',
-                'package',
-                'annexure',
-                'vgm'
-
-            ])->find($args['id']);
-
-            if (!$invoice) {
-                $response->getBody()->write(json_encode(['message' => 'Invoice not found']));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
-            }
-
-            // Get the products and containers
-            $products = $invoice->productDetails->products;
-
-            $containers = $invoice->productDetails->containers;
-            $vgmContainers = $invoice->vgm->containers;
-
-            // Ensure we're working with collections
-            $products = is_array($products) ? collect($products) : $products;
-            $containers = is_array($containers) ? collect($containers) : $containers;
-            $vgmContainers = is_array($vgmContainers) ? collect($vgmContainers) : $vgmContainers;
-
-
-            // === GROUP products into product_section ===
-            $productSection = $products->groupBy('category_id')->map(function ($groupedProducts, $categoryId) {
-                $category = ProductCategory::find($categoryId);
-
-                return [
-                    'id' => $categoryId,
-                    'category_id' => $categoryId,
-                    'category_name' => $category->description ?? null,
-                    'hsn_code' => $category->hsn_code ?? null,
-                    'products' => $groupedProducts->values()->toArray()
-                ];
-            })->values(); // reset keys to indexed array
-
-            $expDrop = ExporterDropdown::where('company_name', $invoice->exporter->company_name)->first();
-
-            $invoice->exporter->setAttribute('header', $expDrop['letterhead_top_image']);
-            $invoice->exporter->setAttribute('footer', $expDrop['letterhead_bottom_image']);
-            $invoice->exporter->setAttribute('signature', $expDrop['stamp_image']);
-            // Add products and containers to the productDetails object
-            $invoice->productDetails->setAttribute('products', $products);
-            $invoice->productDetails->setAttribute('containers', $containers);
-            $invoice->vgm->setAttribute('containers', $vgmContainers);
-            // Add product_section to the invoice
-            $invoice->productDetails->setAttribute('product_section', $productSection);
-
-
-            $response->getBody()->write(json_encode($invoice));
-            return $response->withHeader('Content-Type', 'application/json');
-        } catch (\Exception $e) {
-            $response->getBody()->write(json_encode([
-                'error' => 'Failed to fetch invoice',
-                'message' => $e->getMessage()
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
-        }
-    }
 
     // UPDATE invoice and related data
     public function updateInvoice(Request $request, Response $response, $args)

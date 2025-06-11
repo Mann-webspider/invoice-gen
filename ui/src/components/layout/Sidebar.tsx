@@ -15,15 +15,18 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/context/SidebarContext";
+import api from "@/lib/axios";
+
 
 export const Sidebar = () => {
   const { collapsed, toggleSidebar } = useSidebar();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     // Silent error handling for logout functionality
     try {
       // Clear any stored session/user data
-      localStorage.removeItem('user');
+      let res = await api.post("/logout",{})
+      localStorage.removeItem('authToken');
       // You can add redirect to login page or other logout logic here
       window.location.href = '/login';
     } catch (error) {

@@ -49,6 +49,7 @@ export const filesApi = {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
+      timeout: 20 * 1000, // 20 seconds timeout
     });
 
     const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -60,15 +61,16 @@ export const filesApi = {
     // Optional: Read filename from content-disposition header
     const disposition = response.headers['content-disposition'];
     const match = disposition && disposition.match(/filename="?(.+)"?/);
-    const filename = match?.[1] || 'converted_invoice.pdf';
+    const filename = match?.[1] || 'custom_invoice.pdf';
 
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
-
     console.log('✅ PDF downloaded successfully');
+    return response
+
   } catch (error) {
     console.error('❌ Error downloading PDF:', error);
   }

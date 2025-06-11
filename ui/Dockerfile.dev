@@ -9,6 +9,7 @@ RUN yarn install
 
 COPY . .
 RUN yarn add -D vite
+RUN yarn add docx
 EXPOSE 8080
 
 CMD ["yarn", "run","dev"]

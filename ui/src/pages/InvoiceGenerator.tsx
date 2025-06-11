@@ -644,15 +644,20 @@ const InvoiceGenerator = () => {
     // Determine HSN code based on section title and custom mappings
     let hsnCode;
 
-    if (productType === "Sanitary") {
-      hsnCode = "69101000";
-    } else {
+    
       // First check predefined hsnCodes
+      
+      
       hsnCode = hsnCodes[section.title];
+      
+      
+      
 
       // If not found in predefined codes, check custom mappings
       if (!hsnCode) {
         hsnCode = customSectionHsnCodes[section.title];
+        
+        
       }
 
       // If still not found and there are existing items, use HSN code from the last item
@@ -660,11 +665,11 @@ const InvoiceGenerator = () => {
         hsnCode = section.items[section.items.length - 1].product.hsnCode;
       }
 
-      // Default fallback
-      if (!hsnCode) {
-        hsnCode = "69072100";
-      }
-    }
+      // // Default fallback
+      // if (!hsnCode) {
+      //   hsnCode = "69072100";
+      // }
+    
 
     // Use the default size and its corresponding SQM value
     const defaultSize = sizes[0];
@@ -1542,6 +1547,7 @@ const InvoiceGenerator = () => {
             setSizes={setSizes}
             setSizeToSqmMap={setSizeToSqmMap}
             units={units}
+            setUnits={setUnits}
             removeRow={removeRow}
             addNewRow={addNewRow}
             showInsuranceFreight={showInsuranceFreight}

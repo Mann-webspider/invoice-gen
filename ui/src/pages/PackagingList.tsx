@@ -1147,25 +1147,36 @@ const PackagingList = ({
 
 
 function convertProductsToSections(productsData) {
-  return [
-    {
-      id: "section-1",
-      title: productsData.product_list[0]?.category_name || "Untitled Section",
-      items: productsData.product_list.map((product, index) => ({
-        id: `item-${index + 1}`,
-        quantity: product.quantity,
-        product: {
-          hsnCode: product.hsn_code || "", // You can add this if needed
-          description: product.product_name,
-          size: product.size,
-          netWeight: product.net_weight == 0?"": product.net_weight,
-          grossWeight: product.gross_weight == 0?"": product.gross_weight,
-          
-        },
-      }))
-    }
-  ];
+  if (!productsData?.product_list?.length) return [];
+
+  // Group products by category_name
+  const groupedByCategory = productsData.product_list.reduce((acc, product) => {
+    const category = product.category_name || "Untitled Section";
+    if (!acc[category]) acc[category] = [];
+    acc[category].push(product);
+    return acc;
+  }, {});
+
+  // Convert each group to a section
+  const sections = Object.entries(groupedByCategory).map(([category, items], index) => ({
+    id: `section-${index + 1}`,
+    title: category,
+    items: items.map((product, idx) => ({
+      id: `item-${index + 1}-${idx + 1}`,
+      quantity: product.quantity,
+      product: {
+        hsnCode: product.hsn_code || "",
+        description: product.product_name,
+        size: product.size,
+        netWeight: product.net_weight == 0 ? "" : product.net_weight,
+        grossWeight: product.gross_weight == 0 ? "" : product.gross_weight,
+      },
+    })),
+  }));
+
+  return sections;
 }
+
 useEffect(() => {
   const productData = JSON.parse(localStorage.getItem("invoiceData2"));
   if (productData?.products) {
@@ -1191,6 +1202,7 @@ function updateInvoiceProducts(formData, newObject) {
   if (Array.isArray(newObject.products?.containers)) {
     updatedForm.products.containers = [...newObject.products.containers];
   }
+  updatedForm.products['total_pallet_count'] = newObject.products?.total_pallet_count || '';
 
   // ✅ Calculate total weights
   let totalNetWeight = 0;
@@ -1437,7 +1449,7 @@ function handleNext(data){
               </div>
               <div className="space-y-2">
                 <Label>Currency</Label>
-                <Input value={formData.currancy_type} readOnly className="bg-gray-50" />
+                <Input value={formData.currency_type} readOnly className="bg-gray-50" />
               </div>
               <div className="space-y-2">
                 <Label>Currency Rate</Label>
@@ -1834,11 +1846,13 @@ function handleNext(data){
                         <span className="text-[16px] text-center font-bold">TOTAL PALLET -</span>
                         <Input
                           value={totalPalletCount}
+                          {...register('products.total_pallet_count', {
+                            required: true,})}
                           onChange={(e) => {
                             setTotalPalletCount(e.target.value);
                             saveFieldToLocalStorage('totalPalletCount', e.target.value);
                           }}
-                          className="h-8 border-0 text-center bg-gray-50 font-bold w-14 p-0 mx-1"
+                          className="h-8 border-0 text-center bg-gray-300 font-bold w-14 p-0 mx-1"
                         />
                         <span className="text-[16px] text-center font-bold">NOS</span>
                       </div>

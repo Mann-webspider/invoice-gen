@@ -21,6 +21,7 @@ import { cn } from "@/lib/utils";
 import { useForm } from "@/context/FormContext";
 import { useEffect } from "react";
 import { Controller, useForm as rhf ,UseFormReturn} from "react-hook-form";
+import { Textarea } from "../ui/textarea";
 
 interface BuyerInformationCardProps {
   buyersOrderNo: string;
@@ -172,7 +173,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="notifyParty">NOTIFY PARTY</Label>
-                    <Input
+                    <Textarea
                       id="notifyParty"
                       value={buyerForm?.notify_party || ""}
                       {...register("buyer.notify_party", { required: true })}

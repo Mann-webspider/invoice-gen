@@ -14,7 +14,9 @@ class PackageInformation extends Model
         'total_net_weight',
         'gst_circular',
         'app_ref_number',
-        
+        'total_sqm',
+        'taxable_value',
+        'gst_amount',
         'lut_date',
         'total_amount',
         'amount_in_words'

@@ -131,24 +131,30 @@ export const SupplierDetails = ({
   //   integratedTaxOption,
   // ]);
 
-  const handleSupplierSelect = (value: string, supplierId: string) => {
-    const selected = availableSuppliers.find((s) => s.name === value);
-    if (!selected) return;
+ const handleSupplierSelect = (value: string, supplierId: string) => {
+  const selected = availableSuppliers.find((s) => s.name === value);
+  if (!selected) return;
 
-    const updated = suppliers.map((s) =>
-      s.id === supplierId
-        ? {
-            ...selected,
-            id: s.id, // preserve ID
-            tax_invoice_number: s.tax_invoice_number || "",
-            date: s.date || "",
-          }
-        : s
-    );
-    setValue(`suppliers.${supplierId-1}.name`, selected.name);
-    setValue(`suppliers.${supplierId-1}.gstin_number`, selected.gstin_number);
-    setSuppliers(updated);
-  };
+  const updated = suppliers.map((s) =>
+    s.id === supplierId
+      ? {
+          ...selected,
+          id: s.id, // preserve original ID
+          tax_invoice_number: s.tax_invoice_number || "",
+          date: s.date || "",
+        }
+      : s
+  );
+
+  const index = suppliers.findIndex((s) => s.id === supplierId);
+  if (index === -1) return;
+
+  setValue(`suppliers.${index}.name`, selected.name);
+  setValue(`suppliers.${index}.gstin_number`, selected.gstin_number);
+  setValue(`suppliers.${index}.address`, selected.address);
+  setSuppliers(updated);
+};
+
 
   return (
     <>

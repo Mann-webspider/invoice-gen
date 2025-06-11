@@ -117,34 +117,7 @@
             ]
         }
     },
-    "packagingList": {
-        "containerRows": [
-            {
-                "id": "1",
-                "container_no": "ehbvaebv",
-                "line_seal_no": "lkebveb",
-                "rfid_seal": ";jkrnsb",
-                "design_no": "kajdvd",
-                "quantity": 100,
-                "net_weight": "241236",
-                "gross_weight": "250000"
-            }
-        ],
-        "totalPalletCount": "000",
-        "sections": [
-            {
-                "id": "1",
-                "title": "Glazed porcelain Floor Tiles",
-                "items": []
-            },
-            {
-                "id": "2",
-                "title": "Glazed Ceramic Wall tiles",
-                "items": []
-            }
-        ],
-        "markNumber": "10X20 FCLLCL"
-    },
+
     "annexure": {
         "range": "MORBI",
         "division": "MORBI II",

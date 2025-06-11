@@ -50,6 +50,7 @@ class PdfController
         $response = $response
             ->withHeader('Content-Type', 'application/pdf')
             ->withHeader('Content-Disposition', 'attachment; filename="' . basename($pdfPath) . '"')
+            ->withStatus(200)
             ->withBody(new \Slim\Psr7\Stream($pdfStream));
 
         return $response;

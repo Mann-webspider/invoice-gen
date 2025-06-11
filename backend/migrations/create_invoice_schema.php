@@ -63,6 +63,7 @@ class CreateInvoiceSchema
             frieght INT,
             insurance INT,
             total_price INT,
+            total_pallet_count INT,
             product_ids BLOB,
             container_ids BLOB
         )");
@@ -119,7 +120,7 @@ class CreateInvoiceSchema
             exporter_id TEXT,
             buyer_id TEXT,
             product_id TEXT,
-            supplier_id TEXT,
+            supplier_ids BLOB,
             shipping_id TEXT,
             package_id TEXT,
             annexure_id TEXT,

@@ -140,15 +140,34 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   let lutDate = data.package.lut_date || "26-04-2025";
   let totalInINR = data.package.taxable_value|| 2646246.46;
   let gstValue = "44262423";  // New value
-  const supplierDetails = [
-    ['abc', 3254626216, 'asf/235', '12.02.2025'],
-    ['def', 3254263511, 'aag/235', '16.02.2025'],
-    ['ghi', 3252626216, 'dhf/235', '12.12.2025'],
-    ['jkl', 3246526216, 'hdt/235', '12.06.2025'],
-    ['mno', 3254632526, 'rth/235', '16.02.2025'],
-    ['pqr', 3254632526, 'rth/235', '16.02.2025'],
-    ['xyz', 3254632526, 'rth/235', '16.02.2025'],
-  ];
+  function formatSupplierDetails(suppliers) {
+  return suppliers.map(supplier => {
+    // Convert GSTIN to numeric-only (if required)
+    const numericGstin = supplier.gstin_number;
+
+    // Format date from 'yyyy-mm-dd' to 'dd.mm.yyyy'
+    const [year, month, day] = supplier.date.split('-');
+    const formattedDate = `${day}.${month}.${year}`;
+
+    return [
+      supplier.supplier_name,
+      numericGstin,
+      supplier.tax_invoice_no,
+      supplier.date  // Use formatted date or fallback to original
+    ];
+  });
+}
+
+let supplierDetails = formatSupplierDetails(data.suppliers || []);
+  // const supplierDetails = [
+  //   ['abc', 3254626216, 'asf/235', '12.02.2025'],
+  //   ['def', 3254263511, 'aag/235', '16.02.2025'],
+  //   ['ghi', 3252626216, 'dhf/235', '12.12.2025'],
+  //   ['jkl', 3246526216, 'hdt/235', '12.06.2025'],
+  //   ['mno', 3254632526, 'rth/235', '16.02.2025'],
+  //   ['pqr', 3254632526, 'rth/235', '16.02.2025'],
+  //   ['xyz', 3254632526, 'rth/235', '16.02.2025'],
+  // ];
 
   // Packing List
   const convertArrayToFormat = (
@@ -184,7 +203,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
 
   let containerDetails = convertArrayToFormat(data.product_details.containers, data.product_details.marks, data.vgm.containers) ;
-  let totalPallet = 199;
+  let totalPallet = data.product_details.total_pallet_count || 0;
 
   // Annexure
   let range = data.annexure.range||"MORBI";

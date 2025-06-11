@@ -15,6 +15,7 @@ class ProductDetails extends Model
         'nos',
         'frieght',
         'insurance',
+        'total_pallet_count',
         'total_price',
         'product_ids',
         'container_ids',

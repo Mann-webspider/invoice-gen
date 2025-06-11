@@ -144,38 +144,38 @@ const AnnexureWrapper = () => {
   const navigate = useNavigate();
   const [annexureData, setAnnexureData] = useState<any>(null);
 
-  useEffect(() => {
-    // Retrieve data from localStorage
-    const storedData = localStorage.getItem('annexureData');
-    if (storedData) {
-      try {
-        const parsedData = JSON.parse(storedData);
-        setAnnexureData(parsedData);
-      } catch (e) {
-        // Error parsing annexure data - handled silently
-        navigate('/');
-      }
-    } else {
-      // If no data is found, go back to the packaging list page
-      navigate('/packaging-list');
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  //   // Retrieve data from localStorage
+  //   const storedData = localStorage.getItem('annexureData');
+  //   if (storedData) {
+  //     try {
+  //       const parsedData = JSON.parse(storedData);
+  //       setAnnexureData(parsedData);
+  //     } catch (e) {
+  //       // Error parsing annexure data - handled silently
+  //       navigate('/');
+  //     }
+  //   } else {
+  //     // If no data is found, go back to the packaging list page
+  //     navigate('/packaging-list');
+  //   }
+  // }, [navigate]);
 
-  if (!annexureData) {
-    return <div>Loading...</div>;
-  }
+  // if (!annexureData) {
+  //   return <div>Loading...</div>;
+  // }
 
   return (
     <Annexure 
       onBack={() => navigate('/packaging-list')}
-      importedSections={annexureData.sections}
-      markNumber={annexureData.markNumber}
-      invoiceHeader={annexureData.invoiceHeader}
-      buyerInfo={annexureData.buyerInfo}
-      shippingInfo={annexureData.shippingInfo}
+      importedSections={annexureData?.sections}
+      markNumber={annexureData?.markNumber}
+      invoiceHeader={annexureData?.invoiceHeader}
+      buyerInfo={annexureData?.buyerInfo}
+      shippingInfo={annexureData?.shippingInfo}
       containerInfo={{
-        containerRows: annexureData.containerRows,
-        totalPalletCount: annexureData.totalPalletCount
+        containerRows: annexureData?.containerRows,
+        totalPalletCount: annexureData?.totalPalletCount
       }}
     />
   );

@@ -126,10 +126,11 @@ const Annexure = ({
   } = rhf();
   const annexureForm = watch();
 
-  let invoice = formData.invoice;
-  let packaging = formData.packagingList;
-  let buyer = formData.invoice.buyer;
-  let shipping = formData.invoice.shipping;
+  let invoiceData = JSON.parse(localStorage.getItem("invoiceData2")|| "{}");
+  let invoice = invoiceData;
+  // let packaging = formData.packagingList;
+  let buyer = invoiceData.buyer;
+  let shipping = invoiceData.shipping;
   
   // Get current form ID for localStorage
   const currentFormId = invoiceHeader?.invoiceNo || getCurrentFormId();
@@ -267,32 +268,37 @@ const Annexure = ({
     return res.data.data;
   }
   async function getArn() {
-    let res = await api.get("/arn");
+    let res = await api.get("/arn/1");
     if (res.status !== 200) {
       return "error";
     }
     return res.data.data;
   }
+  let containerData = invoice.products.containers 
   useEffect(() => {
     // Calculate total from container info if available
-    if (containerInfo?.containerRows) {
-      const totalNet = containerInfo.containerRows
-        .reduce((sum, row) => sum + parseFloat(row.netWeight || "0"), 0)
+    console.log(containerData);
+    
+    if (containerData) {
+      const totalNet = containerData
+        .reduce((sum, row) => sum + parseFloat(row.net_weight || "0"), 0)
         .toFixed(0);
 
-      const totalGross = containerInfo.containerRows
-        .reduce((sum, row) => sum + parseFloat(row.grossWeight || "0"), 0)
+      const totalGross = containerData
+        .reduce((sum, row) => sum + parseFloat(row.gross_weight || "0"), 0)
         .toFixed(0);
 
-      const totalQty = containerInfo.containerRows.reduce(
+      const totalQty = containerData.reduce(
         (sum, row) => sum + (row.quantity || 0),
         0
       );
       (async () => {
         try {
           const fetchedSuppliers = await getSuppliers();
-          // const fetchedArn = await getArn();
+          const fetchedArn = await getArn();
           setAvailableSuppliers(fetchedSuppliers);
+          setArn(fetchedArn.arn);
+          
         } catch (error) {
           // Failed to fetch suppliers - handled with toast
         }
@@ -303,13 +309,13 @@ const Annexure = ({
 
       // Initialize container sizes based on packaging list data
       setContainerSizes(
-        containerInfo.containerRows.map((row) => row.size || "1 x 20'")
+        containerData.map((row) => row.size || "1 x 20'")
       );
 
       // Initialize manufacturer selection
       setSelectedManufacturer("DEMO VITRIFIED PVT LTD");
     }
-  }, [containerInfo]);
+  }, []);
 
   // useEffect(() => {
   //   // Update manufacturer data when selection changes
@@ -702,6 +708,9 @@ useEffect(() => {
                     }}
                     placeholder="Enter location code"
                   />
+                  {errors.location_code && (
+                    <p className="text-red-500">Location code is required</p>
+                  )}
                 </div>
               </td>
             </tr>
@@ -720,7 +729,7 @@ useEffect(() => {
               </td>
               <td className="border p-3">
                 <div className="h-4"></div>
-                <div className="border-t pt-2">{`${invoiceHeader?.invoiceNo}/2024-25 Dt. ${invoiceDate}`}</div>
+                <div className="border-t pt-2">{`${invoiceData?.invoice_number}/2024-25 Dt. ${invoiceDate}`}</div>
                 <div className="border-t pt-2 mt-2">{totalPackages}</div>
                 <div className="border-t pt-2 mt-2">
                   <div>{buyer?.consignee}</div>
@@ -942,8 +951,8 @@ useEffect(() => {
                   </tr>
                 </thead>
                 <tbody>
-                  {formData.packagingList?.containerRows ? (
-                    formData.packagingList.containerRows.map((row, index) => {
+                  {invoice.products?.containers ? (
+                    invoice.products?.containers.map((row, index) => {
                       // Get the package type from the packaging list data
                       const packageType = "BOX";
 
@@ -953,17 +962,17 @@ useEffect(() => {
                             {index + 1}
                           </td>
                           <td className="border p-3 text-center">
-                            {row.containerNo || ""}
+                            {row.container_no || ""}
                           </td>
                           <td className="border p-3 text-center">
-                            {row.lineSealNo || ""}
+                            {row.line_seal_no || ""}
                           </td>
                           <td className="border p-3 text-center">
-                            {row.rfidSeal || ""}
+                            {row.rfid_seal || ""}
                           </td>
                           <td className="border p-3 text-center">TILES</td>
                           <td className="border p-3 text-center">
-                            {row.quantity || 0} {packageType}
+                            {row.quantity || 0} 
                           </td>
                         </tr>
                       );

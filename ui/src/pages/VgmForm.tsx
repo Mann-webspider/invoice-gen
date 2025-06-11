@@ -195,6 +195,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
     control,
   } = rhf();
   const vgnForm = watch();
+  let invoiceData = JSON.parse(localStorage.getItem("invoiceData2") || "null");
   const navigate = useNavigate();
   useEffect(() => {
     const subscribe = watch((data) => {
@@ -206,7 +207,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
     };
   }, [watch, invoiceHeader]);
   // Get current form ID for localStorage
-  const currentFormId = invoiceHeader?.invoiceNo || getCurrentFormId();
+  const currentFormId = invoiceData?.invoice_number || getCurrentFormId();
 
   // State for form data
   const [selectedShipper, setSelectedShipper] = useState(null);
@@ -445,23 +446,23 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
       contact: "**13******",
     },
   };
-
+  let containerData = invoiceData.products.containers || [];
   useEffect(() => {
     // Initialize with containerInfo data if available
-    if (containerInfo?.containerRows) {
+    if (containerData) {
       // Default shipper to the one from invoice header
-      if (invoiceHeader?.selectedExporter) {
-        handleShipperSelect(invoiceHeader.selectedExporter);
+      if (invoiceData?.exporter) {
+        handleShipperSelect(invoiceData.exporter);
       }
 
       // Initialize booking numbers and tare weights arrays
-      const newBookingNumbers = containerInfo.containerRows.map(() => "");
-      const newTareWeights = containerInfo.containerRows.map(() => "");
+      const newBookingNumbers = containerData.map(() => "");
+      const newTareWeights = containerData.map(() => "");
 
       setBookingNumbers(newBookingNumbers);
       setTareWeights(newTareWeights);
     }
-  }, [containerInfo, invoiceHeader]);
+  }, [containerData, invoiceHeader]);
 
   const handleShipperSelect = (shipper: string) => {
     setSelectedShipper(shipper);
@@ -548,14 +549,14 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
       // Collect all form data from localStorage
       // const allFormData = collectFormDataFromLocalStorage();
-      
+
       // Use JSON.stringify with replacer function to handle circular references and pretty print
       // console.log(
-        //   "Form data for submission:",
-        //   JSON.stringify(
-          //     allFormData,
-          //     (key, value) => {
-            //       // Prevent circular references by not including fullForm in the logged output
+      //   "Form data for submission:",
+      //   JSON.stringify(
+      //     allFormData,
+      //     (key, value) => {
+      //       // Prevent circular references by not including fullForm in the logged output
       //       if (key === "fullForm") return "[Circular Reference - Not Shown]";
       //       return value;
       //     },
@@ -563,16 +564,22 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
       //   )
       // );
       // Send the data to the PHP backend API
-      let invoiceData = JSON.parse(localStorage.getItem("invoiceData2") || "null");
-      let packagingData = JSON.parse(localStorage.getItem("packagingList") || "null");
-      let annexureData = JSON.parse(localStorage.getItem("annexureData2") || "null");
-      
+      let invoiceData = JSON.parse(
+        localStorage.getItem("invoiceData2") || "null"
+      );
+      let packagingData = JSON.parse(
+        localStorage.getItem("packagingList") || "null"
+      );
+      let annexureData = JSON.parse(
+        localStorage.getItem("annexureData2") || "null"
+      );
+
       const allFormData = {
-        invoice: {...invoiceData},
-        
-        annexure: {...annexureData},
-        vgm:{...data,}
-      }
+        invoice: { ...invoiceData },
+
+        annexure: { ...annexureData },
+        vgm: { ...data },
+      };
       console.log(allFormData);
       const response = await invoiceApi.generate(allFormData);
       console.log(response.data);
@@ -864,9 +871,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
         // Container details mapped from containerInfo
         containers:
-          containerInfo?.containerRows.map((row, index) => {
+          containerData?.map((row, index) => {
             // Get the gross weight from the container row
-            const grossWeight = row.grossWeight || "0.00";
+            const grossWeight = row.gross_weight || "0.00";
             // Get the tare weight from the tareWeights array or use a default
             const tareWeight = tareWeights[index] || "0";
             // Calculate the total VGM using our improved function
@@ -1249,9 +1256,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
       // Container details mapped from containerInfo
       containers:
-        containerInfo?.containerRows.map((row, index) => {
+        containerData?.map((row, index) => {
           // Get the gross weight from the container row
-          const grossWeight = row.grossWeight || "0.00";
+          const grossWeight = row.gross_weight || "0.00";
           // Get the tare weight from the tareWeights array or use a default
           const tareWeight = tareWeights[index] || "0";
           // Calculate the total VGM using our improved function
@@ -1462,12 +1469,13 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Controller
                   name="container_size"
                   control={control}
-                  render={({ field }) => (
+                  rules={{ required: true }}
+                  render={({ field, fieldState: { error } }) => (
                     <Select
                       value={field.value}
                       onValueChange={(value) => field.onChange(value)}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={error ? "border-red-500" : ""}>
                         <SelectValue placeholder="Select container size" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1480,7 +1488,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{containerSize?vgnForm.container_size:""}</div>
+                <div className="font-medium">
+                  {containerSize ? vgnForm.container_size : ""}
+                </div>
               </div>
             </div>
 
@@ -1527,7 +1537,8 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Controller
                   name="verified_gross_mass"
                   control={control}
-                  render={({ field }) => (
+                  rules={{ required: true }}
+                  render={({ field, fieldState: { error } }) => (
                     <Select
                       value={field.value}
                       onValueChange={(value) => {
@@ -1535,7 +1546,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                         saveFieldToLocalStorage("verified_gross_mass", value); // custom local storage logic
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={error ? "border-red-500" : ""}>
                         <SelectValue placeholder="Select method" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1547,7 +1558,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{verifiedGrossMass?vgnForm.verified_gross_mass:""}</div>
+                <div className="font-medium">
+                  {verifiedGrossMass ? vgnForm.verified_gross_mass : ""}
+                </div>
               </div>
             </div>
 
@@ -1559,7 +1572,8 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Controller
                   name="unit_of_measurement"
                   control={control}
-                  render={({ field }) => (
+                  rules={{ required: true }}
+                  render={({ field, fieldState: { error } }) => (
                     <Select
                       value={field.value}
                       onValueChange={(value) => {
@@ -1567,7 +1581,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                         saveFieldToLocalStorage("unit_of_measurement", value); // Persist to local storage
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={error ? "border-red-500" : ""}>
                         <SelectValue placeholder="Select unit" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1580,7 +1594,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{unitOfMeasure?vgnForm.unit_of_measurement:""}</div>
+                <div className="font-medium">
+                  {unitOfMeasure ? vgnForm.unit_of_measurement : ""}
+                </div>
               </div>
             </div>
 
@@ -1598,7 +1614,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 </div>
               </div>
               <div className="space-y-2">
-                <div className="font-medium">Dt. {weighingDate?vgnForm.dt_weighing:""}</div>
+                <div className="font-medium">
+                  Dt. {weighingDate ? vgnForm.dt_weighing : ""}
+                </div>
               </div>
             </div>
 
@@ -1626,7 +1644,8 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 <Controller
                   name="type"
                   control={control}
-                  render={({ field }) => (
+                  rules={{ required: true }}
+                  render={({ field, fieldState: { error } }) => (
                     <Select
                       value={field.value}
                       onValueChange={(value) => {
@@ -1634,7 +1653,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                         saveFieldToLocalStorage("type", value); // Save to local storage
                       }}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className={error ? "border-red-500" : ""}>
                         <SelectValue placeholder="Select container type" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1648,7 +1667,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 />
               </div>
               <div className="space-y-2">
-                <div className="font-medium">{containerType?vgnForm.type:""}</div>
+                <div className="font-medium">
+                  {containerType ? vgnForm.type : ""}
+                </div>
               </div>
             </div>
 
@@ -1703,73 +1724,115 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {containerInfo?.containerRows ? (
-                  containerInfo.containerRows.map((row, index) => (
-                    <TableRow key={index} className="border-b hover:bg-gray-50">
-                      <TableCell className="border p-0">
-                        <Input
-                          value={bookingNumbers[index] || ""}
-                          {...register(`containers.${index}.booking_no`, {required: true})}
-                          onChange={(e) =>
-                            handleBookingNumberChange(index, e.target.value)
-                          }
-                          placeholder="Enter Booking No"
-                          className="h-10 border-0 text-center"
-                        />
-                      </TableCell>
-                      <TableCell className="border text-center">
-                        <Input
-                          value={row.containerNo || ""}
-                          {...register(`containers.${index}.container_no`, {required: true,defaultValue: row.containerNo})}
-                          
-                          readonly
-                          disabled
-                          className="h-10 border-0 text-center"
-                        />
-                        {/* {row.containerNo {...register(`containers.${index}.container_no`)}|| "S***********"} */}
-                      </TableCell>
-                      <TableCell className="border">
-                        <div className="flex items-center justify-center">
-                          <div className="text-right pr-2 w-1/3">
-                            
+                {containerData ? (
+                  containerData.map((row, index) => {
+                    const tare = 
+                      vgnForm?.containers?.[index]?.tare_weight || "0"
+                    ;
+                    const gross = row.gross_weight || "0";
+                    const vgm = calculateTotalVGM(gross, tare);
+
+                    // Optional: keep total_vgm synced in the form (for submission)
+                    useEffect(() => {
+                      setValue(`containers.${index}.total_vgm`, vgm);
+                    }, [tare, gross]);
+                    return (
+                      <TableRow
+                        key={index}
+                        className="border-b hover:bg-gray-50"
+                      >
+                        <TableCell className="border p-0">
+                          <Input
+                            // value={bookingNumbers[index] || ""}
+                            {...register(`containers.${index}.booking_no`, {
+                              required: true,
+                            })}
+                            // onChange={(e) =>
+                            //   handleBookingNumberChange(index, e.target.value)
+                            // }
+                            placeholder="Enter Booking No"
+                            className={`h-10 border-0 text-center ${
+                              errors.containers?.[index]?.booking_no
+                                ? "border-red-500"
+                                : ""
+                            }`}
+                          />
+                        </TableCell>
+                        <TableCell className="border text-center">
+                          <Input
+                            value={row.container_no || ""}
+                            {...register(`containers.${index}.container_no`, {
+                              required: true,
+                              defaultValue: row?.container_no,
+                            })}
+                            readonly
+                            disabled
+                            className="h-10 border-0 text-center"
+                          />
+
+                          {/* {row.containerNo {...register(`containers.${index}.container_no`)}|| "S***********"} */}
+                        </TableCell>
+                        <TableCell className="border">
+                          <div className="flex items-center justify-center">
+                            <div className="text-right pr-2 w-1/3">
+                              <Input
+                                value={row.gross_weight || "0.00"}
+                                {...register(
+                                  `containers.${index}.gross_weight`,
+                                  {
+                                    required: true,
+                                    defaultValue: row.gross_weight || "0.00",
+                                  }
+                                )}
+                                disabled
+                                readOnly
+                                placeholder="Enter Tare Weight"
+                                className="h-10 border-0 text-center w-20"
+                              />
+                            </div>
+                            <div className="px-2">+</div>
                             <Input
-                            value={row.grossWeight || "0.00"}
-                            {...register(`containers.${index}.gross_weight`,{required: true, defaultValue: row.grossWeight || "0.00"})}
-                            disabled
-                            readOnly
-                            placeholder="Enter Tare Weight"
-                            className="h-10 border-0 text-center w-20"
-                          />
+                              // value={tareWeights[index] || ""}
+                              {...register(`containers.${index}.tare_weight`, {
+                                required: true,
+                              })}
+                              // onChange={(e) =>
+                              //   handleTareWeightChange(index, e.target.value)
+                              // }
+                              placeholder="Enter Tare Weight"
+                              className={`h-10 border-0 text-center w-20 ${
+                                errors.containers?.[index]?.tare_weight
+                                  ? "border-red-500"
+                                  : ""
+                              }`}
+                            />
+
+                            <div className="px-2">
+                              = 
+                            </div>
+                            <div className="text-right pl-2 w-1/3 font-medium">
+                              <Input
+                                value={vgm}
+                                readOnly
+                                disabled
+                                placeholder="Total VGM"
+                                className="h-10 border-0 text-center w-20"
+                              />
+
+                              {/* Hidden input to keep in form submission */}
+                              <input
+                                type="hidden"
+                                {...register(`containers.${index}.total_vgm`, {
+                                  required: true,
+                                })}
+                                value={vgm}
+                              />
+                            </div>
                           </div>
-                          <div className="px-2">+</div>
-                          <Input
-                            value={tareWeights[index] || ""}
-                            {...register(`containers.${index}.tare_weight`, {required: true})}
-                            onChange={(e) =>
-                              handleTareWeightChange(index, e.target.value)
-                            }
-                            placeholder="Enter Tare Weight"
-                            className="h-10 border-0 text-center w-20"
-                          />
-                          <div className="px-2">=</div>
-                          <div className="text-right pl-2 w-1/3 font-medium">
-                          <Input
-                            value={calculateTotalVGM(
-                              row.grossWeight || "0",
-                              tareWeights[index] || "0"
-                            )}
-                            {...register(`containers.${index}.total_vgm`,{required: true, defaultValue: calculateTotalVGM(row.grossWeight || "0", tareWeights[index] || "0")})}
-                            disabled
-                            readOnly
-                            placeholder="Enter Tare Weight"
-                            className="h-10 border-0 text-center w-20"
-                          />
-                            
-                          </div>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
                 ) : (
                   <TableRow className="border-b hover:bg-gray-50">
                     <TableCell className="border p-0">
@@ -1812,12 +1875,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
         <Button variant="outline" onClick={onBack}>
           Back
         </Button>
-        <Button
-          onClick={
-            handleSubmit(handleSave)}
-        >
-          Submit
-        </Button>
+        <Button onClick={handleSubmit(handleSave)}>Submit</Button>
       </div>
 
       {/* Letterhead Bottom Image */}
