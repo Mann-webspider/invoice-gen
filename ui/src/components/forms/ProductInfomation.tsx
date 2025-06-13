@@ -70,6 +70,18 @@ const ProductInformation = ({
     formState: { errors },
   } = form;
 
+  
+  function getLastWordsCommaString(sections: Section[]): string {
+  const lastWords = sections.map((section) => {
+    const parts = section.title.trim().split(" ");
+    return parts[parts.length - 1];
+  });
+
+  const uniqueWords = Array.from(new Set(lastWords));
+
+  return uniqueWords.join(", ");
+}
+
   useEffect(() => {
     const subscription = watch((allValues) => {
       const newProductList = sections.flatMap((section) =>
@@ -92,12 +104,15 @@ const ProductInformation = ({
 
       // Only update if the product list has changed
       const current = allValues?.products?.product_list || [];
+
       const isSame = JSON.stringify(current) === JSON.stringify(newProductList);
+      let titleLastWords = getLastWordsCommaString(sections)
       if (!isSame) {
         setValue("products.product_list", newProductList);
         setValue("products.total_price", totalFOBEuro);
         setValue("products.insurance", insuranceAmount);
         setValue("products.frieght", freightAmount);
+        setValue("products.goods", titleLastWords);
       }
     });
 
@@ -128,7 +143,7 @@ const ProductInformation = ({
     async function fetchUnit() {
       try {
         const response = await api.get("/dropdown-options/unit_type");
-        console.log("Unit options fetched:", response.data.data);
+        // console.log("Unit options fetched:", response.data.data);
 
         return response.data.data;
       } catch (error) {
@@ -198,6 +213,7 @@ const ProductInformation = ({
   //     }
   //   });
   // }, [formData, sections, marksAndNumbersValues, freightAmount, insuranceAmount, totalFOBEuro]);
+ 
 
   return (
     <Card>
@@ -445,8 +461,8 @@ const ProductInformation = ({
                             onChange={(e) => {
                               const newDescription = e.target.value;
                               const foundHsnCode = hsnCodes[newDescription];
-                              console.log(section);
-                              
+                           
+
                               setSections((currentSections) =>
                                 currentSections.map((s) =>
                                   s.id === section.id
@@ -478,34 +494,33 @@ const ProductInformation = ({
                         </TableCell>
                         <TableCell>
                           <Input
-  value={item.product.hsnCode || ""}
-  onChange={(e) => {
-    const newHsnCode = e.target.value;
+                            value={item.product.hsnCode || ""}
+                            onChange={(e) => {
+                              const newHsnCode = e.target.value;
 
-    setSections((currentSections) =>
-      currentSections.map((s) =>
-        s.id === section.id
-          ? {
-              ...s,
-              items: s.items.map((i) =>
-                i.id === item.id
-                  ? {
-                      ...i,
-                      product: {
-                        ...i.product,
-                        hsnCode: newHsnCode,
-                      },
-                    }
-                  : i
-              ),
-            }
-          : s
-      )
-    );
-  }}
-  className="h-8 w-24"
-/>
-
+                              setSections((currentSections) =>
+                                currentSections.map((s) =>
+                                  s.id === section.id
+                                    ? {
+                                        ...s,
+                                        items: s.items.map((i) =>
+                                          i.id === item.id
+                                            ? {
+                                                ...i,
+                                                product: {
+                                                  ...i.product,
+                                                  hsnCode: newHsnCode,
+                                                },
+                                              }
+                                            : i
+                                        ),
+                                      }
+                                    : s
+                                )
+                              );
+                            }}
+                            className="h-8 w-24"
+                          />
                         </TableCell>
                         <TableCell>
                           <Select
@@ -532,7 +547,7 @@ const ProductInformation = ({
                                                 totalSQM:
                                                   i.quantity * sqmPerBox,
                                                 totalFOB:
-                                                  i.quantity * i.product.price,
+                                                  i.quantity * sqmPerBox * i.product.price, // task7 no 7 updated 
                                               }
                                             : i
                                         ),
@@ -575,7 +590,8 @@ const ProductInformation = ({
                                                   quantity *
                                                   i.product.sqmPerBox,
                                                 totalFOB:
-                                                  quantity * i.product.price,
+                                                  quantity *
+                                                  i.product.sqmPerBox * i.product.price, // task7 no 7 updated
                                               }
                                             : i
                                         ),
@@ -631,7 +647,7 @@ const ProductInformation = ({
                         </TableCell>
                         <TableCell>
                           <Input
-                            type="number"
+                            type="text"
                             value={item.product.sqmPerBox || ""}
                             onChange={(e) => {
                               const sqmPerBox = parseFloat(e.target.value) || 0;
@@ -651,7 +667,7 @@ const ProductInformation = ({
                                                 totalSQM:
                                                   i.quantity * sqmPerBox,
                                                 totalFOB:
-                                                  i.quantity * i.product.price,
+                                                  i.quantity * sqmPerBox * i.product.price, // `task7 no 7 updated
                                               }
                                             : i
                                         ),
@@ -660,7 +676,7 @@ const ProductInformation = ({
                                 )
                               );
                             }}
-                            className={`h-8 text-right ${
+                            className={`h-8 w-14  m-0 no-spinner appearance-none  text-right ${
                               productType === "Sanitary" ? "bg-gray-100" : ""
                             }`}
                             readOnly={productType === "Sanitary"}
@@ -672,44 +688,52 @@ const ProductInformation = ({
                             type="number"
                             value={item.totalSQM?.toFixed(2) || ""}
                             readOnly
-                            className="h-8 text-right bg-gray-50"
+                            className="h-8 text-right w-24 bg-gray-50"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
-                            type="number"
+                            type="text"
                             value={item.product.price || ""}
                             onChange={(e) => {
                               const price = parseFloat(e.target.value) || 0;
+
                               setSections(
                                 sections.map((s) =>
                                   s.id === section.id
                                     ? {
                                         ...s,
-                                        items: s.items.map((i) =>
-                                          i.id === item.id
-                                            ? {
-                                                ...i,
-                                                product: {
-                                                  ...i.product,
-                                                  price,
-                                                },
-                                                totalFOB: i.quantity * price,
-                                              }
-                                            : i
-                                        ),
+                                        items: s.items.map((i) => {
+                                          if (i.id !== item.id) return i;
+
+                                          const sqmPerBox =
+                                            i.product.sqmPerBox || 0;
+                                          const quantity = i.quantity || 0;
+                                          const totalSQM = quantity * sqmPerBox;
+
+                                          return {
+                                            ...i,
+                                            product: {
+                                              ...i.product,
+                                              price,
+                                            },
+                                            totalSQM,
+                                            totalFOB: totalSQM * price,
+                                          };
+                                        }),
                                       }
                                     : s
                                 )
                               );
                             }}
-                            className="h-8 text-right"
+                            className="h-8 w-24 text-right"
                           />
                         </TableCell>
                         <TableCell>
                           <Input
-                            type="number"
-                            value={item.totalFOB || ""}
+                            type="text"
+                            value={item.totalFOB.toFixed(2) || ""}
+                            readOnly
                             onChange={(e) => {
                               const totalFOB = parseFloat(e.target.value) || 0;
                               setSections(
@@ -730,7 +754,7 @@ const ProductInformation = ({
                                 )
                               );
                             }}
-                            className="h-8 text-right"
+                            className="h-8 w-32 text-right"
                           />
                         </TableCell>
                         <TableCell>
@@ -809,7 +833,7 @@ const ProductInformation = ({
                   Total {paymentTerms === "FOB" ? "FOB" : paymentTerms}
                 </div>
               </div>
-              <div className="w-1/6 text-right p-4 font-semibold text-lg border-l border-gray-200">
+              <div className="w-1/6 text-right p-4 font-semibold text-lg border-l border-red-800">
                 {totalFOBEuro.toFixed(2)}
               </div>
             </div>

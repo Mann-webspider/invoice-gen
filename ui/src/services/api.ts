@@ -61,7 +61,8 @@ export const filesApi = {
     // Optional: Read filename from content-disposition header
     const disposition = response.headers['content-disposition'];
     const match = disposition && disposition.match(/filename="?(.+)"?/);
-    const filename = match?.[1] || 'custom_invoice.pdf';
+    // const filename = fileName || 'custom_invoice.pdf';
+    const filename = file.name.replace(/\.[^/.]+$/, ".pdf");
 
     a.download = filename;
     document.body.appendChild(a);

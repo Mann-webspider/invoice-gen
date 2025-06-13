@@ -227,6 +227,7 @@ class InvoiceController
                 'weighing_slip_no' => $vgm['weighing_slip_no'],
                 'type' => $vgm['type'],
                 'IMDG_class' => $vgm['IMDG_class'],
+                'forwarder_email' => $vgm['forwarder_email'],
                 'containers_id' => json_encode($vgmContainerIds),
                 'invoice_number' => $data['invoice_number'],
             ]);

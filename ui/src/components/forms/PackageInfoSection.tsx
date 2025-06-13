@@ -138,7 +138,11 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
       if (response.status != 200) {
         throw new Error("Network response was not ok");
       }
-      setExportUnderGstCircular(response.data.data.gst_circular);
+      
+      
+      setExportUnderGstCircular(()=>response.data.data.gst_circular);
+      setValue("package.gst_circular", response.data.data.gst_circular);
+      setValue("package.arn_no", response.data.data.arn);
       setLutNo(response.data.data.arn);
     } catch (error) {
       // Error fetching ARN - handled silently
@@ -181,7 +185,7 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
   />
             </div>
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="grossWeight">Gross Weight (KGS)</Label>
               <Input
                 id="grossWeight"
@@ -190,9 +194,9 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
                 readOnly
                 className="cursor-default"
               />
-            </div>
+            </div> */}
 
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="netWeight">Net Weight (KGS)</Label>
               <Input
                 id="netWeight"
@@ -201,7 +205,7 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
                 readOnly
                 className="cursor-default"
               />
-            </div>
+            </div> */}
           </div>
 
           <div className="space-y-4">
@@ -211,10 +215,11 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
               </Label>
               <Input
                 id="exportUnderGstCircular"
-                readonly={true}
+                readOnly={true}
                 {...register("package.gst_circular", {
                   required: "GST circular is required",
                 })}
+
                 value={packageForm?.gst_circular || exportUnderGstCircular}
                 // onChange={(e) => setExportUnderGstCircular(e.target.value)}
                 placeholder="Enter GST circular details"
@@ -267,7 +272,7 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
                     })}
                     // onChange={(e) => setLutNo(e.target.value)}
                     placeholder="Enter LUT number"
-                    readonly
+                    readOnly
                   />
                 </div>
 

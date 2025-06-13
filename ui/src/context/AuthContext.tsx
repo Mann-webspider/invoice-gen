@@ -10,7 +10,7 @@ interface User {
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<any>;
   logout: () => void;
   setUser: (user: User | null) => void;
   isAuthenticated: boolean;
@@ -21,22 +21,22 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
-  const checkSession = async () => {
-    try {
-      const token = localStorage.getItem("authToken");
-      if (token) {
-        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        const response = await api.get("/check-session");
-        if (response.data) {
-          setUser(response.data);
-        }
-      }
-    } catch (error) {
-      // Session check failed - handled silently
-      localStorage.removeItem("authToken");
-      delete api.defaults.headers.common["Authorization"];
-    }
-  };
+  // const checkSession = async () => {
+  //   try {
+  //     const token = localStorage.getItem("authToken");
+  //     if (token) {
+  //       api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  //       const response = await api.get("/check-session");
+  //       if (response.data) {
+  //         setUser(response.data);
+  //       }
+  //     }
+  //   } catch (error) {
+  //     // Session check failed - handled silently
+  //     localStorage.removeItem("authToken");
+  //     delete api.defaults.headers.common["Authorization"];
+  //   }
+  // };
   useEffect(() => {
     // Check for existing session
     const checkSession = async () => {
@@ -59,7 +59,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkSession();
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string) =>  {
     try {
       // Sending login request
       const response = await api.post("/login", { email, password });
@@ -70,9 +70,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.setItem("authToken", token);
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setUser(user);
-      } else {
-        throw new Error("Login failed: No token received");
-      }
+        return response;
+      } 
+        
+        
+        return response;
+        // throw new Error(response.data.message || "Login failed");
+      
     } catch (error: any) {
       // Login error details handled silently
       throw error;

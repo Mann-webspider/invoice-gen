@@ -10,7 +10,8 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Menu
+  Menu,
+  DatabaseBackup
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -37,9 +38,10 @@ export const Sidebar = () => {
   const navItems = [
     { name: "Dashboard", icon: Home, path: "/" },
     // { name: "Company Profile", icon: Building, path: "/company" },
-    { name: "Products", icon: Package, path: "/products" },
+    // { name: "Products", icon: Package, path: "/products" },
     // { name: "Shipping Terms", icon: Ship, path: "/shipping" },
-    { name: "Settings", icon: Settings, path: "/settings" },
+    // { name: "Settings", icon: Settings, path: "/settings" },
+    {name:"Backup", icon: DatabaseBackup, path: "/backup" }
   ];
 
   return (

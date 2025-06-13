@@ -134,7 +134,15 @@ const Annexure = ({
   
   // Get current form ID for localStorage
   const currentFormId = invoiceHeader?.invoiceNo || getCurrentFormId();
-
+  useEffect(() => {
+      const subscribe = watch((data) => {
+        // Save the form data to localStorage whenever it changes
+        // console.log(data);
+      });
+      return () => {
+        subscribe.unsubscribe();
+      };
+    }, [watch]);
   // Load all form data from localStorage on component mount
   useEffect(() => {
     if (currentFormId) {
@@ -259,7 +267,7 @@ const Annexure = ({
     ManufacturerData[]
   >([]);
   // Container size options
-  const sizeOptions = ["1 x 20'", "1 x 40'", "1 x 40' HC"];
+  const sizeOptions = ["1 x 20'", "1 x 40'"];
   async function getSuppliers() {
     let res = await api.get("/supplier");
     if (res.status !== 200) {
@@ -445,9 +453,9 @@ useEffect(() => {
           <div className="flex items-center">
             <span className="font-medium mr-2">RANGE:</span>
             <Input
-              value={annexureForm?.range || range}
+              value={range}
               {...register("range", { required: true })}
-              onChange={(e) => setRange(e.target.value)}
+              onChange={(e) => setRange(()=>e.target.value)}
             />
             {errors.range && (
               <span className="text-red-500 text-sm">Range is required</span>
@@ -456,9 +464,9 @@ useEffect(() => {
           <div className="flex items-center">
             <span className="font-medium mr-2">DIVISION:</span>
             <Input
-              value={annexureForm?.division || division}
+              value={ division}
               {...register("division", { required: true })}
-              onChange={(e) => setDivision(e.target.value)}
+              onChange={(e) => setDivision(()=>e.target.value)}
             />
             {errors.division && (
               <span className="text-red-500 text-sm">Division is required</span>
@@ -467,9 +475,9 @@ useEffect(() => {
           <div className="flex items-center">
             <span className="font-medium mr-2">COMMISSIONERATE:</span>
             <Input
-              value={annexureForm?.commissionerate || commissionerate}
+              value={ commissionerate}
               {...register("commissionerate", { required: true })}
-              onChange={(e) => setCommissionerate(e.target.value)}
+              onChange={(e) => setCommissionerate(()=>e.target.value)}
             />
             {errors.commissionerate && (
               <span className="text-red-500 text-sm">
@@ -504,8 +512,8 @@ useEffect(() => {
             <tr className="border">
               <td className="border p-3 align-top">
                 <div className="font-medium">2 (a) I.E.CODE No.</div>
-                {/* <div className="mt-8">(b) BRANCH CODE No.</div>
-                <div className="mt-8">(c) BIN No.</div> */}
+                <div className="mt-8">(b) BRANCH CODE No.</div>
+                <div className="mt-8">(c) BIN No.</div>
               </td>
               <td className="border p-3">
                 <div className="grid grid-cols-2 gap-2">
@@ -526,20 +534,20 @@ useEffect(() => {
                     {invoice?.exporter.state_code}
                   </div>
                 </div>
-                {/* <div className="mt-3 border-t pt-3">
+                <div className="mt-3 border-t pt-3">
                   <Input
                     placeholder="Enter branch code"
-                    
+                    {...register("branch_code")}
                     className="mt-1"
                   />
                 </div>
                 <div className="mt-3 border-t pt-3">
                   <Input
                     placeholder="Enter BIN number"
-                    
+                    {...register("bin_number")}
                     className="mt-1"
                   />
-                </div> */}
+                </div>
               </td>
             </tr>
 
@@ -697,7 +705,7 @@ useEffect(() => {
               <td className="border p-3">
                 <div>{`${commissionerate} /DIV-${
                   division.includes("II") ? "II" : "I"
-                },${range} / ${range}`}</div>
+                },${division?.split(" ")[0]} / ${range}`}</div>
                 <div className="mt-3 pt-3 border-t">
                   <Input
                     value={annexureForm?.location_code || locationCode}
@@ -729,8 +737,8 @@ useEffect(() => {
               </td>
               <td className="border p-3">
                 <div className="h-4"></div>
-                <div className="border-t pt-2">{`${invoiceData?.invoice_number}/2024-25 Dt. ${invoiceDate}`}</div>
-                <div className="border-t pt-2 mt-2">{totalPackages}</div>
+                <div className="border-t pt-2">{`${invoiceData?.invoice_number} Dt. ${invoiceData?.invoice_date}`}</div>
+                <div className="border-t pt-2 mt-2">{invoiceData?.package.no_of_packages}</div>
                 <div className="border-t pt-2 mt-2">
                   <div>{buyer?.consignee}</div>
                   <div>{shipping?.final_destination}</div>
@@ -996,10 +1004,12 @@ useEffect(() => {
           <div className="space-y-4 pt-4 border-t">
             <div className="space-y-2">
               <Label>11. S.S. PERMISSION No.</Label>
-              <div className="text-center text-red-500  p-2 border rounded">
-                {manufacturerData?.permission}
+              <div className="text-center text-red-500  p-2 border rounded" dangerouslySetInnerHTML={{
+    __html: manufacturerData?.permission?.replace(/\n/g, "<br />") || "",
+  }}/>
+                
               </div>
-            </div>
+            {/* </div> */}
           </div>
 
           {/* GST Circular */}
@@ -1037,7 +1047,7 @@ useEffect(() => {
               <div className="mt-2">
                 EXAMINED THE EXPORT GOODS COVERED UNDER THIS INVOICE,
                 DESCRIPTION OF THE GOODS WITH REFERENCE TO DBK & MEIS SCHEME &
-                NET WAIGHT OF ALL Tiles ARE AS UNDER
+                NET WEIGHT OF ALL {invoiceData?.products.goods} ARE AS UNDER
               </div>
             </div>
           </div>

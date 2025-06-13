@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 
 const containerTypes = ["FCL", "LCL"];
 const leftOptions = Array.from({ length: 100 }, (_, i) => (i + 1).toString());
-const fclRightOptions = ["20 ft", "40 ft"];
+const fclRightOptions = ["20'", "40'"];
 const lclRightOptions = Array.from({ length: 30 }, (_, i) => (i + 1).toString());
 
 const MarksAndNumbers = ({form}) => {
@@ -92,7 +92,7 @@ useEffect(() => {
 
                 // Optional: Reset left/right when changing type
                 if (val === "FCL") {
-                  setValue("products.rightValue", "20 ft");
+                  setValue("products.rightValue", "20'");
                   setValue("products.leftValue", "10");
                 } else {
                   setValue("products.rightValue", "1");

@@ -282,7 +282,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
         setCargoWeights(savedVgmData.cargoWeights || []);
         setTotalWeights(savedVgmData.totalWeights || []);
         setWeighingDate(
-          savedVgmData.weighingDate || format(new Date(), "dd.MM.yyyy")
+           format(new Date(), "dd.MM.yyyy")
         );
         setWeighingLocation(savedVgmData.weighingLocation || "");
         setWeighingMethod(savedVgmData.weighingMethod || "");
@@ -435,16 +435,16 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
   };
   // Predefined shipper options
   const shippers: { [key: string]: any } = {
-    "ZERIC CERAMICA": {
-      registration: "I. E. Code #: AA********",
-      official: "ROHIT KACHADIYA",
-      contact: "**12******",
-    },
-    "DEMO VITRIFIED PVT LTD": {
-      registration: "I. E. Code #: BB********",
-      official: "JOHN DOE",
-      contact: "**13******",
-    },
+    // "ZERIC CERAMICA": {
+    //   registration: "I. E. Code #: AA********",
+    //   official: "ROHIT KACHADIYA",
+    //   contact: "**12******",
+    // },
+    // "DEMO VITRIFIED PVT LTD": {
+    //   registration: "I. E. Code #: BB********",
+    //   official: "JOHN DOE",
+    //   contact: "**13******",
+    // },
   };
   let containerData = invoiceData.products.containers || [];
   useEffect(() => {
@@ -504,15 +504,18 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
     // handle file generate by using this data and use functions like generateInvoiceExcel, generateInvoigenerateDocxceExcel to generate excel and word file then after generate this excel file and then send a apipost call to backend with filesapi.uploadPdf(excelFile)
     try {
       // Generate Excel file
-      const excelBlob = await generateInvoiceExcel(data);
+      const {blob:excelBlob, fileName:excelFileName} = await generateInvoiceExcel(data);
       const docxFile = await generateInvoigenerateDocxceExcel(data);
       // Upload the generated Excel file
       // excelFile return void change it the excel file is downloaded automatically in broswer and save it to machine
-      const excelFile = new File([excelBlob], "custom_invoice.xlsx", {
+      const excelFile = new File([excelBlob], excelFileName, {
         type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
       });
       const response = await filesApi.uploadAndDownloadPdf(excelFile);
       if (response.status === 200) {
+       
+
+     
         toast.success("Excel file uploaded successfully");
       } else {
         toast.error("Failed to upload Excel file");
@@ -1481,7 +1484,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                       <SelectContent>
                         <SelectItem value="20'">20'</SelectItem>
                         <SelectItem value="40'">40'</SelectItem>
-                        <SelectItem value="40' HC">40' HC</SelectItem>
+                        <SelectItem value="20' 40'">20' 40'</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -1690,6 +1693,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
               <div className="space-y-2">
                 <div className="font-medium">{hazardousClass}</div>
               </div>
+              
             </div>
           </div>
 
@@ -1726,9 +1730,8 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
               <TableBody>
                 {containerData ? (
                   containerData.map((row, index) => {
-                    const tare = 
-                      vgnForm?.containers?.[index]?.tare_weight || "0"
-                    ;
+                    const tare =
+                      vgnForm?.containers?.[index]?.tare_weight || "0";
                     const gross = row.gross_weight || "0";
                     const vgm = calculateTotalVGM(gross, tare);
 
@@ -1765,8 +1768,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                               required: true,
                               defaultValue: row?.container_no,
                             })}
-                            readonly
-                            disabled
+                            readOnly
                             className="h-10 border-0 text-center"
                           />
 
@@ -1774,7 +1776,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                         </TableCell>
                         <TableCell className="border">
                           <div className="flex items-center justify-center">
-                            <div className="text-right pr-2 w-1/3">
+                            <div className="text-right pr-2 w-1/3 w-fit">
                               <Input
                                 value={row.gross_weight || "0.00"}
                                 {...register(
@@ -1784,7 +1786,6 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                                     defaultValue: row.gross_weight || "0.00",
                                   }
                                 )}
-                                disabled
                                 readOnly
                                 placeholder="Enter Tare Weight"
                                 className="h-10 border-0 text-center w-20"
@@ -1795,33 +1796,45 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                               // value={tareWeights[index] || ""}
                               {...register(`containers.${index}.tare_weight`, {
                                 required: true,
+                                defaultValue: tare || "0",
+                                pattern: {
+                                  value: /^\d*\.?\d*$/, // only numbers and optional decimal
+                                  message: "Only numeric values allowed",
+                                },
                               })}
+                              type="text"
                               // onChange={(e) =>
                               //   handleTareWeightChange(index, e.target.value)
                               // }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                if (/^\d*\.?\d*$/.test(value)) {
+                                  setValue(
+                                    `containers.${index}.tare_weight`,
+                                    value
+                                  ); // update form manually
+                                }
+                              }}
                               placeholder="Enter Tare Weight"
-                              className={`h-10 border-0 text-center w-20 ${
+                              className={`h-10 border-0 text-center w-28 ${
                                 errors.containers?.[index]?.tare_weight
                                   ? "border-red-500"
                                   : ""
                               }`}
                             />
 
-                            <div className="px-2">
-                              = 
-                            </div>
+                            <div className="px-2">=</div>
                             <div className="text-right pl-2 w-1/3 font-medium">
                               <Input
                                 value={vgm}
                                 readOnly
-                                disabled
                                 placeholder="Total VGM"
-                                className="h-10 border-0 text-center w-20"
+                                className="h-10 border-0 text-center w-28"
                               />
 
                               {/* Hidden input to keep in form submission */}
                               <input
-                                type="hidden"
+                                className="hidden "
                                 {...register(`containers.${index}.total_vgm`, {
                                   required: true,
                                 })}
@@ -1867,6 +1880,22 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
               </TableBody>
             </Table>
           </div>
+          <div className="space-y-2 w-96">
+                <Label className="font-medium">
+                  15. Forwarder Email
+                </Label>
+                <Input
+                  type="email"
+                  placeholder="Enter forwarder email"
+                  {...register("forwarder_email", {required:"Enter the email", defaultValue: "" })}
+                  className=""
+                />
+                {errors.forwarder_email && (
+                  <p className="text-red-500 text-sm">
+                    {errors.forwarder_email.message}
+                  </p>
+                )}
+              </div>
         </CardContent>
       </Card>
 

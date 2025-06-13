@@ -2,19 +2,20 @@ version: '3.8'
 
 services:
   frontend:
-    build:
-      context: ./ui
-      dockerfile: Dockerfile
-    container_name: vite-frontend
+    # build:
+      # context: ./ui
+      # dockerfile: Dockerfile
+    image: manndshelby/invoice-frontend:prod
+    container_name: frontend
     expose:
       - "3000"
     networks:
       - appnet
   backend:
-    build:
-      context: ./backend
-      dockerfile: dockerfile
-    # image: manndshelby/invoice-backend:latest
+    # build:
+      # context: ./backend
+      # dockerfile: dockerfile
+    image: manndshelby/invoice-backend:prod
     container_name: php-prod
     ports:
       - "8000:8000"

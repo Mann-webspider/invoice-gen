@@ -460,9 +460,9 @@ const InvoiceGenerator = () => {
     "I/we shall claim under chapter 3 incentive of FTP as admissible at time policy in force - MEIS, RODTEP"
   );
   const [exportUnderGstCircular, setExportUnderGstCircular] = useState(
-    "EXPORT UNDER GST CIRCULAR NO. XX/20XX Customs DT.XX/XX/20XX"
+    ""
   );
-  const [lutNo, setLutNo] = useState("ACXXXXXXXXXXXXXXX");
+  const [lutNo, setLutNo] = useState("");
   const [lutDate, setLutDate] = useState<Date>(new Date());
   const [integratedTaxOption, setIntegratedTaxOption] = useState<
     "WITH" | "WITHOUT"
@@ -682,14 +682,14 @@ const InvoiceGenerator = () => {
         description: "",
         hsnCode: hsnCode,
         size: defaultSize,
-        price: 10,
+        price: 0,
         sqmPerBox: defaultSqmPerBox,
         marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`,
       },
-      quantity: 1000,
+      quantity: 0,
       unitType: "Box",
-      totalSQM: 1000 * defaultSqmPerBox,
-      totalFOB: 10000,
+      totalSQM: 0 * defaultSqmPerBox,
+      totalFOB: 0,
       sectionId,
     };
 
@@ -748,7 +748,7 @@ const InvoiceGenerator = () => {
           if (item.id === itemId) {
             const quantity = item.quantity || 0;
             const totalSQM = quantity * product.sqmPerBox;
-            const totalFOB = quantity * product.price;
+            const totalFOB = totalSQM * product.price; // i change this line this can be changed in future id 7 task
 
             return {
               ...item,

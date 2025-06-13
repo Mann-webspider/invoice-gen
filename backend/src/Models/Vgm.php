@@ -26,7 +26,8 @@ class Vgm extends Model
         'verified_gross_mass',
         'weighbridge_registration',
         'weighing_slip_no',
-        'containers_id'
+        'containers_id',
+        'forwarder_email'
     ];
     
   

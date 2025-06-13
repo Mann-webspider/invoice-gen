@@ -3,15 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useToast } from "@/components/ui/use-toast";
 import { useAuth } from "@/context";
 import api from "@/lib/axios";
+import { log } from "node:console";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { login,setUser } = useAuth();
   // add a logic for automatic login if uthToken is available in localstorage then s=check the session in backend if yes then redirect to home page if not then redirect to login page
   useEffect(() => {
@@ -34,11 +36,26 @@ const Login = () => {
     setIsLoading(true);
 
     try {
-      await login(email, password);
+      let login_res = await login(email, password);
+      console.log(login_res);
+      if(login_res.status === 401) {
+        throw new Error("Login failed");
+      }
+      toast({
+        title: "Success",
+        description: "Login successful! Redirecting to home page.",
+        variant: "success",})
+      
       navigate("/");
     } catch (error: any) {
-      const errorMessage = error.response?.data?.message || "Invalid credentials. Please try again.";
-      toast.error(errorMessage);
+      console.log(error);
+      
+      const errorMessage = error.response?.data?.message || "Invalid credentials. Please try again. front";
+      toast({title:"Error", description: errorMessage, variant: "destructive" });
+
+      
+      
+      
     } finally {
       setIsLoading(false);
     }
@@ -48,7 +65,7 @@ const Login = () => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-md p-8">
         <h2 className="text-2xl font-bold text-center mb-6">Login</h2>
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin}  className="space-y-4">
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -77,6 +94,7 @@ const Login = () => {
           </div>
           <Button
             type="submit"
+           
             className="w-full"
             disabled={isLoading}
           >

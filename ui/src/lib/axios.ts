@@ -31,7 +31,7 @@ api.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           localStorage.removeItem('authToken');
-          window.location.href = '/login';
+          // window.location.href = '/login';
           break;
         case 403:
           // Forbidden access - handled silently

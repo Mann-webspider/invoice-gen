@@ -215,7 +215,7 @@ const Dashboard = () => {
                     asChild 
                     className="px-0 text-xs text-muted-foreground hover:text-foreground"
                   >
-                    <Link to={card.link}>View Details →</Link>
+                    {/* <Link to={card.link}>View Details →</Link> */}
                   </Button>
                 </div>
               </CardContent>
@@ -257,10 +257,7 @@ const Dashboard = () => {
                       </div>
                       <div className="flex-1 text-right">
                         <div className="font-medium text-sm">
-                          {new Intl.NumberFormat("en-IN", {
-                            style: "currency",
-                            currency: "USD",
-                          }).format(invoice.totalFOBEuro || 0)}
+                          {invoice.totalFOBEuro}
                         </div>
                         <div className="text-xs text-muted-foreground">
                           {invoice.items?.length || 0} items

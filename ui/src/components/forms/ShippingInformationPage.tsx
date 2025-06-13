@@ -74,6 +74,12 @@ const ShippingInformationPage = ({
     }
     return res.data.data;
   }
+  useEffect(() => {
+    
+      
+      setValue("shipping.currency_rate", "88.45");
+    
+  }, []);
 
   // useEffect(() => {
   //   const subscribe = watch((value) => {
@@ -134,12 +140,15 @@ const ShippingInformationPage = ({
             <Input
               id="preCarriageBy"
               value={preCarriageBy}
-              {...register("shipping.pre_carriage_by", {
-                required: "Pre-Carriage By is required",
-              })}
+              {...register("shipping.pre_carriage_by")}
               onChange={(e) => setPreCarriageBy(e.target.value)}
               placeholder="Enter pre-carriage method"
             />
+            {/* {errors.shipping?.pre_carriage_by && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.pre_carriage_by.message}
+              </p>
+            )} */}
           </div>
 
           <div className="space-y-2">
@@ -150,7 +159,7 @@ const ShippingInformationPage = ({
             <Controller
               name="shipping.place_of_receipt" // this must match your form field name
               control={control}
-              rules={{ required: true }} // optional: validation rule
+              rules={{ required: "place of receipt is required" }} // optional: validation rule
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
@@ -166,6 +175,11 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
+            {errors.shipping?.place_of_receipt && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.place_of_receipt.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -173,12 +187,15 @@ const ShippingInformationPage = ({
             <Input
               id="vesselFlightNo"
               value={vesselFlightNo}
-              {...register("shipping.vessel_flight_no", {
-                required: "Vessel/Flight No. is required",
-              })}
+              {...register("shipping.vessel_flight_no",)}
               onChange={(e) => setVesselFlightNo(e.target.value)}
               placeholder="Enter vessel/flight number"
             />
+            {/* {errors.shipping?.vessel_flight_no && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.vessel_flight_no.message}
+              </p>
+            )} */}
           </div>
 
           <div className="space-y-2">
@@ -186,7 +203,7 @@ const ShippingInformationPage = ({
             <Controller
               name="shipping.port_of_loading" // this must match your form field name
               control={control}
-              rules={{ required: true }} // optional: validation rule
+              rules={{ required: "port of loading required" }} // optional: validation rule
               render={({ field }) => (
                 <Select
                   value={field.value}
@@ -213,6 +230,11 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
+            {errors.shipping?.port_of_loading && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.port_of_loading.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -249,30 +271,12 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
-            {/* <Select
-              value={portOfDischarge}
-              onValueChange={(value) => {
-                setPortOfDischarge(value);
-
-                // Update Terms of Delivery if payment terms are CIF or CNF
-                if (paymentTerms === "CIF") {
-                  setTermsOfDelivery(`CIF AT ${value}`);
-                } else if (paymentTerms === "CNF") {
-                  setTermsOfDelivery(`CNF AT ${value}`);
-                }
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select port of discharge" />
-              </SelectTrigger>
-              <SelectContent>
-                {portsOfDischarge.map((port) => (
-                  <SelectItem key={port} value={port}>
-                    {port}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select> */}
+            {errors.shipping?.port_of_discharge && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.port_of_discharge.message}
+              </p>
+            )}
+            
           </div>
 
           <div className="space-y-2">
@@ -296,6 +300,11 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
+            {errors.shipping?.final_destination && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.final_destination.message}
+              </p>
+            )}
           </div>
         </div>
 
@@ -314,6 +323,11 @@ const ShippingInformationPage = ({
               placeholder="Enter country of origin"
               readOnly
             />
+            {errors.shipping?.country_of_origin && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.country_of_origin.message}
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -327,6 +341,11 @@ const ShippingInformationPage = ({
               onChange={(e) => setOriginDetails(e.target.value)}
               placeholder="Enter origin details"
             />
+            {errors.shipping?.origin_details && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.origin_details.message}
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="countryOfFinalDestination">
@@ -351,6 +370,11 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
+            {errors.shipping?.country_of_final_destination && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.country_of_final_destination.message}
+              </p>
+            )}
           </div>
         </div>
 
@@ -363,11 +387,16 @@ const ShippingInformationPage = ({
               {...register("shipping.terms_of_delivery", {
                 required: "Terms of Delivery are required",
               })}
-              readonly
-              disabled
+              readOnly
+              
               className="bg-gray-50"
               placeholder="Terms of Delivery"
             />
+            {errors.shipping?.terms_of_delivery && (
+              <p className="text-red-500 text-sm">
+                {errors.shipping.terms_of_delivery.message}
+              </p>
+            )}
           </div>
 
           <div>
@@ -385,6 +414,11 @@ const ShippingInformationPage = ({
                 })}
                 // onChange={(e) => setPaymentField(() => e.target.value)}
               />
+              {errors.shipping?.payment && (
+                <p className="text-red-500 text-sm">
+                  {errors.shipping.payment.message}
+                </p>
+              )}
             </div>
           </div>
 
@@ -410,13 +444,18 @@ const ShippingInformationPage = ({
                   </Select>
                 )}
               />
+              {errors.shipping?.shipping_method && (
+                <p className="text-red-500 text-sm">
+                  {errors.shipping.shipping_method.message}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="selectedCurrency">Currency</Label>
+              <Label htmlFor="selectedCurrency">Currancy</Label>
               <Controller
                 name="currency_type" // this must match your form field name
                 control={control}
-                rules={{ required: true }} // optional: validation rule
+                rules={{ required: "currency required" }} // optional: validation rule
                 render={({ field }) => (
                   <Select value={field.value} onValueChange={field.onChange}>
                     <SelectTrigger>
@@ -432,15 +471,20 @@ const ShippingInformationPage = ({
                   </Select>
                 )}
               />
+              {errors.currency_type && (
+                <p className="text-red-500 text-sm">
+                  {errors.currency_type.message}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="currencyRate">
-                Current {selectedCurrency} Rate
+                Current Rate
               </Label>
               <Input
                 id="currencyRate"
-                value={currencyRate}
+                
                 {...register("currency_rate", {
                   required: "Currency rate is required",
                   valueAsNumber: true,
@@ -453,7 +497,15 @@ const ShippingInformationPage = ({
                 placeholder="Enter currency rate"
                 type="number"
                 step="0.01"
+                // only non negative numbers with up to 2 decimal places
+                
+                
               />
+              {errors.currency_rate && (
+                <p className="text-red-500 text-sm">
+                  {errors.currency_rate.message}
+                </p>
+              )}
             </div>
           </div>
         </div>

@@ -121,11 +121,11 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
     if (exporterObj) {
       setValue("exporter", exporterObj); // update exporter object in form
       // Convert invoiceDate to local date string (MM/DD/YYYY)
-      const localInvoiceDate = new Date(
-        exporterObj.invoiceDate
-      ).toLocaleDateString();
+      // const localInvoiceDate = new Date(
+      //   exporterObj.invoiceDate
+      // ).toLocaleDateString();
 
-      setValue("invoice_date", localInvoiceDate);
+      // setValue("invoice_date", localInvoiceDate);
       setValue("invoice_number", exporterObj.next_invoice_number || ""); // set invoice number outside exporter
     }
   };
@@ -287,7 +287,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                   )}
                 />
 
-                {errors.invoiceDate && (
+                {errors.invoice_date && (
                   <span className="text-red-500 text-sm">Required</span>
                 )}
               </div>

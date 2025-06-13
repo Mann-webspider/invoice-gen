@@ -415,6 +415,7 @@ const AdminPanel = () => {
       const response = await api.get(`/dropdown-options`);
       const shippingData = response.data.data.shipping;
       // Shipping data received - handled silently
+      console.log(shippingData);
 
       setShippingDetails(shippingData);
     } catch (error) {
@@ -488,9 +489,9 @@ const AdminPanel = () => {
         authorized_name: selectedExporter.authorized_name,
         authorized_designation: selectedExporter.authorized_designation,
         contact_number: selectedExporter.contact_number,
-        company_prefix:selectedExporter.company_prefix,
-        last_invoice_number:selectedExporter.last_invoice_number,
-        invoice_year:selectedExporter.invoice_year
+        company_prefix: selectedExporter.company_prefix,
+        last_invoice_number: selectedExporter.last_invoice_number,
+        invoice_year: selectedExporter.invoice_year,
       });
     }
   }, [selectedExporter, isEditExporterDialogOpen]);
@@ -608,22 +609,29 @@ const AdminPanel = () => {
         // Check if there's a valid exporter id
         const response = await api.put(`/exporter/${id}`, data);
         const exporterData = response.data.data;
-         if (header?.file) {
+        if (header?.file) {
           const headerFormData = new FormData();
           headerFormData.append("image", header.file);
-          let headRes = await api.post(`/upload/header/${exporterData.id}`, headerFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          let headRes = await api.post(
+            `/upload/header/${exporterData.id}`,
+            headerFormData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
           // Header image upload response - handled silently
-          
         }
 
         if (footer?.file) {
           const footerFormData = new FormData();
           footerFormData.append("image", footer.file);
-          let footRes = await api.post(`/upload/footer/${exporterData.id}`, footerFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
+          let footRes = await api.post(
+            `/upload/footer/${exporterData.id}`,
+            footerFormData,
+            {
+              headers: { "Content-Type": "multipart/form-data" },
+            }
+          );
           // Footer image upload response - handled silently
         }
 
@@ -720,14 +728,14 @@ const AdminPanel = () => {
 
   // ------------------------start shipping --------------------------------
 
-  const handleAddShippingValue = () => {
+  const handleAddShippingValue =async () => {
     const addShipping = async (category, value) => {
       try {
         let res = await api.post("/dropdown-options", {
           category: category,
           value: value,
         });
-        console.log(res.data.allOptions);
+        console.log(res.data.all_options);
 
         return res.data.data;
       } catch (error) {
@@ -742,23 +750,32 @@ const AdminPanel = () => {
       });
       return;
     }
-    console.log(editingCategory);
+    
 
-    addShipping(editingCategory, newValue);
+    let shipping_res = await addShipping(editingCategory, newValue);
 
-    // setShippingDetails(prev => {
-    //   const updated = { ...prev };
-    //   if (editingCategory === "place_of_receipt") {
-    //     updated.place_of_receipt = [...prev.place_of_receipt, newValue];
-    //   } else if (editingCategory === "port_of_loading") {
-    //     updated.port_of_loading = [...prev.port_of_loading, newValue];
-    //   } else if (editingCategory === "port_of_discharge") {
-    //     updated.port_of_discharge = [...prev.port_of_discharge, newValue];
-    //   } else if (editingCategory === "final_destination") {
-    //     updated.final_destination = [...prev.final_destination, newValue];
-    //   }
-    //   return updated;
-    // });
+    if (!shipping_res || shipping_res.error) {
+    toast({
+      title: "Error",
+      description: shipping_res?.message || "Failed to add shipping detail",
+      variant: "destructive",
+    });
+    return;
+  }
+
+    setShippingDetails((prev) => {
+      const updated = [...prev ];
+      updated.push({
+        id: shipping_res.id, // Generate a random ID
+        category: shipping_res.category,
+        value: shipping_res.value,
+      })
+      
+        return updated;
+      }
+  );
+    
+
 
     setNewValue("");
     setIsAddValueDialogOpen(false);
@@ -821,9 +838,9 @@ const AdminPanel = () => {
 
   // ------------------------finish shipping --------------------------------
   const openEditValueDialog = (category: string, value: string) => {
-    setEditingCategory(category);
+    setEditingCategory(()=>category);
     // setEditingItemIndex(index);
-    setEditingItemValue(value);
+    setEditingItemValue(()=>value);
     setIsEditValueDialogOpen(true);
   };
 
@@ -1536,7 +1553,7 @@ const AdminPanel = () => {
                   >
                     <span className="truncate">{item.value}</span>
                     <div className="flex space-x-1 ml-2 shrink-0">
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="sm"
                         onClick={() =>
@@ -1545,7 +1562,7 @@ const AdminPanel = () => {
                         className="h-6 w-6 p-0"
                       >
                         <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1600,7 +1617,7 @@ const AdminPanel = () => {
                   >
                     <span className="truncate">{port.value}</span>
                     <div className="flex space-x-1 ml-2 shrink-0">
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="sm"
                         onClick={() =>
@@ -1609,7 +1626,7 @@ const AdminPanel = () => {
                         className="h-6 w-6 p-0"
                       >
                         <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1664,7 +1681,7 @@ const AdminPanel = () => {
                   >
                     <span className="truncate">{port.value}</span>
                     <div className="flex space-x-1 ml-2 shrink-0">
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="sm"
                         onClick={() =>
@@ -1673,7 +1690,7 @@ const AdminPanel = () => {
                         className="h-6 w-6 p-0"
                       >
                         <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1731,7 +1748,7 @@ const AdminPanel = () => {
                   >
                     <span className="truncate">{destination.value}</span>
                     <div className="flex space-x-1 ml-2 shrink-0">
-                      <Button
+                      {/* <Button
                         variant="ghost"
                         size="sm"
                         onClick={() =>
@@ -1743,7 +1760,7 @@ const AdminPanel = () => {
                         className="h-6 w-6 p-0"
                       >
                         <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button>
+                      </Button> */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -2330,7 +2347,7 @@ const AdminPanel = () => {
             </div>
             <div>
               <Label htmlFor="edit-permission">S.S. PERMISSION No.</Label>
-              <Input
+              <Textarea
                 id="edit-permission"
                 value={supplierFormData.permission}
                 onChange={(e) =>
@@ -2433,7 +2450,7 @@ const AdminPanel = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="space-y-4">
           <div>
-            <Label htmlFor="company_name">Exporter Name *</Label>
+            <Label htmlFor="company_name">Exporter Name </Label>
             <Input
               id="company_name"
               value={formData.company_name}
@@ -2563,7 +2580,7 @@ const AdminPanel = () => {
           </div>
 
           <div>
-            <Label htmlFor="state_code">State Code *</Label>
+            <Label htmlFor="state_code">State Code </Label>
             <Input
               id="state_code"
               value={formData.state_code}
@@ -2646,13 +2663,13 @@ const AdminPanel = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Top Letterhead Image */}
           <div className="space-y-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
               <Label
                 htmlFor="letterhead_top_image"
                 className="text-sm font-semibold text-gray-700"
               >
+            <div className="flex items-center justify-between">
                 Top Letterhead Image *
-              </Label>
+              
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 Required
               </span>
@@ -2712,21 +2729,23 @@ const AdminPanel = () => {
                     onChange={(e) =>
                       handleImageUpload(e, "letterhead_top_image")
                     }
-                  />
+                    />
                 </div>
               )}
+              
             </div>
+              </Label>
           </div>
 
           {/* Bottom Letterhead Image */}
           <div className="space-y-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
               <Label
                 htmlFor="letterhead_bottom_image"
                 className="text-sm font-semibold text-gray-700"
               >
+            <div className="flex items-center justify-between">
                 Bottom Letterhead Image *
-              </Label>
+              
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 Required
               </span>
@@ -2790,17 +2809,18 @@ const AdminPanel = () => {
                 </div>
               )}
             </div>
+              </Label>
           </div>
 
           {/* Stamp Image */}
           <div className="space-y-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-            <div className="flex items-center justify-between">
               <Label
                 htmlFor="stamp_image"
                 className="text-sm font-semibold text-gray-700"
               >
+            <div className="flex items-center justify-between">
                 Company Stamp Image *
-              </Label>
+              
               <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                 Required
               </span>
@@ -2862,6 +2882,7 @@ const AdminPanel = () => {
                 </div>
               )}
             </div>
+            </Label>
           </div>
         </div>
       </div>
@@ -2923,8 +2944,7 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle>Add New Exporter</DialogTitle>
             <DialogDescription>
-              Fill in the details to add a new exporter. Fields marked with *
-              are required.
+              Fill in the details to add a new exporter.
             </DialogDescription>
           </DialogHeader>
           {renderExporterForm()}
@@ -2952,7 +2972,7 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle>Edit Exporter</DialogTitle>
             <DialogDescription>
-              Update the exporter details. Fields marked with * are required.
+              Update the exporter details. 
             </DialogDescription>
           </DialogHeader>
           {renderExporterForm()}

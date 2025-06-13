@@ -23,6 +23,7 @@ class CreateVgmSchema
             weighing_slip_no TEXT,
             type TEXT,
             IMDG_class TEXT,
+            forwarder_email TEXT,
             containers_id BLOB
         )");
         $pdo->exec("CREATE TABLE IF NOT EXISTS vgm_container (

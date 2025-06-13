@@ -974,13 +974,13 @@ const PackagingList = ({
   const [containerRows, setContainerRows] = useState<ContainerInfo[]>([
     {
       id: '1',
-      containerNo: 'CONT-001',
-      lineSealNo: 'SEAL-001',
-      rfidSeal: 'RFID-001',
-      designNo: 'TILES',
-      quantity: 700,
-      netWeight: '1000',
-      grossWeight: '1050'
+      containerNo: '',
+      lineSealNo: '',
+      rfidSeal: '',
+      designNo: '',
+      quantity: 0,
+      netWeight: '0',
+      grossWeight: '0'
     }
   ]);
 
@@ -1188,15 +1188,17 @@ useEffect(() => {
 function updateInvoiceProducts(formData, newObject) {
   const updatedForm = { ...formData };
 
-  // ✅ Update weights
-  const newItem = newObject.products?.product_list?.[0]?.items?.[0];
-  if (newItem) {
-    updatedForm.products.product_list = updatedForm.products.product_list.map((product) => ({
+  const newProductList = newObject.products?.product_list || [];
+
+  // ✅ Update weights dynamically per item
+  updatedForm.products.product_list = updatedForm.products.product_list.map((product, i) => {
+    const newItem = newProductList[i]?.items?.[0];
+    return {
       ...product,
-      net_weight: parseFloat(newItem.net_weight),
-      gross_weight: parseFloat(newItem.gross_weight),
-    }));
-  }
+      net_weight: newItem?.net_weight ? parseFloat(newItem.net_weight) : product.net_weight,
+      gross_weight: newItem?.gross_weight ? parseFloat(newItem.gross_weight) : product.gross_weight,
+    };
+  });
 
   // ✅ Copy containers
   if (Array.isArray(newObject.products?.containers)) {
@@ -1208,7 +1210,7 @@ function updateInvoiceProducts(formData, newObject) {
   let totalNetWeight = 0;
   let totalGrossWeight = 0;
 
-  updatedForm.products.product_list.forEach((product) => {
+  updatedForm.products.containers.forEach((product) => {
     totalNetWeight += parseFloat(product.net_weight || 0);
     totalGrossWeight += parseFloat(product.gross_weight || 0);
   });
@@ -1741,12 +1743,12 @@ function handleNext(data){
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {containerRows.map((row) => (
+                  {containerRows.map((row,index) => (
                     <TableRow key={row.id}>
                       <TableCell className="border p-0">
                         <Input
                           value={row.containerNo}
-                          {...register(`products.containers.${row.id-1}.container_no`, {
+                          {...register(`products.containers.${index}.container_no`, {
                             required: true
                           })}
                           onChange={(e) => updateContainerField(row.id, 'containerNo', e.target.value)}
@@ -1757,7 +1759,7 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.lineSealNo}
-                          {...register(`products.containers.${row.id-1}.line_seal_no`, {
+                          {...register(`products.containers.${index}.line_seal_no`, {
                             required: true
                           })} 
                           onChange={(e) => updateContainerField(row.id, 'lineSealNo', e.target.value)}
@@ -1768,7 +1770,7 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.rfidSeal}
-                          {...register(`products.containers.${row.id-1}.rfid_seal`, {
+                          {...register(`products.containers.${index}.rfid_seal`, {
                             required: true
                           })}
                           onChange={(e) => updateContainerField(row.id, 'rfidSeal', e.target.value)}
@@ -1779,7 +1781,7 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.designNo}
-                          {...register(`products.containers.${row.id-1}.design_no`, {
+                          {...register(`products.containers.${index}.design_no`, {
                             required: true
                           })}
                           onChange={(e) => updateContainerField(row.id, 'designNo', e.target.value)}
@@ -1791,7 +1793,7 @@ function handleNext(data){
                         <Input
                           type="number"
                           value={row.quantity}
-                          {...register(`products.containers.${row.id-1}.quantity`, {
+                          {...register(`products.containers.${index}.quantity`, {
                             required: true
                           })}
                           onChange={(e) => updateContainerField(row.id, 'quantity', parseInt(e.target.value) || '')}
@@ -1802,7 +1804,7 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.netWeight}
-                          {...register(`products.containers.${row.id-1}.net_weight`, {
+                          {...register(`products.containers.${index}.net_weight`, {
                             required: true
                           })}
                           onChange={(e) => updateContainerField(row.id, 'netWeight', e.target.value)}
@@ -1813,7 +1815,7 @@ function handleNext(data){
                       <TableCell className="border p-0">
                         <Input
                           value={row.grossWeight}
-                          {...register(`products.containers.${row.id-1}.gross_weight`, {
+                          {...register(`products.containers.${index}.gross_weight`, {
                             required: true
                           })}
                           onChange={(e) => updateContainerField(row.id, 'grossWeight', e.target.value)}
@@ -1904,14 +1906,14 @@ function handleNext(data){
 
           <div className="flex justify-between mt-8">
             <Button variant="outline" onClick={onBack}>Back</Button>
-            <Button onClick={ () => {
+            {/* <Button onClick={ () => {
                
 
                  handleSaveInvoice()
               }}>
                 <Save className="mr-2 h-4 w-4" />
                 Save Invoice
-              </Button>
+              </Button> */}
             <Button variant="default" onClick={handleSubmit(handleNext)}>Next</Button>
           </div>
       </CardContent>
