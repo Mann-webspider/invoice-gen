@@ -4,10 +4,9 @@ import { saveAs } from "file-saver";
   export const generateInvoigenerateDocxceExcel = async (data): Promise<void> => {
   let companyName = data.exporter.company_name || "COMPANY NAME";
   let companyAddress = data.exporter.company_address ||`SECOND FLOOR, OFFICE NO 7,\nISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI,\nGujarat, 363642\nINDIA`;
-  let email = data.vgm.forwarder_email  ||"ABC@GMAIL.COM";
+  let email = data.vgm.forwarder_email ||"ABC@GMAIL.COM";
   let consignee = data.buyer.consignee||"XYZ";
   let notifyParty = data.buyer.notify_party ||["ABC", "DEF", "GHI"];
-  let finalDestination = data.shipping.final_destination || "USA";
   let termsOfDelivery = data.payment_term||"FOB";
   let cuntainerType = data.product_details.nos||"FCL";
   let marksAndNos = data.product_details.marks||"10 x 20'";
@@ -84,7 +83,7 @@ import { saveAs } from "file-saver";
           new Paragraph({
             children: [
               new TextRun({
-                text: `\nPLEASE FIND ATTACHED DOCS & VGM OF ${marksAndNos}FT - ${finalDestination}\n`,
+                text: `\nPLEASE FIND ATTACHED DOCS & VGM OF ${marksAndNos}FT - CUBA\n`,
               }),
             ],
           }),

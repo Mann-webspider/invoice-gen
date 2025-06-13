@@ -273,7 +273,7 @@ const Dashboard = () => {
                           <Eye className="h-3.5 w-3.5" />
                           <span className="sr-only">View</span>
                         </Button>
-                        <Button 
+                        {/* <Button 
                           variant="outline" 
                           size="sm" 
                           className="h-7 w-7 p-0"
@@ -281,7 +281,7 @@ const Dashboard = () => {
                         >
                           <Edit className="h-3.5 w-3.5" />
                           <span className="sr-only">Edit</span>
-                        </Button>
+                        </Button> */}
                       </div>
                     </div>
                   ))}

@@ -878,7 +878,7 @@ const AdminPanel = () => {
           ],
         }));
 
-        setNewDescHsnPair({ description: "", hsn_code: "" });
+        setNewDescHsnPair({ description: response.data.description, hsn_code: response.data.hsn_code });
         setIsAddDescHsnDialogOpen(false);
 
         toast({

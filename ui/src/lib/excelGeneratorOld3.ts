@@ -75,8 +75,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   let invoiceNo = data.invoice_number || "3S4D5F6G7H8";
   let invoiceDate = data.invoice_date || "26-04-2025";
   // invoiceDate = normalizeDateSeparator(invoiceDate, '.');
-  let [year, month, day] = invoiceDate.split('/');
-  invoiceDate = `${year}.${month}.${day}`;
+  let [year, month, day] = invoiceDate.split('-');
+  let formattedDate = `${day}.${month}.${year}`;
   let buyersOrderNo = data.buyer.order_number || "123456789";
   let buyersOrderDate = data.buyer.order_date || "26-04-2025";
   let poNo = data.buyer.po_number || "";
@@ -145,10 +145,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   //   ['Coral Blush', '600X600', 1000, 'BOX', 1.44, 1440, 10.0, 14400.0, 32522.00, 65465.00],
   //   ['Shadow Brown', '600X600', 1000, 'BOX', 1.44, 1440, 10.0, 14400.0, 32522.00, 65465.00],
   // ];
-  let packageInfo = data.package.number_of_package || 14000;
-  let [totalPackages, unitOfIt] = packageInfo.split(' ');
-
-  let noOfPackages = totalPackages;
+  let noOfPackages = data.package.number_of_package.split(" ")[0] || 14000;
   let grossWeight = data.package.total_gross_weight || 14000;
   let netWeight = data.package.total_net_weight || 14000;
   let totalSQM = data.package.total_sqm || 0;
@@ -158,11 +155,9 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   let totalFOBEuro = data.package.total_amount || 234352.00;
   let amountInWords = data.package.amount_in_words || "TWENTY THREE THOUSAND TWO HUNDRED AND THIRTY TWO ONLY";
   let gstCirculerNumber = data.package.gst_circular || "**/20**";
-  // let customDate = data.invoice_date || "26-04-2025";
-  let arn = data.package.app_ref_number || "KS3525252J32";
+  let customDate = data.invoice_date || "26-04-2025";
+  let arn = data.package.arn_ref_number || "KS3525252J32";
   let lutDate = data.package.lut_date || "26-04-2025";
-  [year, month, day] = lutDate.split('-');
-  lutDate = `${day}/${month}/${year}`;
   let totalInINR = data.package.taxable_value || 2646246.46;
 
   let gstValue = data.package.gst_amount || "44262423";   // New value // mann patel
@@ -173,7 +168,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
       // Format date from 'yyyy-mm-dd' to 'dd.mm.yyyy'
       [year, month, day] = supplier.date.split('-');
-      let formattedDate = `${day}.${month}.${year}`;
+      formattedDate = `${day}.${month}.${year}`;
 
       return [
         supplier.supplier_name,
@@ -249,9 +244,9 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   let ann10b = data.annexure.containerized || "SELF SEALING";
   let locationCode = data.annexure.location_code || "";
   let ssPermissionNo = data.annexure.manufacturer_permission || "*****************************************************************************************************";
-  // let issuedBy = "*******************************************************************************************";
-  let selfSealingCircularNo = "59/2010" // new values
-  let selfSealingCircularNoDate = "23.12.2010" // new values
+  let issuedBy = "*******************************************************************************************";
+  let selfSealingCircularNo = "34/4903" // new values
+  let selfSealingCircularNoDate = "23.05.4235" // new values
 
   //vgn
   let nameOfOfficial = data.vgm.authorized_name || "";
@@ -267,10 +262,10 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   let vgn14 = data.vgm.IMDG_class || "N/A";
 
 
-  let packegingType = unitOfIt;  // Ignore it for now
+  let packegingType = data?.package.number_of_package.split(" ")[1]|| "BOX";  // Ignore it for now
 
 
-  let type = "sanitary";
+  let type = "mix";
   let taxStatus = data.integrated_tax.toLowerCase() || "with";
   // Create a new workbook
   const workbook = new ExcelJS.Workbook();
@@ -360,14 +355,14 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     };
   };
 
-  configurePrintSheet(worksheet);
-  // worksheet.pageSetup = {
-  //   paperSize: 9,            // A4
-  //   orientation: 'portrait',
-  //   fitToPage: true,
-  //   fitToWidth: 1,           // Fit width to one page
-  //   horizontalCentered: true,
-  // };
+  // configurePrintSheet(worksheet);
+  worksheet.pageSetup = {
+    paperSize: 9,            // A4
+    orientation: 'portrait',
+    fitToPage: true,
+    fitToWidth: 1,           // Fit width to one page
+    horizontalCentered: true,
+  };
 
   const setGlobalFontSize = (
     worksheet: ExcelJS.Worksheet,
@@ -573,7 +568,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   worksheet.mergeCells('O14:AA19');
   worksheet.getCell('O14').value = `${notifyParty}`;
-  worksheet.getCell('O14').font = { bold: true };
   worksheet.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
   setOuterBorder('O13:AA19', worksheet, 'medium'); // Removalble
 
@@ -674,7 +668,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   worksheet.mergeCells('O24:AA25');
   worksheet.getCell('O24').value = `${paymentTerms}`;
   worksheet.getCell('O24').font = { name: 'Arial', color: { argb: 'FFFF0000' } };
-  worksheet.getCell('O24').alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
+  worksheet.getCell('O24').alignment = { horizontal: 'left', vertical: 'top' };
 
   worksheet.mergeCells('O26:U26');
   worksheet.getCell('O26').value = shippingMethod;
@@ -1589,7 +1583,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   row++;
 
   worksheet.mergeCells('A' + row + ':AA' + row);
-  worksheet.getCell('A' + row).value = gstCirculerNumber;
+  worksheet.getCell('A' + row).value = `EXPORT UNDER GST CIRCULAR NO. ${gstCirculerNumber} Customs DT.${customDate}`;
   worksheet.getCell('A' + row).font = { italic: true };
   worksheet.getCell('A' + row).alignment = { horizontal: 'left' };
   setOuterBorder('A' + row + ':AA' + row, worksheet);
@@ -1597,7 +1591,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   worksheet.mergeCells('A' + row + ':AA' + (row + 1));
   if (taxStatus === "without") {
-    worksheet.getCell('A' + row).value = `LETTER OF UNDERTAKING NO.ACKNOWLEDGMENT FOR LUT  APPLICATION REFERENCE NUMBER (ARN) ${arn}\nDT:${lutDate}`;
+    worksheet.getCell('A' + row).value = `LETTER OF UNDERTAKING NO.ACKNOWLEDGMENT FOR LUT  APPLICATION REFERENCE NUMBER (ARN) ${arn}\n${lutDate}`;
   } else {
     worksheet.getCell('A' + row).value = `SUPPLY MEANT FOR EXPORT ON PAYMENT OF IGST UNDER CLAIM OF REFUND RS. TOTAL : ${gstValue}\n(TAXABLE ${termsOfDelivery} INR VALUE ${totalInINR}@ 18% )                                                                            ${gstValue}  `;
   }
@@ -2017,7 +2011,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   const packingList = workbook.addWorksheet('PACKING LIST');
 
   packingList.mergeCells('A1:AA1');
-  packingList.getCell('A1').value = 'PACKING LIST';
+  packingList.getCell('A1').value = 'PAKING LIST';
   packingList.getCell('A1').font = { bold: true };
   packingList.getCell('A1').alignment = { horizontal: 'center' };
   setOuterBorder('A1:AA1', packingList);
@@ -2186,14 +2180,14 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   packingList.mergeCells('N21:AA21');
   packingList.getCell('N21').value = "Terms of Delivery & Payment :-";
-  // packingList.getCell('N21').font = { bold: true };
+  packingList.getCell('N21').font = { bold: true };
 
   packingList.mergeCells('N22:AA22');
   packingList.getCell('N22').value = `${termsOfDelivery} AT ${portOfLoading} PORT`;
 
   packingList.mergeCells('N23:AA24');
   packingList.getCell('N23').value = `${paymentTerms}`;
-  packingList.getCell('N23').alignment = { wrapText: true, vertical: 'top' };
+  packingList.getCell('N23').alignment = { vertical: 'top' };
 
   packingList.mergeCells('N25:V25');
   packingList.getCell('N25').value = shippingMethod;
@@ -2274,7 +2268,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   packingList.getCell('B28').value = "HSN CODE";
   packingList.getCell('B28').font = { bold: true };
   packingList.getCell('B28').alignment = { horizontal: 'center', vertical: 'middle' };
-  setOuterBorder('B28:D28', packingList);
+  setOuterBorder('B28:D28', worksheet);
 
 
   row = 27;
@@ -2336,7 +2330,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
       packingList.mergeCells('Q' + row + ':U' + row);
       packingList.getCell('Q' + row).value = products[i][2];
-      packingList.getCell('Q' + row).font = { bold: true };
       packingList.getCell('Q' + row).alignment = { horizontal: 'center' };
       setOuterBorder('Q' + row + ':U' + row, packingList);
 
@@ -2653,12 +2646,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('A5:A6');
   annexure.getCell('A5').value = 1;
-  // annexure.getCell('A5').font = { bold: true };
+  annexure.getCell('A5').font = { bold: true };
   annexure.getCell('A5').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B5:L6');
   annexure.getCell('B5').value = "NAME OF EXPORTER";
-  // annexure.getCell('B5').font = { bold: true };
+  annexure.getCell('B5').font = { bold: true };
   annexure.getCell('B5').alignment = { horizontal: 'left', vertical: 'top' };
   setOuterBorder('A5:L6', annexure);
 
@@ -2675,36 +2668,35 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('A7:A10');
   annexure.getCell('A7').value = 2;
-  // annexure.getCell('A7').font = { bold: true };
+  annexure.getCell('A7').font = { bold: true };
   annexure.getCell('A7').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B7:L8');
   annexure.getCell('B7').value = "(a) I.E.CODE No.";
-  // annexure.getCell('B7').font = { bold: true };
+  annexure.getCell('B7').font = { bold: true };
   annexure.getCell('B7').alignment = { horizontal: 'left', vertical: 'top' };
 
   annexure.mergeCells('B9:L9');
   annexure.getCell('B9').value = "(b) BRANCH CODE No.";
-  // annexure.getCell('B9').font = { bold: true };
+  annexure.getCell('B9').font = { bold: true };
   annexure.getCell('B9').alignment = { horizontal: 'left', vertical: 'top' };
 
   annexure.mergeCells('B10:L10');
   annexure.getCell('B10').value = "(c) BIN No.";
-  // annexure.getCell('B10').font = { bold: true };
+  annexure.getCell('B10').font = { bold: true };
   annexure.getCell('B10').alignment = { horizontal: 'left', vertical: 'top' };
   setOuterBorder('A7:L10', annexure);
 
   annexure.mergeCells('M7:T7');
-  annexure.getCell('M7').value = `I.E. CODE #: ${ieCode}`;
-  annexure.getCell('M7').font = { bold: true };
+  annexure.getCell('M7').value = `I.E. CODE : ${ieCode}`;
   annexure.getCell('M7').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('M8:T8');
-  annexure.getCell('M8').value = `GSTIN NO. #: ${gstinNo}`;
+  annexure.getCell('M8').value = `GSTIN NO. : ${gstinNo}`;
   annexure.getCell('M8').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('U7:AA7');
-  annexure.getCell('U7').value = `PAN NO. #: ${panNo}`;
+  annexure.getCell('U7').value = `PAN NO. : ${panNo}`;
   annexure.getCell('U7').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('U8:AA8');
@@ -2724,22 +2716,22 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('A11:A16');
   annexure.getCell('A11').value = 3;
-  // annexure.getCell('A11').font = { bold: true };
+  annexure.getCell('A11').font = { bold: true };
   annexure.getCell('A11').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B11:L11');
   annexure.getCell('B11').value = "NAME OF THE MANUFACTURER";
-  // annexure.getCell('B11').font = { bold: true };
+  annexure.getCell('B11').font = { bold: true };
   annexure.getCell('B11').alignment = { horizontal: 'left', vertical: 'top' };
 
   annexure.mergeCells('B12:L12');
   annexure.getCell('B12').value = "(DIFFERENCE FROM THE EXPORTER)";
-  // annexure.getCell('B12').font = { bold: true };
+  annexure.getCell('B12').font = { bold: true };
   annexure.getCell('B12').alignment = { horizontal: 'left', vertical: 'top' };
 
   annexure.mergeCells('B13:L13');
   annexure.getCell('B13').value = "FACTORY ADDRESS";
-  // annexure.getCell('B13').font = { bold: true };
+  annexure.getCell('B13').font = { bold: true };
   annexure.getCell('B13').alignment = { horizontal: 'left', vertical: 'top' };
   setOuterBorder('A11:L16', annexure);
 
@@ -2757,40 +2749,38 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   setOuterBorder('M11:AA16', annexure);
 
   annexure.getCell('A17').value = 4;
-  // annexure.getCell('A17').font = { bold: true };
+  annexure.getCell('A17').font = { bold: true };
   annexure.getCell('A17').alignment = { horizontal: 'right' };
 
   annexure.mergeCells('B17:L17');
   annexure.getCell('B17').value = "DATE OF EXAMINATION";
-  // annexure.getCell('B17').font = { bold: true };
+  annexure.getCell('B17').font = { bold: true };
   annexure.getCell('B17').alignment = { horizontal: 'left' };
   setOuterBorder('A17:L17', annexure);
 
   annexure.mergeCells('M17:AA17');
   annexure.getCell('M17').value = `Dt. ${invoiceDate}`;
-  annexure.getCell('M17').font = { bold: true };
   annexure.getCell('M17').alignment = { horizontal: 'left' };
   setOuterBorder('M17:AA17', annexure);
 
   annexure.mergeCells('A18:A19');
   annexure.getCell('A18').value = 5;
-  // annexure.getCell('A18').font = { bold: true };
+  annexure.getCell('A18').font = { bold: true };
   annexure.getCell('A18').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B18:L18');
   annexure.getCell('B18').value = "NAME AND DESIGNATION OF THE EXAMINING";
-  // annexure.getCell('B18').font = { bold: true };
+  annexure.getCell('B18').font = { bold: true };
   annexure.getCell('B18').alignment = { horizontal: 'left', vertical: 'top' };
 
   annexure.mergeCells('B19:L19');
   annexure.getCell('B19').value = "OFFICER / INSPECTOR / EO / PO";
-  // annexure.getCell('B19').font = { bold: true };
+  annexure.getCell('B19').font = { bold: true };
   annexure.getCell('B19').alignment = { horizontal: 'left', vertical: 'top' };
   setOuterBorder('A18:L19', annexure);
 
   annexure.mergeCells('M18:AA18');
   annexure.getCell('M18').value = ann5;
-  annexure.getCell('M18').font = { bold: true };
   annexure.getCell('M18').alignment = { horizontal: 'left' };
   setOuterBorder('M18:AA18', annexure);
 
@@ -2799,23 +2789,22 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('A20:A21');
   annexure.getCell('A20').value = 6;
-  // annexure.getCell('A20').font = { bold: true };
+  annexure.getCell('A20').font = { bold: true };
   annexure.getCell('A20').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B20:L20');
   annexure.getCell('B20').value = "NAME AND DESIGNATION OF THE EXAMINING";
-  // annexure.getCell('B20').font = { bold: true };
+  annexure.getCell('B20').font = { bold: true };
   annexure.getCell('B20').alignment = { horizontal: 'left', vertical: 'top' };
 
   annexure.mergeCells('B21:L21');
   annexure.getCell('B21').value = "OFFICER / APPRAISER / SUPERINTENDENT ";
-  // annexure.getCell('B21').font = { bold: true };
+  annexure.getCell('B21').font = { bold: true };
   annexure.getCell('B21').alignment = { horizontal: 'left', vertical: 'top' };
   setOuterBorder('A20:L21', annexure);
 
   annexure.mergeCells('M20:AA20');
   annexure.getCell('M20').value = ann6;
-  annexure.getCell('M20').font = { bold: true };
   annexure.getCell('M20').alignment = { horizontal: 'left' };
   setOuterBorder('M20:AA20', annexure);
 
@@ -2824,55 +2813,53 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('A22:A23');
   annexure.getCell('A22').value = 7;
-  // annexure.getCell('A22').font = { bold: true };
+  annexure.getCell('A22').font = { bold: true };
   annexure.getCell('A22').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B22:L22');
   annexure.getCell('B22').value = "(a) NAME OF COMMISERATE / DIVISION / RANGE";
-  // annexure.getCell('B22').font = { bold: true };
+  annexure.getCell('B22').font = { bold: true };
   annexure.getCell('B22').alignment = { horizontal: 'left', vertical: 'top' };
 
   annexure.mergeCells('B23:L23');
   annexure.getCell('B23').value = "(b) LOCATION CODEO";
-  // annexure.getCell('B23').font = { bold: true };
+  annexure.getCell('B23').font = { bold: true };
   annexure.getCell('B23').alignment = { horizontal: 'left', vertical: 'top' };
   setOuterBorder('A22:L23', annexure);
 
   annexure.mergeCells('M22:AA22');
   annexure.getCell('M22').value = `${commissionerate} /${division} / ${range}`;
-  annexure.getCell('M22').font = { bold: true };
   annexure.getCell('M22').alignment = { horizontal: 'left' };
   setOuterBorder('M22:AA22', annexure);
 
   annexure.mergeCells('M23:AA23');
   annexure.getCell('M23').value = locationCode;
-  annexure.getCell('M23').font = { bold: true };
   annexure.getCell('M23').alignment = { horizontal: 'left' };
   setOuterBorder('M23:AA23', annexure);
 
   annexure.mergeCells('A24:A30');
   annexure.getCell('A24').value = 8;
-  // annexure.getCell('A24').font = { bold: true };
+  annexure.getCell('A24').font = { bold: true };
   annexure.getCell('A24').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B24:L24');
   annexure.getCell('B24').value = "PARTICULARS OF EXPORT INVOICE";
-  // annexure.getCell('B24').font = { bold: true };
+  annexure.getCell('B24').font = { bold: true };
   annexure.getCell('B24').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('B25:L25');
   annexure.getCell('B25').value = "(a) EXPORT INVOICE No";
-  // annexure.getCell('B25').font = { bold: true };
+  annexure.getCell('B25').font = { bold: true };
   annexure.getCell('B25').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('B26:L26');
   annexure.getCell('B26').value = "(b) TOTAL No. OF PACKAGES";
-  // annexure.getCell('B26').font = { bold: true };
+  annexure.getCell('B26').font = { bold: true };
   annexure.getCell('B26').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('B27:L27');
   annexure.getCell('B27').value = "(c) NAME AND ADDRESS OF THE CONSIGNEE";
-  // annexure.getCell('B27').font = { bold: true };
+  annexure.getCell('B27').font = { bold: true };
   annexure.getCell('B27').alignment = { horizontal: 'left' };
   setOuterBorder('A24:L30', annexure);
 
@@ -2881,80 +2868,74 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('M25:AA25');
   annexure.getCell('M25').value = `${invoiceNo}  Dt.${invoiceDate}`;
-  annexure.getCell('M25').font = { bold: true };
   annexure.getCell('M25').alignment = { horizontal: 'left' };
   setOuterBorder('M25:AA25', annexure);
 
   annexure.mergeCells('M26:AA26');
   annexure.getCell('M26').value = noOfPackages;
-  annexure.getCell('M26').font = { bold: true };
   annexure.getCell('M26').alignment = { horizontal: 'left' };
   setOuterBorder('M26:AA26', annexure);
 
   annexure.mergeCells('M27:AA30');
   annexure.getCell('M27').value = `${consignee}\n${finalDestination}`;
-  annexure.getCell('M27').font = { bold: true };
   annexure.getCell('M27').alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
   setOuterBorder('M27:AA30', annexure);
 
 
   annexure.mergeCells('A31:A33');
   annexure.getCell('A31').value = 9;
-  // annexure.getCell('A31').font = { bold: true };
+  annexure.getCell('A31').font = { bold: true };
   annexure.getCell('A31').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B31:V31');
   annexure.getCell('B31').value = "(a) IS THE DESCRIPTION OF THE GOODS THE QUANTITY AND THERE VALUE AS PER PARTICULARS FURNISHED IN THE EXPORT INVOICE";
-  // annexure.getCell('B31').font = { bold: true };
+  annexure.getCell('B31').font = { bold: true };
   annexure.getCell('B31').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('B32:V32');
   annexure.getCell('B32').value = "(b) WHETHER SAMPLES IS DRAWN FOR BEING FORWARDED TO PORT OF EXPORT";
-  // annexure.getCell('B32').font = { bold: true };
+  annexure.getCell('B32').font = { bold: true };
   annexure.getCell('B32').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('B33:V33');
   annexure.getCell('B33').value = "(c) IF YES THE No. OF THE SEAL OF THE PACKAGE CONTAINING THE SAMPLE ";
-  // annexure.getCell('B33').font = { bold: true };
+  annexure.getCell('B33').font = { bold: true };
   annexure.getCell('B33').alignment = { horizontal: 'left' };
   setOuterBorder('A31:V33', annexure);
 
   annexure.mergeCells('W31:AA31');
   annexure.getCell('W31').value = ann9a;
-  annexure.getCell('W31').font = { bold: true };
   annexure.getCell('W31').alignment = { horizontal: 'left' };
   setOuterBorder('W31:AA31', annexure);
 
   annexure.mergeCells('W32:AA32');
   annexure.getCell('W32').value = ann9b;
-  annexure.getCell('W32').font = { bold: true };
   annexure.getCell('W32').alignment = { horizontal: 'left' };
   setOuterBorder('W32:AA32', annexure);
 
   annexure.mergeCells('W33:AA33');
   annexure.getCell('W33').value = ann9c;
-  annexure.getCell('W33').font = { bold: true };
   annexure.getCell('W33').alignment = { horizontal: 'left' };
   setOuterBorder('W33:AA33', annexure);
 
   annexure.mergeCells('A34:A36');
   annexure.getCell('A34').value = 10;
-  // annexure.getCell('A34').font = { bold: true };
+  annexure.getCell('A34').font = { bold: true };
   annexure.getCell('A34').alignment = { horizontal: 'right', vertical: 'top' };
 
   annexure.mergeCells('B34:V34');
   annexure.getCell('B34').value = "CENTRAL EXCISE / CUSTOM SEAL No.";
-  // annexure.getCell('B34').font = { bold: true };
+  annexure.getCell('B34').font = { bold: true };
   annexure.getCell('B34').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('B35:V35');
   annexure.getCell('B35').value = "(a) FOR NON CONTAINERIZED CARGO No.OF PACKAGES";
-  // annexure.getCell('B35').font = { bold: true };
+  annexure.getCell('B35').font = { bold: true };
   annexure.getCell('B35').alignment = { horizontal: 'left' };
 
   annexure.mergeCells('B36:V36');
   annexure.getCell('B36').value = "(b) FOR CONTAINERAISED CARGO";
-  // annexure.getCell('B36').font = { bold: true };
+  annexure.getCell('B36').font = { bold: true };
   annexure.getCell('B36').alignment = { horizontal: 'left' };
   setOuterBorder('A34:V36', annexure);
 
@@ -2964,13 +2945,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('W35:AA35');
   annexure.getCell('W35').value = ann10a;
-  annexure.getCell('W35').font = { bold: true };
   annexure.getCell('W35').alignment = { horizontal: 'left' };
   setOuterBorder('W35:AA35', annexure);
 
   annexure.mergeCells('W36:AA36');
   annexure.getCell('W36').value = ann10b;
-  annexure.getCell('W36').font = { bold: true };
   annexure.getCell('W36').alignment = { horizontal: 'left' };
   setOuterBorder('W36:AA36', annexure);
 
@@ -3059,24 +3038,24 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   annexure.getCell('B' + row).font = { bold: true };
   annexure.getCell('B' + row).alignment = { horizontal: 'left' };
 
-  annexure.mergeCells('F' + row + ':AA' + (row + 1));
+  annexure.mergeCells('F' + row + ':AA' + row);
   annexure.getCell('F' + row).value = ssPermissionNo;
   annexure.getCell('F' + row).font = { color: { argb: 'FFFF0000' }, bold: true };
-  annexure.getCell('F' + row).alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
-  row += 2;
+  annexure.getCell('F' + row).alignment = { horizontal: 'left' };
+  row++;
 
-  // annexure.mergeCells('F' + row + ':AA' + row);
-  // annexure.getCell('F' + row).value = issuedBy;
-  // annexure.getCell('F' + row).font = { color: { argb: 'FFFF0000' }, bold: true };
-  // annexure.getCell('F' + row).alignment = { horizontal: 'left' };
-  // row++;
+  annexure.mergeCells('F' + row + ':AA' + row);
+  annexure.getCell('F' + row).value = issuedBy;
+  annexure.getCell('F' + row).font = { color: { argb: 'FFFF0000' }, bold: true };
+  annexure.getCell('F' + row).alignment = { horizontal: 'left' };
+  row++;
 
   annexure.getCell('A' + row).value = 12;
   annexure.getCell('A' + row).font = { bold: true };
   annexure.getCell('A' + row).alignment = { horizontal: 'right' };
 
   annexure.mergeCells('B' + row + ':AA' + row);
-  annexure.getCell('B' + row).value = gstCirculerNumber;
+  annexure.getCell('B' + row).value = `EXPORT UNDER GST CIRCULAR NO. ${gstCirculerNumber} Customs DT.${customDate}`;
   annexure.getCell('B' + row).font = { italic: true };
   annexure.getCell('B' + row).alignment = { horizontal: 'left' };
   row++;
@@ -3088,7 +3067,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   annexure.mergeCells('B' + row + ':AA' + (row + 1));
   if (taxStatus === "without") {
-    annexure.getCell('B' + row).value = `LETTER OF UNDERTAKING NO.ACKNOWLEDGMENT FOR LUT  APPLICATION REFERENCE NUMBER (ARN) ${arn}\nDT:${lutDate}`;
+    annexure.getCell('B' + row).value = `LETTER OF UNDERTAKING NO.ACKNOWLEDGMENT FOR LUT  APPLICATION REFERENCE NUMBER (ARN) ${arn}\n${lutDate}`;
   } else {
     annexure.getCell('B' + row).value = `SUPPLY MEANT FOR EXPORT ON PAYMENT OF IGST UNDER CLAIM OF REFUND RS. TOTAL : ${gstValue}\n(TAXABLE ${termsOfDelivery} INR VALUE ${totalInINR}@ 18% )                                                                            ${gstValue}  `;
   }
@@ -3177,7 +3156,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   vgn.addImage(vgnHeader, {
     tl: { col: 0, row: 0 }, // X66 (X = col 24 → 24 - 1 = 23 → 22 for 0-based)
-    ext: { width: vgnHeaderW, height: vgnHeaderH }, // adjust size as needed 116
+    ext: { width: 778, height: vgnHeaderH }, // adjust size as needed 116
   });
 
   vgn.mergeCells('A' + row + ':K' + row);
@@ -3245,7 +3224,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   setOuterBorder('B' + row + ':F' + row, vgn);
 
   vgn.mergeCells('G' + row + ':K' + row);
-  vgn.getCell('G' + row).value = `I.E. CODE #: ${ieCode}`;
+  vgn.getCell('G' + row).value = `I.E. CODE : ${ieCode}`;
   vgn.getCell('G' + row).alignment = { wrapText: true, horizontal: 'center' }
   setOuterBorder('G' + row + ':K' + row, vgn);
   row++;
@@ -3325,14 +3304,13 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   setOuterBorder('B' + row + ':F' + row, vgn);
 
   vgn.mergeCells('G' + row + ':K' + row);
-  vgn.getCell('G' + row).value = `${containerSize}'`;
+  vgn.getCell('G' + row).value = containerSize;
   vgn.getCell('G' + row).alignment = { wrapText: true, horizontal: 'center' }
   setOuterBorder('G' + row + ':K' + row, vgn);
   row++;
 
-  vgn.mergeCells('A' + row + ':A' + (row + 1));
   vgn.getCell('A' + row).value = 7;
-  vgn.getCell('A' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'top' }
+  vgn.getCell('A' + row).alignment = { wrapText: true, horizontal: 'center' }
   vgn.getCell('A' + row).border = {
     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
     left: { style: 'thin', color: { argb: 'FF000000' } },
@@ -3340,18 +3318,18 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     right: { style: 'thin', color: { argb: 'FF000000' } },
   };
 
-  vgn.mergeCells('B' + row + ':F' + (row + 1));
+  vgn.mergeCells('B' + row + ':F' + row);
   vgn.getCell('B' + row).value = "Maximum permissible weight of container as per the CSC plate";
   vgn.getCell('B' + row).alignment = { wrapText: true, horizontal: 'left' }
-  setOuterBorder('B' + row + ':F' + (row + 1), vgn);
+  setOuterBorder('B' + row + ':F' + row, vgn);
 
-  vgn.mergeCells('G' + row + ':K' + (row + 1));
+  vgn.mergeCells('G' + row + ':K' + row);
   vgn.getCell('G' + row).value = vgn7;
   vgn.getCell('G' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'top' }
-  setOuterBorder('G' + row + ':K' + (row + 1), vgn);
+  setOuterBorder('G' + row + ':K' + row, vgn);
 
-  // vgn.getRow(row).height = 34;
-  row += 2;
+  vgn.getRow(row).height = 34;
+  row++;
 
   vgn.getCell('A' + row).value = 8;
   vgn.getCell('A' + row).alignment = { wrapText: true, horizontal: 'center' }
@@ -3605,7 +3583,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
   vgn.addImage(vgnFooter, {
     tl: { col: 0, row: (row + 1) }, // X66 (X = col 24 → 24 - 1 = 23 → 22 for 0-based)
-    ext: { width: vgnFooterW, height: vgnFooterH }, // adjust size as needed
+    ext: { width: 778, height: 64 }, // adjust size as needed
   });
 
   vgn.pageSetup.fitToPage = true;
@@ -3642,5 +3620,5 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   saveAs(blob, fileName);
   console.log('✅ Excel file prepared for download');
-  return {blob,fileName};;
+  return {blob,fileName};
 };
