@@ -3,12 +3,7 @@
 import { format } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-} from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -20,38 +15,21 @@ import {
 import { cn } from "@/lib/utils";
 import { useForm } from "@/context/FormContext";
 import { useEffect } from "react";
-import { Controller, useForm as rhf ,UseFormReturn} from "react-hook-form";
+import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
 import { Textarea } from "../ui/textarea";
+import { useState } from "react";
+import { useRef } from "react";
 
 interface BuyerInformationCardProps {
-  buyersOrderNo: string;
-  setBuyersOrderNo: (val: string) => void;
-  buyersOrderDate: Date;
-  setBuyersOrderDate: (date: Date) => void;
-  poNo: string;
-  setPoNo: (val: string) => void;
-  consignee: string;
-  setConsignee: (val: string) => void;
-  notifyParty: string;
-  setNotifyParty: (val: string) => void;
-  form : UseFormReturn;
+  
+  form: UseFormReturn;
 }
 
 const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
-  buyersOrderNo,
-  setBuyersOrderNo,
-  buyersOrderDate,
-  setBuyersOrderDate,
-  poNo,
-  setPoNo,
-  consignee,
-  setConsignee,
-  notifyParty,
-  setNotifyParty,
-  form
+  
+  form,
 }) => {
-
-  const {formData, setInvoiceData} = useForm();
+  const { formData, setInvoiceData } = useForm();
   const {
     register,
     handleSubmit,
@@ -83,109 +61,145 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
 
   return (
     <Card>
-          <CardHeader>
-            <CardTitle>Buyer Information</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 gap-6">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <h3 className="font-medium">Buyer's Order No. & Date</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="buyersOrderNo">ORDER NO.</Label>
-                    <Input
-                      id="buyersOrderNo"
-                      value={buyerForm?.buyer_order_no || ""}
-                      {...register("buyer.buyer_order_no", { required: true })}
-                      // onChange={(e) => setBuyersOrderNo(e.target.value)}
-                      placeholder="Enter buyer's order number"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label>ORDER DATE</Label>
-                    <Controller
-                  name="buyer.buyer_order_date"
-                  control={control}
-                  rules={{ required: true }}
-                  render={({ field }) => (
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !field.value && "text-muted-foreground",
-                            errors.invoice_date && "border-red-500"
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {field.value ? field.value : "Pick a date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={
-                            field.value ? new Date(field.value) : undefined
-                          }
-                          onSelect={(date) => {
-                            if (date) {
-                              const localeDate = date.toLocaleDateString();
-                              field.onChange(localeDate);
-                            }
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
-                  )}
+      <CardHeader>
+        <CardTitle>Buyer Information</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <h3 className="font-medium">Buyer's Order No. & Date</h3>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="buyersOrderNo">ORDER NO.</Label>
+                <Input
+                  id="buyersOrderNo"
+                  value={buyerForm?.buyer_order_no || ""}
+                  {...register("buyer.buyer_order_no", { required: true })}
+                  // onChange={(e) => setBuyersOrderNo(e.target.value)}
+                  placeholder="Enter buyer's order number"
                 />
+              </div>
+
+              <div className="space-y-2">
+                <Label>ORDER DATE</Label>
+                
+
+<Controller
+  name="buyer.buyer_order_date"
+  control={control}
+  rules={{ required: true }}
+  render={({ field }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const calendarRef = useRef<HTMLDivElement>(null);
+
+    const handleDateChange = (date: Date | undefined) => {
+      if (date) {
+        const formatted = date.toISOString().split("T")[0]; // yyyy-mm-dd
+        field.onChange(formatted);
+        setIsOpen(false);
+      }
+    };
+
+    // ❗ Close calendar on outside click
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          calendarRef.current &&
+          !calendarRef.current.contains(event.target as Node)
+        ) {
+          setIsOpen(false);
+        }
+      };
+
+      if (isOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, [isOpen]);
+
+    return (
+      <div className="relative w-full" ref={calendarRef}>
+        <Input
+          value={field.value || ""}
+          type={"text"}
+          onChange={(e) => field.onChange(e.target.value)}
+          placeholder="YYYY-MM-DD"
+          onFocus={() => setIsOpen(true)}
+          className={cn(
+            "w-full pr-10",
+            !field.value && "text-muted-foreground",
+            errors?.buyer?.buyer_order_date && "border-red-500"
+          )}
+        />
+        <CalendarIcon
+          onClick={() => setIsOpen((prev) => !prev)}
+          className="absolute right-2 top-2.5 h-4 w-4 text-gray-500 cursor-pointer"
+        />
+        {isOpen && (
+          <div className="absolute z-50 mt-1 bg-white border shadow-lg rounded-md p-2">
+            <Calendar
+              mode="single"
+              selected={
+                field.value ? new Date(field.value) : undefined
+              }
+              onSelect={handleDateChange}
+              initialFocus
+            />
+          </div>
+        )}
+      </div>
+    );
+  }}
+/>
+
 
                 {errors.buyer_order_date && (
                   <span className="text-red-500 text-sm">Required</span>
                 )}
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="poNo">PO NO.</Label>
-                  <Input
-                    id="poNo"
-                    value={buyerForm?.po_no || ""}
-                    {...register("buyer.po_no", { required: true })}
-                    // onChange={(e) => setPoNo(e.target.value)}
-                    placeholder="Enter PO number"
-                  />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 mt-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="consignee">CONSIGNEE</Label>
-                    <Input
-                      id="consignee"
-                      value={buyerForm?.consignee || ""}
-                      {...register("buyer.consignee", { required: true })}
-                      // onChange={(e) => setConsignee(e.target.value)}
-                      placeholder="Enter consignee details"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="notifyParty">NOTIFY PARTY</Label>
-                    <Textarea
-                      id="notifyParty"
-                      value={buyerForm?.notify_party || ""}
-                      {...register("buyer.notify_party", { required: true })}
-                      // onChange={(e) => setNotifyParty(e.target.value)}
-                      placeholder="Enter notify party details"
-                    />
-                  </div>
-                </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="space-y-2">
+              <Label htmlFor="poNo">PO NO.</Label>
+              <Input
+                id="poNo"
+                value={buyerForm?.po_no || ""}
+                {...register("buyer.po_no", { required: true })}
+                // onChange={(e) => setPoNo(e.target.value)}
+                placeholder="Enter PO number"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="space-y-2">
+                <Label htmlFor="consignee">CONSIGNEE</Label>
+                <Input
+                  id="consignee"
+                  value={buyerForm?.consignee || ""}
+                  {...register("buyer.consignee", { required: true })}
+                  // onChange={(e) => setConsignee(e.target.value)}
+                  placeholder="Enter consignee details"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="notifyParty">NOTIFY PARTY</Label>
+                <Textarea
+                  id="notifyParty"
+                  value={buyerForm?.notify_party || ""}
+                  {...register("buyer.notify_party", { required: true })}
+                  // onChange={(e) => setNotifyParty(e.target.value)}
+                  placeholder="Enter notify party details"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 };
 

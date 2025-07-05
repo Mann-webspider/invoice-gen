@@ -29,52 +29,17 @@ import { Plus, Save, Trash } from "lucide-react";
 import { Product, InvoiceItem, ProductSection } from "@/lib/types";
 import { Controller, useForm as rhf } from "react-hook-form";
 import { parse, isValid, format } from "date-fns";
+import MarksAndNumbers from "@/components/MarksAndNumbers";
+import { useForm } from "@/context/FormContext";
+import { Navigate, useNavigate } from "react-router-dom";
 // Handle date-fns import with proper TypeScript handling
 let format: (date: Date | number, format: string) => string;
 
-// Using dynamic import for TypeScript compatibility
-// const importDateFns = async () => {
-//   try {
-//     const dateFns = await import('date-fns');
-//     return dateFns.format;
-//   } catch (error) {
-//     return (date: Date | number, fmt: string) => new Date(date).toLocaleDateString();
-//   }
-// };
+
 
 // Default implementation until the import resolves
 format = (date, fmt) => new Date(date).toLocaleDateString();
 
-// Initialize format function
-// importDateFns().then(formatFn => {
-//   format = formatFn;
-// });
-
-import MarksAndNumbers from "@/components/MarksAndNumbers";
-import { useForm } from "@/context/FormContext";
-import { Navigate, useNavigate } from "react-router-dom";
-
-// Handle sonner import with proper TypeScript handling
-let toast: any = {
-  success: (message: string) => console.log(`[SUCCESS] ${message}`),
-  error: (message: string) => console.error(`[ERROR] ${message}`),
-};
-
-// Using dynamic import for TypeScript compatibility
-const importSonner = async () => {
-  try {
-    const sonner = await import("sonner");
-    return sonner.toast;
-  } catch (error) {
-    // Return default console implementation
-    return toast;
-  }
-};
-
-// Initialize toast function
-importSonner().then((toastFn) => {
-  toast = toastFn;
-});
 
 import api from "@/lib/axios";
 import {
@@ -83,7 +48,6 @@ import {
   getValueFromSection,
   saveFormSection,
 } from "@/lib/formDataUtils";
-import { register } from "module";
 
 // Update the props interface to receive data from InvoiceGenerator
 interface PackagingListProps {
@@ -131,12 +95,11 @@ interface PackagingListProps {
 
 const PackagingList = ({
   onBack,
-  importedSections,
+  
   markNumber: initialMarkNumber,
   readOnly = false,
   invoiceHeader,
-  buyerInfo,
-  shippingInfo,
+  
 }: PackagingListProps) => {
   const {
     setInvoiceData,
@@ -155,18 +118,11 @@ const PackagingList = ({
   }, [watch]);
 
   // Add missing state variables
-  const [productSections, setProductSections] = useState<ProductSection[]>(
-    importedSections || []
-  );
-  const [markNumber, setMarkNumber] = useState<string>(initialMarkNumber || "");
-  const [containerNumber, setContainerNumber] = useState<string>("");
-  const [containerSize, setContainerSize] = useState<string>("20'");
-  const [containerType, setContainerType] = useState<string>("FCL");
-  const [grossWeight, setGrossWeight] = useState<string>("");
-  const [netWeight, setNetWeight] = useState<string>("");
-  const [totalPackages, setTotalPackages] = useState<string>("");
-  const [packageType, setPackageType] = useState<string>("Carton");
 
+  const [markNumber, setMarkNumber] = useState<string>(initialMarkNumber || "");
+ 
+  const [containerType, setContainerType] = useState<string>("FCL");
+ 
   // Get current form ID for localStorage
   const currentFormId =
     invoiceHeader?.invoiceNo ||
@@ -200,141 +156,10 @@ const PackagingList = ({
     }
   };
 
-  // Process incoming props and context
-  // Fetch exporter data directly from API if needed
-  // useEffect(() => {
-  //   const fetchExporterData = async () => {
-  //     try {
-  //       // First try to get exporter data from localStorage
-  //       const invoiceData = loadFormSection(currentFormId, 'invoice');
-
-  //       // Check if we need to fetch exporter data
-  //       if (!invoiceData?.exporter || !invoiceData.exporter.company_name) {
-  //         const response = await api.get("/exporter");
-  //         if (response.status === 200 && response.data.data) {
-
-  //           // Find the exporter that matches the one in localStorage if available
-  //           const savedInvoiceData = localStorage.getItem('invoiceFormData');
-  //           let selectedExporterName = '';
-
-  //           if (savedInvoiceData) {
-  //             const parsedData = JSON.parse(savedInvoiceData);
-  //             selectedExporterName = parsedData.invoiceHeader?.selectedExporter || '';
-  //           }
-
-  //           // Find the matching exporter or use the first one
-  //           const matchingExporter = response.data.data.find(e => e.company_name === selectedExporterName) || response.data.data[0];
-
-  //           if (matchingExporter) {
-  //             // Update form context with the exporter data
-  //             setInvoiceData({
-  //               ...formData?,
-  //               exporter: matchingExporter
-  //             });
-  //           }
-  //         }
-  //       }
-  //     } catch (error) {
-  //       // Error fetching exporter data - handled with toast
-  //     }
-  //   };
-
-  //   fetchExporterData();
-  // }, []);
-
-  // Load saved packaging list data if available
-  // useEffect(() => {
-  //   if (currentFormId) {
-  //     try {
-  //       // Load packaging list data from localStorage
-  //       const packagingListData = loadFormSection(currentFormId, 'packagingList');
-
-  //       if (packagingListData) {
-  //         setPackagingListData(packagingListData);
-
-  //         // Update state with saved data
-  //         if (packagingListData.sections) setProductSections(packagingListData.sections);
-  //         if (packagingListData.markNumber) setMarkNumber(packagingListData.markNumber);
-  //         if (packagingListData.containerNumber) setContainerNumber(packagingListData.containerNumber);
-  //         if (packagingListData.containerSize) setContainerSize(packagingListData.containerSize);
-
-  //         // Load other fields from packaging list data
-  //         if (packagingListData.grossWeight) setGrossWeight(packagingListData.grossWeight);
-  //         if (packagingListData.netWeight) setNetWeight(packagingListData.netWeight);
-  //         if (packagingListData.totalPackages) setTotalPackages(packagingListData.totalPackages);
-  //       } else {
-  //         // If no packaging list data, try to populate from invoice data
-  //         const invoiceData = loadFormSection(currentFormId, 'invoice');
-  //         if (invoiceData) {
-  //           // Set container info from invoice if available
-  //           if (invoiceData.containerNumber) setContainerNumber(invoiceData.containerNumber);
-  //           if (invoiceData.containerSize) setContainerSize(invoiceData.containerSize || '20\'');
-
-  //           // Set mark number from invoice if available
-  //           if (invoiceData.markNumber) setMarkNumber(invoiceData.markNumber);
-
-  //           // Set product sections from invoice items if available
-  //           if (invoiceData.items && invoiceData.items.length > 0) {
-  //             const sectionsFromInvoice = invoiceData.items.map((item: any, index: number) => ({
-  //               id: index.toString(),
-  //               title: item.product_name || `Section ${index + 1}`,
-  //               items: [{
-  //                 id: `${index}-0`,
-  //                 product_name: item.product_name || '',
-  //                 description: item.description || '',
-  //                 quantity: item.quantity || 0,
-  //                 unit: item.unit || 'PCS',
-  //                 net_weight: item.net_weight || 0,
-  //                 gross_weight: item.gross_weight || 0,
-  //                 dimensions: item.dimensions || { length: 0, width: 0, height: 0 }
-  //               }]
-  //             }));
-  //             setProductSections(sectionsFromInvoice);
-  //           }
-  //         }
-  //       }
-  //     } catch (error) {
-  //       console.error("Error loading saved packaging list data:", error);
-  //     }
-  //   }
-  // }, [currentFormId]);
-
-  // Load saved data from localStorage if available
+ 
   const [savedInvoiceData, setSavedInvoiceData] = useState<any>(null);
 
-  // useEffect(() => {
-  //   const storedData = localStorage.getItem('invoiceFormData');
-  //   if (storedData) {
-  //     try {
-  //       const parsedData = JSON.parse(storedData);
-  //       setSavedInvoiceData(parsedData);
-
-  //       // If we have invoice data in localStorage but not in formData, update formData
-  //       if (parsedData.invoiceHeader && (!formData?.invoice?.exporter || !formData.invoice.exporter.company_name)) {
-  //         setInvoiceData({
-  //           ...formData.invoice,
-  //           invoice_number: parsedData.invoiceHeader.invoiceNo || '',
-  //           invoice_date: parsedData.invoiceHeader.invoiceDate ? format(new Date(parsedData.invoiceHeader.invoiceDate), 'dd/MM/yyyy') : '',
-  //           exporter: {
-  //             company_name: parsedData.invoiceHeader.selectedExporter || '',
-  //             company_address: parsedData.invoiceHeader.companyAddress || '',
-  //             email: parsedData.invoiceHeader.email || '',
-  //             tax_id: parsedData.invoiceHeader.taxid || '',
-  //             ie_code: parsedData.invoiceHeader.ieCode || '',
-  //             pan_number: parsedData.invoiceHeader.panNo || '',
-  //             gstin_number: parsedData.invoiceHeader.gstinNo || '',
-  //             state_code: parsedData.invoiceHeader.stateCode || ''
-  //           },
-  //           buyer: parsedData.buyerInfo || {},
-  //           shipping: parsedData.shippingInfo || {},
-  //           products: parsedData.sections || []
-  //         });
-  //       }
-  //     } catch (error) {
-  //       // Error parsing invoice data from localStorage
-  //     }
-  //   }
-  // }, [formData, setInvoiceData]);
+  
 
   // Define data structure types
   interface ExporterData {
@@ -407,49 +232,7 @@ const PackagingList = ({
     }
   }
 
-  // Create a merged exporter object that prioritizes the selected exporter data
-  const exporter = {
-    company_name:
-      selectedExporterData?.company_name ||
-      formData?.exporter?.company_name ||
-      savedInvoiceData?.invoiceHeader?.selectedExporter ||
-      "",
-    company_address:
-      selectedExporterData?.company_address ||
-      formData?.exporter?.company_address ||
-      savedInvoiceData?.invoiceHeader?.companyAddress ||
-      "",
-    email:
-      selectedExporterData?.email ||
-      formData?.exporter?.email ||
-      savedInvoiceData?.invoiceHeader?.email ||
-      "",
-    tax_id:
-      selectedExporterData?.tax_id ||
-      formData?.exporter?.tax_id ||
-      savedInvoiceData?.invoiceHeader?.taxid ||
-      "",
-    ie_code:
-      selectedExporterData?.ie_code ||
-      formData?.exporter?.ie_code ||
-      savedInvoiceData?.invoiceHeader?.ieCode ||
-      "",
-    pan_number:
-      selectedExporterData?.pan_number ||
-      formData?.exporter?.pan_number ||
-      savedInvoiceData?.invoiceHeader?.panNo ||
-      "",
-    gstin_number:
-      selectedExporterData?.gstin_number ||
-      formData?.exporter?.gstin_number ||
-      savedInvoiceData?.invoiceHeader?.gstinNo ||
-      "",
-    state_code:
-      selectedExporterData?.state_code ||
-      formData?.exporter?.state_code ||
-      savedInvoiceData?.invoiceHeader?.stateCode ||
-      "",
-  };
+  
 
   const buyer = formData?.buyer || savedInvoiceData?.buyerInfo || {};
   const shipping = formData?.shipping || savedInvoiceData?.shippingInfo || {};
@@ -508,32 +291,10 @@ const PackagingList = ({
     }
   }
 
-  // Debug invoice number from all sources
-  const debugInvoiceNumber = {
-    finalValue: invoiceNumber,
-    fromProps: invoiceHeader?.invoiceNo,
-    fromPropsAlt: invoiceHeader?.invoice_number,
-    fromFormData: formData?.invoice?.invoice_number,
-    fromLocalStorage: savedInvoiceData?.invoiceHeader?.invoiceNo,
-    fromLocalStorageAlt: savedInvoiceData?.invoiceHeader?.invoice_number,
-    invoiceHeaderKeys: invoiceHeader ? Object.keys(invoiceHeader) : [],
-    savedInvoiceDataKeys: savedInvoiceData?.invoiceHeader
-      ? Object.keys(savedInvoiceData.invoiceHeader)
-      : [],
-  };
 
-  // Force a re-render if invoiceNumber changes
-  useEffect(() => {}, [invoiceNumber]);
 
-  // Get payment terms
-  const paymentTerms =
-    shippingInfo?.paymentTerms ||
-    shipping?.payment_terms ||
-    shipping?.payment ||
-    savedInvoiceData?.shippingInfo?.paymentTerms ||
-    "";
 
-  const product = formData?.invoice?.products || {};
+  
   let navigate = useNavigate();
   // HSN codes mapping to section titles
   const [hsnCodes] = useState<{ [key: string]: string }>({
@@ -547,7 +308,7 @@ const PackagingList = ({
   const [sizes] = useState<string[]>(["600X1200", "600X600", "300X600"]);
 
   // Parse imported mark number or use default
-  const [markParts, setMarkParts] = useState<string[]>(["", "", ""]);
+  const [markParts, setMarkParts] = useState<string[]>([]);
 
   useEffect(() => {
     if (markNumber) {
@@ -568,12 +329,7 @@ const PackagingList = ({
     "Mann",
   ]);
 
-  // State for custom section title input
-  const [customSectionTitle, setCustomSectionTitle] = useState<string>("");
-  const [showCustomInput, setShowCustomInput] = useState<{
-    [key: string]: boolean;
-  }>({});
-
+  
   // Initialize state with imported sections or defaults
   const [sections, setSections] = useState<any[]>([
     {
@@ -588,112 +344,11 @@ const PackagingList = ({
     },
   ]);
 
-  // Use effect to update sections when importedSections changes
-  // useEffect(() => {
-  //   try {
+  
 
-  //     // Always initialize with default sections if none are provided
-  //     if (!importedSections || importedSections.length === 0) {
+ 
 
-  //       setSections([
-  //         {
-  //           id: '1',
-  //           title: 'Glazed porcelain Floor Tiles',
-  //           items: []
-  //         },
-  //         {
-  //           id: '2',
-  //           title: 'Mann',
-  //           items: []
-  //         }
-  //       ]);
-  //       return;
-  //     }
-
-  //     if (importedSections && importedSections.length > 0) {
-  //       // Process imported sections to ensure they have the required properties
-  //       const processedSections = importedSections.map(section => {
-  //         if (!section) {
-  //           // Encountered null or undefined section
-  //           return {
-  //             id: Date.now().toString(),
-  //             title: 'Glazed porcelain Floor Tiles',
-  //             items: []
-  //           };
-  //         }
-
-  //         // Get the HSN code for the section title
-  //         const sectionTitle = section.title || 'Glazed porcelain Floor Tiles';
-  //         const sectionHsnCode = hsnCodes[sectionTitle] || "69072100";
-
-  //         // Process items to ensure they have net weight and gross weight and correct HSN codes
-  //         const processedItems = Array.isArray(section.items) ? section.items.map(item => {
-  //           if (!item || !item.product) {
-  //             // Encountered invalid item in section
-  //             return {
-  //               id: Date.now().toString(),
-  //               quantity: 0,
-  //               price: 0,
-  //               product: {
-  //                 name: '',
-  //                 hsnCode: sectionHsnCode,
-  //                 netWeight: '',
-  //                 grossWeight: ''
-  //               }
-  //             };
-  //           }
-
-  //           return {
-  //             ...item,
-  //             product: {
-  //               ...item.product,
-  //               // Keep the original HSN code if it exists, otherwise use the section's HSN code
-  //               hsnCode: item.product.hsnCode || sectionHsnCode,
-  //               netWeight: item.product.netWeight || calculateNetWeight(item),
-  //               grossWeight: item.product.grossWeight || calculateGrossWeight(item)
-  //             }
-  //           };
-  //         }) : [];
-
-  //         return {
-  //           ...section,
-  //           title: sectionTitle,
-  //           items: processedItems
-  //         };
-  //       });
-
-  //       setSections(processedSections);
-  //     }
-  //   } catch (error) {
-  //     // Error processing sections
-  //     // Set default sections if there's an error
-  //     setSections([
-  //       {
-  //         id: '1',
-  //         title: 'Glazed porcelain Floor Tiles',
-  //         items: []
-  //       },
-  //       {
-  //         id: '2',
-  //         title: 'Mann',
-  //         items: []
-  //       }
-  //     ]);
-  //   }
-  // }, [importedSections, hsnCodes]);
-
-  // Helper functions to calculate weights if they are not provided
-  const calculateNetWeight = (item: InvoiceItem): string => {
-    // Simplified logic - in real app, you'd have a more sophisticated calculation
-    const isWallTile = item.product.hsnCode === "69072300";
-    return isWallTile ? "13950.00" : "";
-  };
-
-  const calculateGrossWeight = (item: InvoiceItem): string => {
-    // Simplified logic
-    const isWallTile = item.product.hsnCode === "69072300";
-    return isWallTile ? "14200.00" : "";
-  };
+  
 
   // Update section title and auto-fill HSN codes for all items in that section
   const handleSectionTitleChange = (sectionId: string, title: string) => {
@@ -819,20 +474,7 @@ const PackagingList = ({
     );
   };
 
-  const handleSaveInvoice = async () => {
-    try {
-      // logic for saving invoice in backend api POST /api/invoice from formData.invoice with api
-      const response = await api.post("/invoice", formData.invoice);
-      toast.success("Invoice saved successfully");
-      if (response.status === 201) {
-        // navigate to packaging list page
-        navigate("/annexure");
-      }
-    } catch (error) {
-      // Error saving invoice - handled with toast
-      toast.error("Error saving invoice");
-    }
-  };
+  
   // Update HSN code
   const handleHSNChange = (
     sectionId: string,
@@ -1056,9 +698,9 @@ const PackagingList = ({
       lineSealNo: "",
       rfidSeal: "",
       designNo: "",
-      quantity: 0,
-      netWeight: "0",
-      grossWeight: "0",
+      quantity: "",
+      netWeight: "",
+      grossWeight: "",
     },
   ]);
 
@@ -1192,40 +834,7 @@ const PackagingList = ({
     }
   };
 
-  // whenever the containerRows changes then update the invoiceFormData.products.containers
-  // useEffect(() => {
-  //   const updatedContainers = containerRows.map(row => ({
-  //     id: row.id,
-  //     container_no: row.containerNo,
-  //     line_seal_no: row.lineSealNo,
-  //     rfid_seal: row.rfidSeal,
-  //     design_no: row.designNo,
-  //     quantity: row.quantity,
-  //     net_weight: row.netWeight,
-  //     gross_weight: row.grossWeight
-  //   }));
 
-  //   setPackagingListData({
-  //     ...formData.packagingList,
-  //     containerRows: updatedContainers,
-  //     totalPalletCount: totalPalletCount,
-  //     sections: sections,
-  //     markNumber: `${markParts[0]}X${markParts[1]} ${markParts[2]}`
-  //   });
-  //   setInvoiceData({
-  //     ...formData.invoice,
-  //     products: {
-  //       ...formData.invoice.products,
-  //       containers: updatedContainers
-
-  //     }
-  //   });
-  // }, [containerRows]);
-
-  // Debug state before rendering
-  // useEffect(() => {
-
-  // }, [sections, invoiceNumber, markParts, containerType]);
 
   function formatCustomDate(
     inputDate: string | null | undefined,
@@ -1646,22 +1255,7 @@ const PackagingList = ({
                     className="bg-gray-50"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label>Currency</Label>
-                  <Input
-                    value={formData.currency_type}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Currency Rate</Label>
-                  <Input
-                    value={formData?.currency_rate}
-                    readOnly
-                    className="bg-gray-50"
-                  />
-                </div>
+                
               </div>
             </CardContent>
           </Card>
@@ -2152,7 +1746,7 @@ const PackagingList = ({
                         </TableCell>
                         <TableCell className="border p-0">
                           <Input
-                            type="number"
+                            type="text"
                             value={row.quantity}
                             {...register(
                               `products.containers.${index}.quantity`,
@@ -2173,6 +1767,7 @@ const PackagingList = ({
                         </TableCell>
                         <TableCell className="border p-0">
                           <Input
+                          type={"text"}
                             value={row.netWeight}
                             {...register(
                               `products.containers.${index}.net_weight`,
@@ -2193,6 +1788,7 @@ const PackagingList = ({
                         </TableCell>
                         <TableCell className="border p-0">
                           <Input
+                          type={"text"}
                             value={row.grossWeight}
                             {...register(
                               `products.containers.${index}.gross_weight`,

@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import React, { useEffect } from "react";
 import { useForm } from "@/context/FormContext";
 import api from "@/lib/axios";
-import { format } from "date-fns";
+
 import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
 interface Supplier {
   id: string;
@@ -18,31 +18,25 @@ interface Supplier {
 }
 
 interface PackageInfoSectionProps {
-  noOfPackages: string;
-  grossWeight: string;
-  netWeight: string;
   paymentTerms: string;
   selectedCurrency: string;
   exportUnderGstCircular: string;
   sections: any[];
   totalSQM: number;
-  setExportUnderGstCircular: (val: string) => void;
+  setExportUnderGstCircular: (val: any) => void;
   integratedTaxOption: string;
   arnNo?: string;
   setLutNo: (val: string) => void;
   lutNo: string;
   lutDate: string;
-  setLutDate: (val: string) => void;
+
   totalFOBEuro: number;
   amountInWords: string;
   currencyRate: number;
   form: UseFormReturn;
 }
 
-const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
-  noOfPackages,
-  grossWeight,
-  netWeight,
+const PackageInfoSection = ({
   paymentTerms,
   selectedCurrency,
   exportUnderGstCircular,
@@ -53,12 +47,12 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
   lutNo,
   setLutNo,
   lutDate,
-  setLutDate,
+
   totalFOBEuro,
   amountInWords,
   currencyRate,
   form,
-}) => {
+}: PackageInfoSectionProps) => {
   const { formData, setInvoiceData } = useForm();
   const {
     register,
@@ -138,9 +132,8 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
       if (response.status != 200) {
         throw new Error("Network response was not ok");
       }
-      
-      
-      setExportUnderGstCircular(()=>response.data.data.gst_circular);
+
+      setExportUnderGstCircular(() => response.data.data.gst_circular);
       setValue("package.gst_circular", response.data.data.gst_circular);
       setValue("package.arn_no", response.data.data.arn);
       setLutNo(response.data.data.arn);
@@ -176,13 +169,14 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
             <div className="space-y-2">
               <Label htmlFor="noOfSQm">No. of SQMs</Label>
               <Input
-    id="noOfSQMs"
-    
-    {...register("package.no_of_sqm", { required: "No. of SQMs is required" })}
-    readOnly
-    className="cursor-default"
-    placeholder="e.g., 20.16 SQM"
-  />
+                id="noOfSQMs"
+                {...register("package.no_of_sqm", {
+                  required: "No. of SQMs is required",
+                })}
+                readOnly
+                className="cursor-default"
+                placeholder="e.g., 20.16 SQM"
+              />
             </div>
 
             {/* <div className="space-y-2">
@@ -219,7 +213,6 @@ const PackageInfoSection: React.FC<PackageInfoSectionProps> = ({
                 {...register("package.gst_circular", {
                   required: "GST circular is required",
                 })}
-
                 value={packageForm?.gst_circular || exportUnderGstCircular}
                 // onChange={(e) => setExportUnderGstCircular(e.target.value)}
                 placeholder="Enter GST circular details"

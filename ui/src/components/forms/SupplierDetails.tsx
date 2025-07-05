@@ -31,11 +31,7 @@ interface SupplierDetailsProps {
   suppliers: Supplier[];
   setSuppliers: (suppliers: Supplier[]) => void;
   integratedTaxOption: "WITH" | "WITHOUT";
-  setSelectedSupplier?: (suppliers: Array<object>) => void;
-  selectedSupplier?: Array<object>;
-  setAuthorizedName?: (name: string) => void;
-  setAuthorizedGstin?: (gstin: string) => void;
-  setGstInvoiceNoDate?: (date: string) => void;
+  
   form: UseFormReturn;
 }
 
@@ -49,11 +45,7 @@ export const SupplierDetails = ({
   suppliers,
   setSuppliers,
   integratedTaxOption,
-  setSelectedSupplier,
-  selectedSupplier,
-  setAuthorizedName,
-  setAuthorizedGstin,
-  setGstInvoiceNoDate,
+  
   form
 }: SupplierDetailsProps) => {
   const [availableSuppliers, setAvailableSuppliers] = useState<Supplier[]>([]);
@@ -80,56 +72,6 @@ export const SupplierDetails = ({
   }, []);
 
   // Sync suppliers with formData
-  // useEffect(() => {
-  //   // Only update the form data if the integratedTaxOption is "WITHOUT"
-  //   if (integratedTaxOption === "WITHOUT") {
-  //     setInvoiceData((prev) => ({
-  //       ...prev,
-  //       invoice: {
-  //         ...prev.invoice,
-  //         supplier: suppliers.map((s) => ({
-  //           id: s.id,
-  //           name: s.name,
-  //           gstin_number: s.gstin_number,
-  //           tax_invoice_number: s.tax_invoice_number || "",
-  //           date: s.date || "",
-  //           authorizedName: s.name || "ABC",
-  //           authorizedGstin: s.gstin_number || "XXXXXXXXXXXX",
-  //           contactNo: s.contactNo || "",
-  //         })),
-  //       },
-  //     }));
-  //   }
-
-  //   // Update selectedSupplier state if the prop exists
-  //   if (setSelectedSupplier) {
-  //     setSelectedSupplier(suppliers);
-  //   }
-
-  //   // Update other supplier-related states if they exist and if there are suppliers
-  //   if (suppliers.length > 0 && suppliers[0].name) {
-  //     if (setAuthorizedName) {
-  //       setAuthorizedName(suppliers[0].name || "ABC");
-  //     }
-  //     if (setAuthorizedGstin) {
-  //       setAuthorizedGstin(suppliers[0].gstin_number || "XXXXXXXXXXXX");
-  //     }
-  //     if (setGstInvoiceNoDate) {
-  //       setGstInvoiceNoDate(
-  //         `GST/${suppliers[0].tax_invoice_number || "XXX"} ${
-  //           suppliers[0].date || "XX.XX.XXXX"
-  //         }`
-  //       );
-  //     }
-  //   }
-  // }, [
-  //   suppliers,
-  //   setSelectedSupplier,
-  //   setAuthorizedName,
-  //   setAuthorizedGstin,
-  //   setGstInvoiceNoDate,
-  //   integratedTaxOption,
-  // ]);
 
  const handleSupplierSelect = (value: string, supplierId: string) => {
   const selected = availableSuppliers.find((s) => s.name === value);

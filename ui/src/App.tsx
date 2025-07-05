@@ -2,24 +2,24 @@ import React, { useState, useEffect } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { BrowserRouter as Router, Routes, Route, useNavigate, Navigate } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useNavigate,
+  Navigate,
+} from "react-router-dom";
 
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import Dashboard from "./pages/Dashboard";
-import CompanyProfile from "./pages/CompanyProfile";
-import Products from "./pages/Products";
-import ShippingTerms from "./pages/ShippingTerms";
+
 import InvoiceGenerator from "./pages/InvoiceGenerator";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
 import PackagingList from "./pages/PackagingList";
 import Annexure from "./pages/Annexure";
 import VgmForm from "./pages/VgmForm";
-import InvoiceEditor from "./pages/InvoiceEditor";
-import AddClient from "./pages/AddClient";
-import ClientList from "./pages/ClientList";
-import AddExporter from "./pages/AddExporter";
-import ExporterList from "./pages/ExporterList";
+
 import { QueryProvider } from "./providers/query-provider";
 
 import { FormProvider } from "./context/FormContext";
@@ -38,31 +38,31 @@ const PackagingListWrapper = () => {
 
   useEffect(() => {
     // Retrieve data from localStorage
-    const storedData = localStorage.getItem('invoiceFormData');
+    const storedData = localStorage.getItem("invoiceFormData");
     // Retrieved localStorage data
-    
+
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
         // Parsed data from localStorage
-        
+
         // Ensure sections are properly formatted
         if (!parsedData.sections || !Array.isArray(parsedData.sections)) {
           // Creating default sections
           parsedData.sections = [
             {
-              id: '1',
-              title: 'Glazed porcelain Floor Tiles',
-              items: []
+              id: "1",
+              title: "Glazed porcelain Floor Tiles",
+              items: [],
             },
             {
-              id: '2',
-              title: 'Mann',
-              items: []
-            }
+              id: "2",
+              title: "Mann",
+              items: [],
+            },
           ];
         }
-        
+
         setFormData(parsedData);
         setLoading(false);
       } catch (e) {
@@ -70,13 +70,13 @@ const PackagingListWrapper = () => {
         setError("Could not parse invoice data. Please try again.");
         setLoading(false);
         // Don't navigate away immediately to show the error
-        setTimeout(() => navigate('/'), 3000);
+        setTimeout(() => navigate("/"), 3000);
       }
     } else {
       // If no data is found, go back to the invoice page
       setError("No invoice data found.");
       setLoading(false);
-      setTimeout(() => navigate('/'), 3000);
+      setTimeout(() => navigate("/"), 3000);
     }
   }, [navigate]);
 
@@ -84,22 +84,26 @@ const PackagingListWrapper = () => {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="p-6 bg-white shadow-md rounded-lg text-center">
-          <h2 className="text-xl font-semibold mb-4">Loading Packaging List...</h2>
+          <h2 className="text-xl font-semibold mb-4">
+            Loading Packaging List...
+          </h2>
           <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600 mx-auto"></div>
         </div>
       </div>
     );
   }
-  
+
   if (error) {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="p-6 bg-white shadow-md rounded-lg text-center max-w-md">
           <h2 className="text-xl font-semibold text-red-600 mb-4">Error</h2>
           <p className="mb-4">{error}</p>
-          <p className="text-sm text-gray-500 mb-4">Redirecting to home page...</p>
-          <button 
-            onClick={() => navigate('/')} 
+          <p className="text-sm text-gray-500 mb-4">
+            Redirecting to home page...
+          </p>
+          <button
+            onClick={() => navigate("/")}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Go Home Now
@@ -113,10 +117,12 @@ const PackagingListWrapper = () => {
     return (
       <div className="flex items-center justify-center h-screen">
         <div className="p-6 bg-white shadow-md rounded-lg text-center">
-          <h2 className="text-xl font-semibold text-red-600 mb-4">No Data Available</h2>
+          <h2 className="text-xl font-semibold text-red-600 mb-4">
+            No Data Available
+          </h2>
           <p className="mb-4">Could not load packaging list data.</p>
-          <button 
-            onClick={() => navigate('/')} 
+          <button
+            onClick={() => navigate("/")}
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Go Home
@@ -127,14 +133,11 @@ const PackagingListWrapper = () => {
   }
 
   return (
-    <PackagingList 
-      onBack={() => navigate('/invoice')}
-      importedSections={formData.sections}
-      markNumber={formData.markNumber || ''}
+    <PackagingList
+      onBack={() => navigate("/invoice")}
+      markNumber={formData.markNumber || ""}
       readOnly={formData.readOnly || false}
       invoiceHeader={formData.invoiceHeader || {}}
-      buyerInfo={formData.buyerInfo || {}}
-      shippingInfo={formData.shippingInfo || {}}
     />
   );
 };
@@ -166,8 +169,8 @@ const AnnexureWrapper = () => {
   // }
 
   return (
-    <Annexure 
-      onBack={() => navigate('/packaging-list')}
+    <Annexure
+      onBack={() => navigate("/packaging-list")}
       importedSections={annexureData?.sections}
       markNumber={annexureData?.markNumber}
       invoiceHeader={annexureData?.invoiceHeader}
@@ -175,7 +178,7 @@ const AnnexureWrapper = () => {
       shippingInfo={annexureData?.shippingInfo}
       containerInfo={{
         containerRows: annexureData?.containerRows,
-        totalPalletCount: annexureData?.totalPalletCount
+        totalPalletCount: annexureData?.totalPalletCount,
       }}
     />
   );
@@ -188,18 +191,18 @@ const VgmFormWrapper = () => {
 
   useEffect(() => {
     // Retrieve data from localStorage
-    const storedData = localStorage.getItem('vgmData');
+    const storedData = localStorage.getItem("vgmData");
     if (storedData) {
       try {
         const parsedData = JSON.parse(storedData);
         setVgmData(parsedData);
       } catch (e) {
         // Error parsing VGM data - handled silently
-        navigate('/');
+        navigate("/");
       }
     } else {
       // If no data is found, go back to the annexure page
-      navigate('/annexure');
+      navigate("/annexure");
     }
   }, [navigate]);
 
@@ -208,8 +211,8 @@ const VgmFormWrapper = () => {
   }
 
   return (
-    <VgmForm 
-      onBack={() => navigate('/annexure')}
+    <VgmForm
+      onBack={() => navigate("/annexure")}
       containerInfo={vgmData.containerInfo}
       invoiceHeader={vgmData.invoiceHeader}
     />
@@ -220,165 +223,96 @@ const App = () => (
   <AuthProvider>
     <FormProvider>
       <SidebarProvider>
-      <QueryProvider>
-        <TooltipProvider>
-          <Router>
-            <Toaster  />
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<Login />} />
+        <QueryProvider>
+          <TooltipProvider>
+            <Router>
+              <Toaster />
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<Login />} />
 
-              {/* Protected routes */}
-              <Route
-                path="/"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <Dashboard />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/company"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <CompanyProfile />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/products"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <Products />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/shipping"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <ShippingTerms />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/invoice"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <InvoiceGenerator />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/packaging-list"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <PackagingListWrapper />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/annexure"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AnnexureWrapper />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/invoice-editor/:id"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <InvoiceEditor />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/add-client"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AddClient />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/client-list"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <ClientList />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/add-exporter"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <AddExporter />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/exporter-list"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <ExporterList />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/vgm-form"
-                element={
-                  <ProtectedRoute>
-                    <AdminLayout>
-                      <VgmFormWrapper />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
+                {/* Protected routes */}
+                <Route
+                  path="/"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <Dashboard />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
+                <Route
+                  path="/invoice"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <InvoiceGenerator />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/invoice/drafts/:id"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <InvoiceGenerator />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/packaging-list"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <PackagingListWrapper />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/annexure"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <AnnexureWrapper />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Admin-only routes */}
-              <Route
-                path="/admin"
-                element={
-                  <ProtectedRoute requireAdmin>
-                    <AdminLayout>
-                      <AdminPanel />
-                    </AdminLayout>
-                  </ProtectedRoute>
-                }
-              />
+                <Route
+                  path="/vgm-form"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <VgmFormWrapper />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
 
-              {/* Catch all route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Router>
-        </TooltipProvider>
-      </QueryProvider>
+                {/* Admin-only routes */}
+                <Route
+                  path="/admin"
+                  element={
+                    <ProtectedRoute requireAdmin>
+                      <AdminLayout>
+                        <AdminPanel />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+
+                {/* Catch all route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Router>
+          </TooltipProvider>
+        </QueryProvider>
       </SidebarProvider>
     </FormProvider>
   </AuthProvider>

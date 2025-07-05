@@ -367,7 +367,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
   // create a function for getting images from api call and convert it into displayable format
   const getImageUrl = (id: string, type: string) => {
-    const baseUrl = (import.meta as any).env.VITE_API_BASE_URL || "";
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}/api` ;
     switch (type) {
       case "header":
         return `${baseUrl}/upload/header/${id}`;
@@ -504,14 +504,16 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
     // handle file generate by using this data and use functions like generateInvoiceExcel, generateInvoigenerateDocxceExcel to generate excel and word file then after generate this excel file and then send a apipost call to backend with filesapi.uploadPdf(excelFile)
     try {
       // Generate Excel file
-      const {blob:excelBlob, fileName:excelFileName} = await generateInvoiceExcel(data);
+      const {allBuffers:excelBlob, fileName:excelFileName} = await generateInvoiceExcel(data);
+      
+      
       const docxFile = await generateInvoigenerateDocxceExcel(data);
       // Upload the generated Excel file
       // excelFile return void change it the excel file is downloaded automatically in broswer and save it to machine
-      const excelFile = new File([excelBlob], excelFileName, {
-        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      });
-      const response = await filesApi.uploadAndDownloadPdf(excelFile);
+     
+      const response = await filesApi.uploadMultipleExcelAndDownloadPDFs(excelBlob,data.invoice_number);
+      console.log(response);
+      
       if (response.status === 200) {
        
 
@@ -1885,7 +1887,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
                   15. Forwarder Email
                 </Label>
                 <Input
-                  type="email"
+                  type="text"
                   placeholder="Enter forwarder email"
                   {...register("forwarder_email", {required:"Enter the email", defaultValue: "" })}
                   className=""

@@ -539,7 +539,7 @@ class InvoiceController
                 $response->getBody()->write(json_encode(['message' => 'Invoice not found']));
                 return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
             }
-
+            $data=$data['invoice'];
             // Update exporter
             $exporter = ExporterDetails::find($invoice->exporter_id);
             $exporter->update([
@@ -556,17 +556,17 @@ class InvoiceController
             // Update buyer
             $buyer = BuyerDetails::find($invoice->buyer_id);
             $buyer->update([
-                'order_number' => $data['buyer']['order_number'],
-                'order_date' => $data['buyer']['order_date'],
-                'po_number' => $data['buyer']['po_number'],
+                'order_number' => $data['buyer']['buyer_order_no'],
+                'order_date' => $data['buyer']['buyer_order_date'],
+                'po_number' => $data['buyer']['po_no'],
                 'consignee' => $data['buyer']['consignee'],
                 'notify_party' => $data['buyer']['notify_party']
             ]);
 
             // Update products
             $productIds = [];
-            foreach ($data['product']['product_list'] as $product) {
-                $productRecord = ProductList::updateOrCreate(
+            foreach ($data['products']['product_list'] as $product) {
+                $productRecord = ProductLists::updateOrCreate(
                     ['id' => $product['id'] ?? null],
                     [
                         'category_id' => $product['category_id'],

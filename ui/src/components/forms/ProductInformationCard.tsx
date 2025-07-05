@@ -215,7 +215,7 @@ const ProductInformationCard = ({
                         </TableCell>
                         <TableCell>
                           <Input
-                            type="number"
+                            type="text"
                             min="0"
                             value={item.quantity}
                             onChange={(e) => {

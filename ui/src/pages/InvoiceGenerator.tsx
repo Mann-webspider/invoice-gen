@@ -76,9 +76,10 @@ import { Controller, useForm as rhf } from "react-hook-form";
 
 // Check if invoice data exists in local storage
 const invoiceData = localStorage.getItem("invoiceData");
+// check wheter the url is /invoice or /invoice/draft:id
+const isDraft = window.location.pathname.includes("/invoice/draft/");
 
 // Helper function to convert number to words for invoice use
-
 function numberToWords(num: number) {
   const ones = [
     "",
@@ -167,187 +168,114 @@ function numberToWords(num: number) {
 const InvoiceGenerator = () => {
   const navigate = useNavigate(); // Use useNavigate from react-router-dom
   const { formData, setInvoiceData } = useForm();
-  const [clients, setClients] = useState<Client[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [shippingTerms, setShippingTerms] = useState<ShippingTerm[]>([]);
+
   const [companyProfile, setCompanyProfile] = useState<CompanyProfile | null>(
     null
   );
 
-  const [previewOpen, setPreviewOpen] = useState(false);
   const [taxOptionDialogOpen, setTaxOptionDialogOpen] = useState(false);
-  const [formSubmitted, setFormSubmitted] = useState(false);
+
   const form = rhf({
-  "invoice_number": "",
-  "exporter": {
-    "id": "",
-    "company_name": "",
-    "company_address": "",
-    "contact_number": "",
-    "email": "",
-    "tax_id": "",
-    "ie_code": "",
-    "pan_number": "",
-    "gstin_number": "",
-    "state_code": "",
-    "authorized_name": "",
-    "authorized_designation": "",
-    "company_prefix": "",
-    "last_invoice_number": 0,
-    "invoice_year": "",
-    "letterhead_top_image": "",
-    "letterhead_bottom_image": "",
-    "stamp_image": "",
-    "next_invoice_number": ""
-  },
-  "invoice_date": "",
-  "buyer": {
-    "buyer_order_no": "",
-    "po_no": "",
-    "consignee": "",
-    "notify_party": "",
-    "buyer_order_date": ""
-  },
-  "shipping": {
-    "pre_carriage_by": "",
-    "vessel_flight_no": "",
-    "country_of_origin": "",
-    "origin_details": "",
-    "terms_of_delivery": "",
-    "payment": "",
-    "place_of_receipt": "",
-    "place_of_loading": "",
-    "place_of_discharge": "",
-    "final_destination": "",
-    "country_of_final_destination": "",
-    "shipping_method": ""
-  },
-  "currency_rate": 0,
-  "currancy_type": "",
-  "products": {
-    "nos": "",
-    "marks": "",
-    "rightValue": "",
-    "leftValue": "",
-    "insurance":0,
-    "freight": 0,
-    "product_list": [
-      {
-        "category_id": "",
-        "category_name": "",
-        "product_name": "",
-        "size": "",
-        "quantity": 0,
-        "sqm": 0,
-        "total_sqm": 0,
-        "price": 0,
-        "unit": "",
-        "total": 0,
-        "net_weight": 0,
-        "gross_weight": 0
-      }
-    ],
-    "total_price": 0,
-    "containers": []
-  },
-  "package": {
-    "no_of_packages": "",
-    "no_of_sqm": "",
-    "gross_weight": "",
-    "net_weight": "",
-    "gst_circular": "",
-    "arn_no": "",
-    "lut_date": "",
-    "total_fob": "",
-    "amount_in_words": "",
-    "gst_amount":0,
-    "taxable_value":0
-  },
-  "invoice": {
-    "integrated_tax": "",
-    "product_type": ""
-  },
-  "integrated_tax_option": "",
-  "payment_terms": "",
-  "product_type": "",
-  "suppliers": [
-    {
-      "tax_invoice_number": "",
-      "date": "",
-      "name": "",
-      "gstin_number": ""
-    }
-  ]
-}
-);
-  // State for expanded section
-  const [expandedSection, setExpandedSection] = useState<
-    "exporter" | "shipping" | "product" | "gst"
-  >("exporter");
-
-  // Function to toggle section expansion
-  const toggleSection = (
-    section: "exporter" | "shipping" | "product" | "gst"
-  ) => {
-    setExpandedSection(section);
-  };
-
-  //exporter details
-  const [exporterData, setExporterData] = useState([{}]);
-  const [exporter, setExporter] = useState({
-    company_name: "",
-    company_address: "",
-    email: "",
-    tax_id: "",
-    ie_code: "",
-    pan_number: "",
-    gstin_number: "",
-    state_code: "",
     invoice_number: "",
+    exporter: {
+      id: "",
+      company_name: "",
+      company_address: "",
+      contact_number: "",
+      email: "",
+      tax_id: "",
+      ie_code: "",
+      pan_number: "",
+      gstin_number: "",
+      state_code: "",
+      authorized_name: "",
+      authorized_designation: "",
+      company_prefix: "",
+      last_invoice_number: 0,
+      invoice_year: "",
+      letterhead_top_image: "",
+      letterhead_bottom_image: "",
+      stamp_image: "",
+      next_invoice_number: "",
+    },
     invoice_date: "",
-    consignee: "",
-    notify_party: "",
-    buyers_order_no: "",
-    buyers_order_date: "",
-    po_no: "",
-  });
-
-  // shipping details
-  const [shippingData, setShippingData] = useState({});
-  const [shipping, setShipping] = useState({
-    pre_carriage_by: "",
-    place_of_receipt: "",
-    vessel_flight_no: "",
-    port_of_loading: "",
-    port_of_discharge: "",
-    final_destination: "",
-    country_of_origin: "",
-    origin_details: "",
-    country_of_final_destination: "",
-    terms_of_delivery: "",
+    buyer: {
+      buyer_order_no: "",
+      po_no: "",
+      consignee: "",
+      notify_party: "",
+      buyer_order_date: "",
+    },
+    shipping: {
+      pre_carriage_by: "",
+      vessel_flight_no: "",
+      country_of_origin: "",
+      origin_details: "",
+      terms_of_delivery: "",
+      payment: "",
+      place_of_receipt: "",
+      place_of_loading: "",
+      place_of_discharge: "",
+      final_destination: "",
+      country_of_final_destination: "",
+      shipping_method: "",
+    },
+    currency_rate: 0,
+    currancy_type: "",
+    products: {
+      nos: "",
+      marks: "",
+      rightValue: "",
+      leftValue: "",
+      insurance: 0,
+      freight: 0,
+      product_list: [
+        {
+          category_id: "",
+          category_name: "",
+          product_name: "",
+          size: "",
+          quantity: 0,
+          sqm: 0,
+          total_sqm: 0,
+          price: 0,
+          unit: "",
+          total: 0,
+          net_weight: 0,
+          gross_weight: 0,
+        },
+      ],
+      total_price: 0,
+      containers: [],
+    },
+    package: {
+      no_of_packages: "",
+      no_of_sqm: "",
+      gross_weight: "",
+      net_weight: "",
+      gst_circular: "",
+      arn_no: "",
+      lut_date: "",
+      total_fob: "",
+      amount_in_words: "",
+      gst_amount: 0,
+      taxable_value: 0,
+    },
+    invoice: {
+      integrated_tax: "",
+      product_type: "",
+    },
+    integrated_tax_option: "",
     payment_terms: "",
-    shipping_method: "",
-  });
-
-  // product details
-  const [productData, setProductData] = useState([{}]);
-  const [product, setProduct] = useState({
-    marks: "",
-    nos: "",
-
-    size: "",
-    quantity: "",
-    price: "",
-    total: "",
-  });
-
-  const [gstData, setGstData] = useState([{}]);
-  const [gst, setGst] = useState({
-    arn: "",
-    lut_date: "",
-    rate: "",
-    tax: "",
-    total: "",
+    product_type: "",
+    suppliers: [
+      {
+        tax_invoice_number: "",
+        date: "",
+        name: "",
+        gstin_number: "",
+      },
+    ],
   });
 
   // Invoice Header
@@ -380,7 +308,7 @@ const InvoiceGenerator = () => {
   const [companyAddress, setCompanyAddress] = useState("");
 
   // Shipping Info
-  const [selectedShippingTerm, setSelectedShippingTerm] = useState<string>("");
+
   const [preCarriageBy, setPreCarriageBy] = useState("");
   const [placeOfReceipt, setPlaceOfReceipt] = useState("MORBI");
   const [vesselFlightNo, setVesselFlightNo] = useState("");
@@ -436,11 +364,6 @@ const InvoiceGenerator = () => {
   ]);
 
   const [productType, setProductType] = useState<string>("Tiles");
-  const [productTypeOptions, setProductTypeOptions] = useState<string[]>([
-    "Sanitary",
-    "Tiles",
-    "Mix",
-  ]);
 
   // Product Info
   const [sections, setSections] = useState<ProductSection[]>([
@@ -455,19 +378,13 @@ const InvoiceGenerator = () => {
   const [noOfPackages, setNoOfPackages] = useState("14000 BOX");
   const [grossWeight, setGrossWeight] = useState("");
   const [netWeight, setNetWeight] = useState("");
-  const [exportUnderDutyDrawback, setExportUnderDutyDrawback] = useState(true);
-  const [ftpIncentiveDeclaration, setFtpIncentiveDeclaration] = useState(
-    "I/we shall claim under chapter 3 incentive of FTP as admissible at time policy in force - MEIS, RODTEP"
-  );
-  const [exportUnderGstCircular, setExportUnderGstCircular] = useState(
-    ""
-  );
+
+  const [exportUnderGstCircular, setExportUnderGstCircular] = useState("");
   const [lutNo, setLutNo] = useState("");
   const [lutDate, setLutDate] = useState<Date>(new Date());
   const [integratedTaxOption, setIntegratedTaxOption] = useState<
     "WITH" | "WITHOUT"
   >("WITHOUT");
-  const [selectedSupplier, setSelectedSupplier] = useState<Array<object>>([{}]);
 
   // Totals
   const [totalSQM, setTotalSQM] = useState<number>(0);
@@ -499,23 +416,16 @@ const InvoiceGenerator = () => {
   const [customSectionHsnCodes, setCustomSectionHsnCodes] = useState<{
     [key: string]: string;
   }>({});
-  const [showSectionOptions, setShowSectionOptions] = useState<boolean>(false);
-
+  
   // Replace the single showSectionOptions state with a map to track each section's dropdown state
   const [openSectionDropdowns, setOpenSectionDropdowns] = useState<{
     [key: string]: boolean;
   }>({});
 
-  // Calculate tax values
-  const taxableValue =
-    integratedTaxOption === "WITH" ? totalFOBEuro * currencyRate : 0;
-  const gstAmount = taxableValue * 0.18; // 18% GST
 
   // Format date to string
   const formattedLutDate = lutDate ? format(lutDate, "yyyy-MM-dd") : "";
 
-  // Add missing exporterRef state
-  const [exporterRef, setExporterRef] = useState<string>("Exp/0001/2024-25");
 
   useEffect(() => {
     // Always show the tax option dialog when component mounts
@@ -644,32 +554,24 @@ const InvoiceGenerator = () => {
     // Determine HSN code based on section title and custom mappings
     let hsnCode;
 
-    
-      // First check predefined hsnCodes
-      
-      
-      hsnCode = hsnCodes[section.title];
-      
-      
-      
+    // First check predefined hsnCodes
 
-      // If not found in predefined codes, check custom mappings
-      if (!hsnCode) {
-        hsnCode = customSectionHsnCodes[section.title];
-        
-        
-      }
+    hsnCode = hsnCodes[section.title];
 
-      // If still not found and there are existing items, use HSN code from the last item
-      if (!hsnCode && section.items.length > 0) {
-        hsnCode = section.items[section.items.length - 1].product.hsnCode;
-      }
+    // If not found in predefined codes, check custom mappings
+    if (!hsnCode) {
+      hsnCode = customSectionHsnCodes[section.title];
+    }
 
-      // // Default fallback
-      // if (!hsnCode) {
-      //   hsnCode = "69072100";
-      // }
-    
+    // If still not found and there are existing items, use HSN code from the last item
+    if (!hsnCode && section.items.length > 0) {
+      hsnCode = section.items[section.items.length - 1].product.hsnCode;
+    }
+
+    // // Default fallback
+    // if (!hsnCode) {
+    //   hsnCode = "69072100";
+    // }
 
     // Use the default size and its corresponding SQM value
     const defaultSize = sizes[0];
@@ -736,417 +638,17 @@ const InvoiceGenerator = () => {
     });
   };
 
-  const handleProductSelect = (productId: string, itemId: string) => {
-    const product = products.find((p) => p.id === productId);
+ 
 
-    if (!product) return;
+  
 
-    setSections(
-      sections.map((section) => ({
-        ...section,
-        items: section.items.map((item) => {
-          if (item.id === itemId) {
-            const quantity = item.quantity || 0;
-            const totalSQM = quantity * product.sqmPerBox;
-            const totalFOB = totalSQM * product.price; // i change this line this can be changed in future id 7 task
-
-            return {
-              ...item,
-              product,
-              totalSQM,
-              totalFOB,
-            };
-          }
-          return item;
-        }),
-      }))
-    );
-  };
-
-  const handleQuantityChange = (quantity: number, itemId: string) => {
-    setSections(
-      sections.map((section) => ({
-        ...section,
-        items: section.items.map((item) => {
-          if (item.id === itemId) {
-            const parsedQuantity = quantity || 0;
-            const totalSQM = parsedQuantity * item.product.sqmPerBox;
-            const totalFOB = parsedQuantity * item.product.price;
-
-            return {
-              ...item,
-              quantity: parsedQuantity,
-              totalSQM,
-              totalFOB,
-            };
-          }
-          return item;
-        }),
-      }))
-    );
-  };
-
-  const handleClientSelect = (clientId: string) => {
-    const client = clients.find((c) => c.id === clientId);
-
-    if (client) {
-      setConsignee(client.consignee);
-      setNotifyParty(client.notifyParty);
-    }
-  };
-
-  const handleShippingTermSelect = (termId: string) => {
-    const term = shippingTerms.find((t) => t.id === termId);
-
-    if (term) {
-      setSelectedShippingTerm(termId);
-      setPortOfLoading(term.port);
-      setCurrencyRate(parseFloat(term.euroRate.toString())); // Convert to number before setting
-
-      // Update Terms of Delivery based on current payment terms
-      if (paymentTerms === "CIF" || paymentTerms === "CNF") {
-        if (paymentTerms === "CIF") {
-          setTermsOfDelivery(`CIF AT ${portOfDischarge}`);
-        } else {
-          setTermsOfDelivery(`CNF AT ${portOfDischarge}`);
-        }
-      } else {
-        setTermsOfDelivery(`FOB AT ${term.port}`);
-      }
-    }
-  };
-
-  const saveInvoiceData = async () => {
-    // Validate required fields
-    if (!invoiceNo.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter an invoice number");
-      }
-      return;
-    }
-
-    if (!buyersOrderNo.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter a buyer's order number");
-      }
-      return;
-    }
-
-    if (!poNo.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter a PO number");
-      }
-      return;
-    }
-
-    if (!consignee.trim()) {
-      if (formSubmitted) {
-        toast.error("Please enter a consignee");
-      }
-      return;
-    }
-
-    // if (!selectedShippingTerm) {
-    //   if (formSubmitted) {
-    //     toast.error("Please select shipping terms");
-    //   }
-    //   return;
-    // }
-
-    if (sections.length === 0) {
-      if (formSubmitted) {
-        toast.error("Please add at least one section");
-      }
-      return;
-    }
-
-    // const hasEmptyItems = sections.some(section => section.items.some(item => !item.product.id || item.quantity <= 0));
-    // if (hasEmptyItems) {
-    //   if (formSubmitted) {
-    //     toast.error("Please complete all items in all sections");
-    //   }
-    //   return;
-    // }
-
-    // Create invoice object
-    const invoice: Invoice = {
-      invoiceNo,
-      date: invoiceDate,
-      client: {
-        consignee,
-        notifyParty,
-        buyerOrderNoFormat: buyersOrderNo,
-      },
-      items: sections.flatMap((section) => section.items),
-      shippingTerm: shippingTerms.find(
-        (s) => s.id === selectedShippingTerm
-      ) as ShippingTerm,
-      totalSQM,
-      totalFOBEuro,
-      amountInWords,
-    };
-
-    // Save invoice to backend
-    try {
-      const response = await api.post("/invoice", invoice);
-      toast.success("Invoice saved successfully");
-      if (response.status === 200) {
-        // Invoice saved successfully
-        return response.data;
-      }
-    } catch (error) {
-      // Error saving invoice - handled silently
-      toast.error("Error saving invoice");
-      throw error;
-    }
-  };
-
-  // Add validation state to track which fields are invalid
-  const [validationErrors, setValidationErrors] = useState<{
-    invoiceNumber: boolean;
-    invoiceDate: boolean;
-    exporter: boolean;
-    consignee: boolean;
-    portOfLoading: boolean;
-    portOfDischarge: boolean;
-    finalDestination: boolean;
-    countryOfOrigin: boolean;
-    countryOfFinalDestination: boolean;
-    termsOfDelivery: boolean;
-    paymentTerms: boolean;
-    selectedCurrency: boolean;
-    productItems: boolean;
-  }>({
-    invoiceNumber: false,
-    invoiceDate: false,
-    exporter: false,
-    consignee: false,
-    portOfLoading: false,
-    portOfDischarge: false,
-    finalDestination: false,
-    countryOfOrigin: false,
-    countryOfFinalDestination: false,
-    termsOfDelivery: false,
-    paymentTerms: false,
-    selectedCurrency: false,
-    productItems: false,
-  });
-
-  // Function to reset validation errors
-  const resetValidationErrors = () => {
-    setValidationErrors({
-      invoiceNumber: false,
-      invoiceDate: false,
-      exporter: false,
-      consignee: false,
-      portOfLoading: false,
-      portOfDischarge: false,
-      finalDestination: false,
-      countryOfOrigin: false,
-      countryOfFinalDestination: false,
-      termsOfDelivery: false,
-      paymentTerms: false,
-      selectedCurrency: false,
-      productItems: false,
-    });
-  };
-
-  // Add useEffect to reset validation errors when fields are filled
-  useEffect(() => {
-    // Create a new validation errors object
-    const newValidationErrors = { ...validationErrors };
-
-    // Check each field and reset its validation error if it's now filled
-    if (formData.invoice?.invoice_number)
-      newValidationErrors.invoiceNumber = false;
-    if (formData.invoice?.invoice_date) newValidationErrors.invoiceDate = false;
-    if (formData.invoice?.exporter?.company_name)
-      newValidationErrors.exporter = false;
-    if (formData.invoice?.buyer?.consignee)
-      newValidationErrors.consignee = false;
-    if (portOfLoading) newValidationErrors.portOfLoading = false;
-    if (portOfDischarge) newValidationErrors.portOfDischarge = false;
-    if (finalDestination) newValidationErrors.finalDestination = false;
-    if (countryOfOrigin) newValidationErrors.countryOfOrigin = false;
-    if (countryOfFinalDestination)
-      newValidationErrors.countryOfFinalDestination = false;
-    if (termsOfDelivery) newValidationErrors.termsOfDelivery = false;
-    if (paymentTerms) newValidationErrors.paymentTerms = false;
-    if (selectedCurrency) newValidationErrors.selectedCurrency = false;
-
-    // Check if sections have at least one item
-    const hasSections = sections.length > 0;
-    const hasItems = sections.some((section) => section.items.length > 0);
-    if (hasSections && hasItems) newValidationErrors.productItems = false;
-
-    // Update validation errors state if any changes were made
-    setValidationErrors(newValidationErrors);
-  }, [
-    formData.invoice?.invoice_number,
-    formData.invoice?.invoice_date,
-    formData.invoice?.exporter?.company_name,
-    formData.invoice?.buyer?.consignee,
-    portOfLoading,
-    portOfDischarge,
-    finalDestination,
-    countryOfOrigin,
-    countryOfFinalDestination,
-    termsOfDelivery,
-    paymentTerms,
-    selectedCurrency,
-    sections,
-  ]);
-
+  
   // Update the handleNext function to pass data to PackagingList
   const handleNext = (data) => {
     // Track if any validation errors occurred
-    let hasErrors = false;
-    const errorMessages: string[] = [];
-    const newValidationErrors = { ...validationErrors };
+    
     console.log(data);
     localStorage.setItem(`invoiceData2`, JSON.stringify(data));
-    
-    // VALIDATION CHECKS COMMENTED OUT AS REQUESTED
-    /*
-    // Check for required fields, but make Pre-Carriage By, Vessel/Flight No, and Supplier Details optional
-    // Validate invoice number
-    if (!formData.invoice?.invoice_number) {
-      newValidationErrors.invoiceNumber = true;
-      errorMessages.push("Please enter an invoice number");
-      hasErrors = true;
-    } else {
-      newValidationErrors.invoiceNumber = false;
-    }
-    
-    // Validate invoice date
-    if (!formData.invoice?.invoice_date) {
-      newValidationErrors.invoiceDate = true;
-      errorMessages.push("Please enter an invoice date");
-      hasErrors = true;
-    } else {
-      newValidationErrors.invoiceDate = false;
-    }
-    
-    // Validate exporter
-    if (!formData.invoice?.exporter?.company_name) {
-      newValidationErrors.exporter = true;
-      errorMessages.push("Please select an exporter");
-      hasErrors = true;
-    } else {
-      newValidationErrors.exporter = false;
-    }
-    
-    // Validate consignee
-    if (!formData.invoice?.buyer?.consignee) {
-      newValidationErrors.consignee = true;
-      errorMessages.push("Please enter consignee details");
-      hasErrors = true;
-    } else {
-      newValidationErrors.consignee = false;
-    }
-    
-    // Validate port of loading
-    if (!portOfLoading) {
-      newValidationErrors.portOfLoading = true;
-      errorMessages.push("Please select port of loading");
-      hasErrors = true;
-    } else {
-      newValidationErrors.portOfLoading = false;
-    }
-    
-    // Validate port of discharge
-    if (!portOfDischarge) {
-      newValidationErrors.portOfDischarge = true;
-      errorMessages.push("Please select port of discharge");
-      hasErrors = true;
-    } else {
-      newValidationErrors.portOfDischarge = false;
-    }
-    
-    // Validate final destination
-    if (!finalDestination) {
-      newValidationErrors.finalDestination = true;
-      errorMessages.push("Please select final destination");
-      hasErrors = true;
-    } else {
-      newValidationErrors.finalDestination = false;
-    }
-    
-    // Validate country of origin
-    if (!countryOfOrigin) {
-      newValidationErrors.countryOfOrigin = true;
-      errorMessages.push("Please enter country of origin");
-      hasErrors = true;
-    } else {
-      newValidationErrors.countryOfOrigin = false;
-    }
-    
-    // Validate country of final destination
-    if (!countryOfFinalDestination) {
-      newValidationErrors.countryOfFinalDestination = true;
-      errorMessages.push("Please select country of final destination");
-      hasErrors = true;
-    } else {
-      newValidationErrors.countryOfFinalDestination = false;
-    }
-    
-    // Validate terms of delivery
-    if (!termsOfDelivery) {
-      newValidationErrors.termsOfDelivery = true;
-      errorMessages.push("Please enter terms of delivery");
-      hasErrors = true;
-    } else {
-      newValidationErrors.termsOfDelivery = false;
-    }
-    
-    // Validate payment terms
-    if (!paymentTerms) {
-      newValidationErrors.paymentTerms = true;
-      errorMessages.push("Please select payment terms");
-      hasErrors = true;
-    } else {
-      newValidationErrors.paymentTerms = false;
-    }
-    
-    // Validate currency
-    if (!selectedCurrency) {
-      newValidationErrors.selectedCurrency = true;
-      errorMessages.push("Please select currency");
-      hasErrors = true;
-    } else {
-      newValidationErrors.selectedCurrency = false;
-    }
-    
-    // Check if sections have at least one item
-    const hasSections = sections.length > 0;
-    const hasItems = sections.some(section => section.items.length > 0);
-    
-    if (!hasSections || !hasItems) {
-      newValidationErrors.productItems = true;
-      errorMessages.push("Please add at least one product item");
-      hasErrors = true;
-    } else {
-      newValidationErrors.productItems = false;
-    }
-    
-    // Update the validation errors state
-    setValidationErrors(newValidationErrors);
-    
-    // If there are validation errors, show them
-    if (hasErrors) {
-      // Show a toast with the first error message
-      toast.error(errorMessages[0]);
-      
-      // Also show a summary of all errors
-      if (errorMessages.length > 1) {
-        toast.error(`Please fill in all required fields (${errorMessages.length} errors found)`);
-      }
-      
-      // Scroll to the top of the page to make error messages visible
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-      return;
-    }
-    */
 
     //Prepare supplier data for WITHOUT PAYMENT OF INTEGRATED TAX option
     const supplierData =
@@ -1385,8 +887,6 @@ const InvoiceGenerator = () => {
     }
   };
 
-  const COMMON_SUPPLIERS = [];
-
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
@@ -1403,134 +903,40 @@ const InvoiceGenerator = () => {
 
           {/* Exporter Information */}
           <ExporterInfo
-            selectedExporter={selectedExporter}
             exporters={exporters}
-            handleExporterSelect={(value) => {
-              // Set the selected exporter name
-              setSelectedExporter(value);
-
-              // Find the selected exporter object
-              const selectedExporterObj = exporters.find(
-                (e) => e.company_name === value
-              );
-
-              if (selectedExporterObj) {
-                // Update all related fields
-                setCompanyAddress(selectedExporterObj.company_address || "");
-                setEmail(selectedExporterObj.email || "");
-                setTaxid(selectedExporterObj.tax_id || "");
-                setIeCode(selectedExporterObj.ie_code || "");
-                setPanNo(selectedExporterObj.pan_number || "");
-                setGstinNo(selectedExporterObj.gstin_number || "");
-                setStateCode(selectedExporterObj.state_code || "");
-
-                // Save this data to localStorage for direct access by PackagingList
-                localStorage.setItem(
-                  "selectedExporterData",
-                  JSON.stringify({
-                    company_name: value,
-                    company_address: selectedExporterObj.company_address || "",
-                    email: selectedExporterObj.email || "",
-                    tax_id: selectedExporterObj.tax_id || "",
-                    ie_code: selectedExporterObj.ie_code || "",
-                    pan_number: selectedExporterObj.pan_number || "",
-                    gstin_number: selectedExporterObj.gstin_number || "",
-                    state_code: selectedExporterObj.state_code || "",
-                  })
-                );
-              }
-            }}
-            companyAddress={companyAddress}
-            email={email}
-            taxid={taxid}
             invoiceNo={invoiceNo}
-            invoiceDate={invoiceDate}
-            setInvoiceNo={setInvoiceNo}
-            setInvoiceDate={setInvoiceDate}
-            ieCode={ieCode}
-            panNo={panNo}
-            gstinNo={gstinNo}
-            stateCode={stateCode}
-            setIeCode={setIeCode}
-            setPanNo={setPanNo}
-            setGstinNo={setGstinNo}
-            setStateCode={setStateCode}
-            setTaxid={setTaxid}
-            setEmail={setEmail}
             setExporters={setExporters}
-            hasInvoiceNumberError={validationErrors.invoiceNumber}
-            hasInvoiceDateError={validationErrors.invoiceDate}
-            hasExporterError={validationErrors.exporter}
             form={form}
           />
 
           {/* Buyer Information */}
-          <BuyerInformationCard
-            buyersOrderNo={buyersOrderNo}
-            setBuyersOrderNo={setBuyersOrderNo}
-            buyersOrderDate={buyersOrderDate}
-            setBuyersOrderDate={setBuyersOrderDate}
-            poNo={poNo}
-            setPoNo={setPoNo}
-            consignee={consignee}
-            setConsignee={setConsignee}
-            notifyParty={notifyParty}
-            setNotifyParty={setNotifyParty}
-            hasConsigneeError={validationErrors.consignee}
-            form={form}
-          />
+          <BuyerInformationCard form={form} />
 
           {/* Shipping Information */}
           <ShippingInformationPage
             preCarriageBy={preCarriageBy}
             setPreCarriageBy={setPreCarriageBy}
-            placeOfReceipt={placeOfReceipt}
-            setPlaceOfReceipt={setPlaceOfReceipt}
             placesOfReceipt={placesOfReceipt}
             setPlacesOfReceipt={setPlacesOfReceipt}
             vesselFlightNo={vesselFlightNo}
             setVesselFlightNo={setVesselFlightNo}
-            portOfLoading={portOfLoading}
             setPortOfLoading={setPortOfLoading}
             portsOfLoading={portsOfLoading}
             setPortsOfLoading={setPortsOfLoading}
-            portOfDischarge={portOfDischarge}
             setPortOfDischarge={setPortOfDischarge}
             setPortsOfDischarge={setPortsOfDischarge}
             portsOfDischarge={portsOfDischarge}
-            finalDestination={finalDestination}
-            setFinalDestination={setFinalDestination}
             setFinalDestinations={setFinalDestinations}
             finalDestinations={finalDestinations}
             countryOfOrigin={countryOfOrigin}
             setCountryOfOrigin={setCountryOfOrigin}
             originDetails={originDetails}
-            countryOfFinalDestination={countryOfFinalDestination}
-            setCountryOfFinalDestination={setCountryOfFinalDestination}
             setOriginDetails={setOriginDetails}
             countriesOfFinalDestination={countriesOfFinalDestination}
             setCountriesOfFinalDestination={setCountriesOfFinalDestination}
-            termsOfDelivery={termsOfDelivery}
-            setTermsOfDelivery={setTermsOfDelivery}
             paymentTerms={paymentTerms}
-            shippingMethod={shippingMethod}
-            setShippingMethod={setShippingMethod}
             shippingMethods={shippingMethods}
-            selectedCurrency={selectedCurrency}
-            setSelectedCurrency={setSelectedCurrency}
             currencies={currencies}
-            currencyRate={currencyRate}
-            setCurrencyRate={setCurrencyRate}
-            hasPortOfLoadingError={validationErrors.portOfLoading}
-            hasPortOfDischargeError={validationErrors.portOfDischarge}
-            hasFinalDestinationError={validationErrors.finalDestination}
-            hasCountryOfOriginError={validationErrors.countryOfOrigin}
-            hasCountryOfFinalDestinationError={
-              validationErrors.countryOfFinalDestination
-            }
-            hasTermsOfDeliveryError={validationErrors.termsOfDelivery}
-            hasPaymentTermsError={validationErrors.paymentTerms}
-            hasCurrencyError={validationErrors.selectedCurrency}
             form={form}
           />
 
@@ -1570,9 +976,6 @@ const InvoiceGenerator = () => {
 
           {/* Package Information */}
           <PackageInfoSection
-            noOfPackages={noOfPackages}
-            grossWeight={grossWeight}
-            netWeight={netWeight}
             paymentTerms={paymentTerms}
             selectedCurrency={selectedCurrency}
             exportUnderGstCircular={exportUnderGstCircular}
@@ -1583,7 +986,6 @@ const InvoiceGenerator = () => {
             lutNo={lutNo}
             setLutNo={setLutNo}
             lutDate={formattedLutDate}
-            setLutDate={(val: string) => setLutDate(new Date(val))}
             totalFOBEuro={totalFOBEuro}
             amountInWords={amountInWords}
             currencyRate={currencyRate}
@@ -1593,28 +995,13 @@ const InvoiceGenerator = () => {
           <SupplierDetails
             suppliers={suppliers}
             setSuppliers={setSuppliers}
-            setSelectedSupplier={setSelectedSupplier}
             integratedTaxOption={integratedTaxOption}
-            selectedSupplier={selectedSupplier}
-            setAuthorizedName={setAuthorizedName}
-            setAuthorizedGstin={setAuthorizedGstin}
-            setGstInvoiceNoDate={setGstInvoiceNoDate}
             form={form}
           />
 
           {/* Footer Buttons */}
           <Card className="mt-6">
             <CardFooter className="flex justify-end gap-4">
-              <Button
-                onClick={() => {
-                  // setFormSubmitted(true);
-                  // handleSaveInvoice();
-                  // localStorage.setItem("taxDialogBox", "false");
-                }}
-              >
-                <Save className="mr-2 h-4 w-4" />
-                Save Invoice
-              </Button>
               <Button onClick={form.handleSubmit(handleNext)}>
                 <ArrowRight className="mr-2 h-4 w-4" />
                 Next
@@ -1625,142 +1012,6 @@ const InvoiceGenerator = () => {
 
         {/* Dialogs */}
         {/* PDF Preview Dialog */}
-        <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
-          <DialogContent className="max-w-5xl max-h-[80vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Invoice Preview</DialogTitle>
-            </DialogHeader>
-            <div className="border p-1 mt-2">
-              <InvoicePDFPreview
-                // Invoice Header
-                invoiceNo={invoiceNo}
-                date={format(invoiceDate, "yyyy-MM-dd")}
-                exporterRef={exporterRef}
-                ieCode={ieCode}
-                companyName={selectedExporter}
-                companyAddress={companyAddress}
-                companyEmail={email}
-                taxId={taxid}
-                stateCode={stateCode}
-                panNo={panNo}
-                gstinNo={gstinNo}
-                buyersOrderNo={buyersOrderNo}
-                buyersOrderDate={format(buyersOrderDate, "yyyy-MM-dd")}
-                poNo={poNo}
-                consignee={consignee}
-                notifyParty={notifyParty}
-                // Shipping Information
-                termsOfDelivery={termsOfDelivery}
-                paymentTerms={paymentTerms}
-                shippingMethod={shippingMethod}
-                placeOfReceipt={placeOfReceipt}
-                preCarriageBy={preCarriageBy}
-                countryOfOrigin={countryOfOrigin}
-                originDetails={originDetails}
-                vesselFlightNo={vesselFlightNo}
-                portOfLoading={portOfLoading}
-                portOfDischarge={portOfDischarge}
-                finalDestination={finalDestination}
-                countryOfFinalDestination={countryOfFinalDestination}
-                euroRate={currencyRate.toString()}
-                selectedCurrency={selectedCurrency}
-                // Product Information
-                items={sections.flatMap((section) =>
-                  section.items.map((item, index) => ({
-                    id: parseInt(item.id),
-                    srNo: index + 1,
-                    marks: item.product.marksAndNos,
-                    description: item.product.description,
-                    quantity: item.quantity,
-                    unitType: "BOX",
-                    sqmPerBox: item.product.sqmPerBox,
-                    size: item.product.size,
-                    hsnCode: item.product.hsnCode,
-                    totalSqm: item.totalSQM,
-                    price: item.product.price,
-                    totalAmount: item.totalFOB,
-                  }))
-                )}
-                // Package and Declaration
-                noOfPackages={noOfPackages}
-                grossWeight={grossWeight}
-                netWeight={netWeight}
-                exportUnderDutyDrawback={exportUnderDutyDrawback}
-                ftpIncentiveDeclaration={ftpIncentiveDeclaration}
-                exportUnderGstCircular={exportUnderGstCircular}
-                lutNo={lutNo}
-                lutDate={formattedLutDate}
-                fobEuro={totalFOBEuro.toFixed(2)}
-                totalFobEuro={totalFOBEuro.toFixed(2)}
-                amountInWords={amountInWords}
-                integratedTaxOption={integratedTaxOption}
-                // Supplier Details
-                supplierDetails1={`SUPPLIER DETAILS :- 1\nNAME: ${
-                  suppliers[0]?.name || ""
-                }\nGSTIN: ${suppliers[0]?.gstin || ""}`}
-                supplierDetails2={
-                  suppliers[1]
-                    ? `SUPPLIER DETAILS :- 2\nNAME: ${suppliers[1].name}\nGSTIN: ${suppliers[1].gstin}`
-                    : ""
-                }
-                supplierDetails3={
-                  suppliers[2]
-                    ? `SUPPLIER DETAILS :- 3\nNAME: ${suppliers[2].name}\nGSTIN: ${suppliers[2].gstin}`
-                    : ""
-                }
-                gstInvoiceNoDate={gstInvoiceNoDate}
-                companyNameFooter={companyProfile?.name}
-                declarationText={declarationText}
-                authorizedName={authorizedName}
-                authorizedGstin={authorizedGstin}
-                currencyRate={currencyRate}
-                taxableValue={taxableValue}
-                gstAmount={gstAmount}
-              />
-            </div>
-            <div className="flex justify-end mt-4">
-              <Button
-                onClick={() => {
-                  const printWindow = window.open("", "_blank");
-                  if (printWindow) {
-                    printWindow.document.write(`
-                    <html>
-                      <head>
-                        <title>Invoice ${invoiceNo}</title>
-                        <style>
-                          body { font-family: Arial, sans-serif; }
-                          table { width: 100%; border-collapse: collapse; }
-                          th, td { border: 1px solid black; padding: 5px; }
-                          th { background-color: #f2f2f2; }
-                          .container { max-width: 210mm; margin: 0 auto; padding: 10mm; }
-                          @media print {
-                            body { width: 210mm; height: 297mm; }
-                            .no-print { display: none; }
-                          }
-                        </style>
-                      </head>
-                      <body>
-                        <div class="container">
-                          ${
-                            document.querySelector(".dialog-content")
-                              ?.innerHTML || ""
-                          }
-                        </div>
-                        <script>
-                          window.onload = function() { window.print(); }
-                        </script>
-                      </body>
-                    </html>
-                  `);
-                    printWindow.document.close();
-                  }
-                }}
-              >
-                Print PDF
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
 
         {/* Tax Option Dialog */}
         <Dialog

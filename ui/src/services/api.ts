@@ -39,10 +39,10 @@ export const invoiceApi = {
 };
 
 export const filesApi = {
-  uploadAndDownloadPdf : async (file: File) => {
+  uploadAndDownloadPdf : async (file: File,id:string) => {
   const formData = new FormData();
   formData.append('file', file);
-
+  formData.append('id',id);
   try {
     const response = await api.post('/upload/excel', formData, {
       responseType: 'blob', // 👈 important for binary download
@@ -75,7 +75,62 @@ export const filesApi = {
   } catch (error) {
     console.error('❌ Error downloading PDF:', error);
   }
+},
+uploadMultipleExcelAndDownloadPDFs: async (files: any[], invoiceId: string) => {
+   if (!files?.length) {
+    console.error("❌ No files provided");
+    return;
+  }
+  let allResponse = [];
+  for (let i = 0; i < files.length; i++) {
+  const buffer = files[i];
+  const sheetNames = ['CUSTOM_INVOICE', 'PACKING_LIST', 'ANNEXURE', 'VGN']; // Or dynamic if needed
+
+  const blob = new Blob([buffer.buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const excelFile = new File([blob], `${buffer.fileName}`, {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+  console.log("Uploading file:", excelFile.name);
+  
+  
+    const formData = new FormData();
+    formData.append('file', excelFile);
+    formData.append('id', invoiceId);
+
+    try {
+      const response = await api.post('/upload/excel', formData, {
+        responseType: 'blob',
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 20 * 1000,
+      });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      allResponse.push({response, url});
+      const a = document.createElement('a');
+      a.href = url;
+
+      const filename = excelFile.name.replace(/\.[^/.]+$/, ".pdf");
+      a.download = filename;
+
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+      console.log(`✅ ${filename} downloaded`);
+      
+    } catch (error) {
+      console.error(`❌ Failed to convert ${excelFile.name}`, error);
+    }
+  
 }
+return allResponse
+}
+
 }
 
 // Admin API

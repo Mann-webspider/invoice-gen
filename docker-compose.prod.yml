@@ -3,9 +3,9 @@ version: '3.8'
 services:
   frontend:
     # build:
-      # context: ./ui
-      # dockerfile: Dockerfile
-    image: manndshelby/invoice-frontend:prod
+    #   context: ./ui
+    #   dockerfile: Dockerfile
+    image: manndshelby/invoice-frontend:1.1
     container_name: frontend
     expose:
       - "3000"
@@ -13,9 +13,9 @@ services:
       - appnet
   backend:
     # build:
-      # context: ./backend
-      # dockerfile: dockerfile
-    image: manndshelby/invoice-backend:prod
+    #   context: ./backend
+    #   dockerfile: dockerfile
+    image: manndshelby/invoice-backend:1.0
     container_name: php-prod
     ports:
       - "8000:8000"

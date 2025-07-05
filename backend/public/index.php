@@ -54,10 +54,20 @@ $app->add(function (Request $request, RequestHandlerInterface $handler): Respons
     error_log("Middleware intercepted with status: " . $response->getStatusCode());
     return $response;
 });
+$app->add(function (Request $request, RequestHandlerInterface $handler): Response {
+    error_log('Incoming request: ' . $request->getMethod() . ' ' . $request->getUri()->getPath());
+    return $handler->handle($request);
+});
 
-$app->options('/{routes:.+}', function ($request, $response, $args) {
+$app->add(function (Request $request, RequestHandlerInterface $handler): Response {
+    error_log("🔍 Incoming request: " . $request->getMethod() . " " . $request->getUri()->getPath());
+    return $handler->handle($request);
+});
+
+
+$app->options('/{routes:.+}', function ($request, SlimResponse $response, $args) {
     return $response    
-        ->withHeader('Access-Control-Allow-Origin', 'http://localhost:8080')
+        ->withHeader('Access-Control-Allow-Origin', '*')
         ->withHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Accept')
         ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH')
         ->withHeader('Access-Control-Allow-Credentials', 'true'); // No Content

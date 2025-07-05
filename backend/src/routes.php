@@ -1,6 +1,7 @@
 <?php
 
 // use App\InvoiceController;
+use Shelby\OpenSwoole\Controllers\DraftController;
 use Slim\App;
 use Shelby\OpenSwoole\Controllers\DropdownController;
 use Shelby\OpenSwoole\Controllers\InvoiceController;
@@ -29,12 +30,15 @@ return function (App $app) {
     $userController = new UserController($container->get('db'));
     $documentUploadController = new DocumentUploadController();
     $pdfController = new PdfController();
+    $draftController = new DraftController($container->get('db'));
+
 
 
 
     // create authentication routes
-    $app->post('/api/login', [$userController, 'login']);
-    $app->post('/api/logout', [$userController, 'logout']);
+    
+    $app->post('/api/auth/login', [$userController, 'login']);
+    $app->post('/api/auth/logout', [$userController, 'logout']);
     $app->post('/api/register', [$userController, 'register']);
 
     // Database Backup and Restore Routes
@@ -116,6 +120,14 @@ return function (App $app) {
     $app->get('/api/upload/signature/{exporterId}', [$documentUploadController, 'getSignature']);
 
      $app->post('/api/upload/excel', [$pdfController, 'convert']);
+     $app->get('/api/show/excel/{path:.+}', [$pdfController, 'streamByRelativePath']);
+
+    // Draft Routes
+    $app->post('/api/draft', [$draftController, 'createDraft']);
+    $app->get('/api/draft', [$draftController, 'getDrafts']); 
+    $app->get('/api/draft/{id}', [$draftController, 'getDraftById']);
+    $app->put('/api/draft/{id}', [$draftController, 'updateDraft']);
+    $app->delete('/api/draft/{id}', [$draftController, 'deleteDraft']);
 
 
 };

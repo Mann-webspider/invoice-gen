@@ -70,17 +70,16 @@ const ProductInformation = ({
     formState: { errors },
   } = form;
 
-  
   function getLastWordsCommaString(sections: Section[]): string {
-  const lastWords = sections.map((section) => {
-    const parts = section.title.trim().split(" ");
-    return parts[parts.length - 1];
-  });
+    const lastWords = sections.map((section) => {
+      const parts = section.title.trim().split(" ");
+      return parts[parts.length - 1];
+    });
 
-  const uniqueWords = Array.from(new Set(lastWords));
+    const uniqueWords = Array.from(new Set(lastWords));
 
-  return uniqueWords.join(", ");
-}
+    return uniqueWords.join(", ");
+  }
 
   useEffect(() => {
     const subscription = watch((allValues) => {
@@ -106,7 +105,7 @@ const ProductInformation = ({
       const current = allValues?.products?.product_list || [];
 
       const isSame = JSON.stringify(current) === JSON.stringify(newProductList);
-      let titleLastWords = getLastWordsCommaString(sections)
+      let titleLastWords = getLastWordsCommaString(sections);
       if (!isSame) {
         setValue("products.product_list", newProductList);
         setValue("products.total_price", totalFOBEuro);
@@ -181,38 +180,6 @@ const ProductInformation = ({
     fetchData();
   }, []);
 
-  // useEffect(() => {
-  //   const formattedProducts = sections.map(section => (
-  //     section.items.map(item => ({
-  //       category_id: section.id || "",
-  //       category_name: section.title || "",
-  //       hsnCode: item.product.hsnCode ,
-  //       product_name: item.product.description || "",
-  //       size: item.product.size || "",
-  //       quantity: item.quantity || 0,
-  //       sqm: item.product.sqmPerBox || 0,
-  //       total_sqm: item.totalSQM || 0,
-  //       price: item.product.price || 0,
-  //       unit: item.unitType,
-  //       total: item.totalFOB ,
-  //       net_weight: item.product.netWeight || 0,
-  //       gross_weight: item.product.grossWeight || 0
-  //     }))
-  //   )).flat();
-
-  //   setInvoiceData({
-  //     ...formData.invoice,
-  //     products: {
-  //       marks: marksAndNumbersValues.leftValue +" X "+ marksAndNumbersValues.rightValue,
-  //       nos: marksAndNumbersValues.containerType,
-  //       frieght: freightAmount,
-  //       insurance: insuranceAmount,
-  //       total_price: totalFOBEuro,
-  //       product_list: formattedProducts,
-  //       containers: []
-  //     }
-  //   });
-  // }, [formData, sections, marksAndNumbersValues, freightAmount, insuranceAmount, totalFOBEuro]);
  
 
   return (
@@ -461,7 +428,6 @@ const ProductInformation = ({
                             onChange={(e) => {
                               const newDescription = e.target.value;
                               const foundHsnCode = hsnCodes[newDescription];
-                           
 
                               setSections((currentSections) =>
                                 currentSections.map((s) =>
@@ -547,7 +513,9 @@ const ProductInformation = ({
                                                 totalSQM:
                                                   i.quantity * sqmPerBox,
                                                 totalFOB:
-                                                  i.quantity * sqmPerBox * i.product.price, // task7 no 7 updated 
+                                                  i.quantity *
+                                                  sqmPerBox *
+                                                  i.product.price, // task7 no 7 updated
                                               }
                                             : i
                                         ),
@@ -571,7 +539,7 @@ const ProductInformation = ({
                         </TableCell>
                         <TableCell>
                           <Input
-                            type="number"
+                            type="text"
                             min="0"
                             value={item.quantity}
                             onChange={(e) => {
@@ -591,7 +559,8 @@ const ProductInformation = ({
                                                   i.product.sqmPerBox,
                                                 totalFOB:
                                                   quantity *
-                                                  i.product.sqmPerBox * i.product.price, // task7 no 7 updated
+                                                  i.product.sqmPerBox *
+                                                  i.product.price, // task7 no 7 updated
                                               }
                                             : i
                                         ),
@@ -650,7 +619,8 @@ const ProductInformation = ({
                             type="text"
                             value={item.product.sqmPerBox || ""}
                             onChange={(e) => {
-                              const sqmPerBox = parseFloat(e.target.value) || 0;
+                              const sqmPerBox = e.target.value;
+                              if (!/^\d*\.?\d*$/.test(sqmPerBox)) return;
                               setSections(
                                 sections.map((s) =>
                                   s.id === section.id
@@ -665,9 +635,16 @@ const ProductInformation = ({
                                                   sqmPerBox,
                                                 },
                                                 totalSQM:
-                                                  i.quantity * sqmPerBox,
+                                                  i.quantity *
+                                                  (parseFloat(
+                                                    sqmPerBox || "0"
+                                                  ) || 0),
                                                 totalFOB:
-                                                  i.quantity * sqmPerBox * i.product.price, // `task7 no 7 updated
+                                                  i.quantity *
+                                                  (parseFloat(
+                                                    sqmPerBox || "0"
+                                                  ) || 0) *
+                                                  i.product.price, // `task7 no 7 updated
                                               }
                                             : i
                                         ),
@@ -676,7 +653,7 @@ const ProductInformation = ({
                                 )
                               );
                             }}
-                            className={`h-8 w-14  m-0 no-spinner appearance-none  text-right ${
+                            className={`h-8 w-14  m-0 no-spinner appearance-none p-2  text-right ${
                               productType === "Sanitary" ? "bg-gray-100" : ""
                             }`}
                             readOnly={productType === "Sanitary"}
@@ -694,9 +671,12 @@ const ProductInformation = ({
                         <TableCell>
                           <Input
                             type="text"
-                            value={item.product.price || ""}
+                            value={item.product.price ?? ""}
                             onChange={(e) => {
-                              const price = parseFloat(e.target.value) || 0;
+                              const priceInput = e.target.value;
+
+                              // Allow only valid decimal numbers or empty input
+                              if (!/^\d*\.?\d*$/.test(priceInput)) return;
 
                               setSections(
                                 sections.map((s) =>
@@ -706,16 +686,20 @@ const ProductInformation = ({
                                         items: s.items.map((i) => {
                                           if (i.id !== item.id) return i;
 
-                                          const sqmPerBox =
-                                            i.product.sqmPerBox || 0;
+                                          const sqmPerBox = parseFloat(
+                                            i.product.sqmPerBox || "0"
+                                          );
                                           const quantity = i.quantity || 0;
+                                          const price = parseFloat(
+                                            priceInput || "0"
+                                          );
                                           const totalSQM = quantity * sqmPerBox;
 
                                           return {
                                             ...i,
                                             product: {
                                               ...i.product,
-                                              price,
+                                              price: priceInput, // store raw string in state
                                             },
                                             totalSQM,
                                             totalFOB: totalSQM * price,

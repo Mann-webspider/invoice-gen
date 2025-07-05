@@ -17,43 +17,36 @@ import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
 const ShippingInformationPage = ({
   preCarriageBy,
   setPreCarriageBy,
-  placeOfReceipt,
-  setPlaceOfReceipt,
+  
   placesOfReceipt,
   setPlacesOfReceipt,
   vesselFlightNo,
   setVesselFlightNo,
-  portOfLoading,
+  
   setPortOfLoading,
   setPortsOfLoading,
   portsOfLoading,
-  portOfDischarge,
+ 
   setPortOfDischarge,
   portsOfDischarge,
   setPortsOfDischarge,
-  finalDestination,
-  setFinalDestination,
+  
   setFinalDestinations,
   finalDestinations,
   countryOfOrigin,
   setCountryOfOrigin,
   originDetails,
   setOriginDetails,
-  countryOfFinalDestination,
-  setCountryOfFinalDestination,
+  
   countriesOfFinalDestination,
   setCountriesOfFinalDestination,
-  termsOfDelivery,
-  setTermsOfDelivery,
+  
   paymentTerms,
-  shippingMethod,
-  setShippingMethod,
+  
   shippingMethods,
-  selectedCurrency,
-  setSelectedCurrency,
+  
   currencies,
-  currencyRate,
-  setCurrencyRate,
+  
   form,
 }) => {
   const { formData, setInvoiceData } = useForm();
@@ -105,28 +98,7 @@ const ShippingInformationPage = ({
     })();
   }, []);
 
-  // useEffect(()=>{
-  //   setInvoiceData({
-  //     ...formData.invoice,
-  //     currency_type: selectedCurrency,
-  //     currency_rate: currencyRate,
-  //     shipping: {
-  //       pre_carriage_by: preCarriageBy,
-  //       shipping_method: shippingMethod,
-  //       place_of_receipt: placeOfReceipt,
-  //       port_of_loading: portOfLoading,
-  //       port_of_discharge: portOfDischarge,
-  //       final_destination: finalDestination,
-  //       country_of_origin: countryOfOrigin,
-  //       origin_details: originDetails,
-  //       country_of_final_destination: countryOfFinalDestination,
-  //       terms_of_delivery: termsOfDelivery,
-  //       payment: paymentField,
-  //       vessel_flight_no: vesselFlightNo,
 
-  //     }
-  //   })
-  // },[placeOfReceipt, portOfLoading, portOfDischarge, finalDestination, countryOfOrigin, originDetails, countryOfFinalDestination, termsOfDelivery, paymentTerms, shippingMethod, selectedCurrency, currencyRate,paymentField])
   return (
     <Card>
       <CardHeader>
@@ -213,7 +185,7 @@ const ShippingInformationPage = ({
 
                     // custom logic: update Terms of Delivery if needed
                     if (paymentTerms === "FOB") {
-                      setTermsOfDelivery(`FOB AT ${value}`);
+                      setValue("shipping.terms_of_delivery",`FOB AT ${value}`);
                     }
                   }}
                 >
@@ -252,9 +224,9 @@ const ShippingInformationPage = ({
 
                     // Update Terms of Delivery if payment terms are CIF or CNF
                     if (paymentTerms === "CIF") {
-                      setTermsOfDelivery(`CIF AT ${value}`);
+                      setValue("shipping.terms_of_delivery",`CIF AT ${value}`);
                     } else if (paymentTerms === "CNF") {
-                      setTermsOfDelivery(`CNF AT ${value}`);
+                      setValue("shipping.terms_of_delivery",`CNF AT ${value}`);
                     }
                   }}
                 >
@@ -383,11 +355,11 @@ const ShippingInformationPage = ({
             <Label htmlFor="termsOfDelivery">Terms of Delivery</Label>
             <Input
               id="termsOfDelivery"
-              value={termsOfDelivery}
+              value={shippingForm?.terms_of_delivery || ""}
               {...register("shipping.terms_of_delivery", {
                 required: "Terms of Delivery are required",
               })}
-              readOnly
+              
               
               className="bg-gray-50"
               placeholder="Terms of Delivery"

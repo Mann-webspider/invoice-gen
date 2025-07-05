@@ -26,30 +26,13 @@ import { useForm } from "@/context/FormContext";
 import { Controller, useForm as rhf,UseFormReturn } from "react-hook-form";
 
 interface ExporterInfoProps {
-  selectedExporter: string;
+  
   exporters: object[];
-  handleExporterSelect: (value: string) => void;
-  companyAddress: string;
-  email: string;
-  taxid: string;
+  
   invoiceNo: string;
-  invoiceDate: Date | undefined;
-  setInvoiceNo: (value: string) => void;
-  setInvoiceDate: (date: Date) => void;
-  ieCode: string;
-  panNo: string;
-  gstinNo: string;
-  stateCode: string;
-  setIeCode: (val: string) => void;
-  setPanNo: (val: string) => void;
-  setGstinNo: (val: string) => void;
-  setStateCode: (val: string) => void;
-  setTaxid: (val: string) => void;
-  setEmail: (val: string) => void;
+  
   setExporters: (val: any[]) => void;
-  hasInvoiceNumberError?: boolean;
-  hasInvoiceDateError?: boolean;
-  hasExporterError?: boolean;
+  
   form: UseFormReturn
 }
 async function getExporters() {
@@ -61,30 +44,13 @@ async function getExporters() {
 }
 
 const ExporterInfo: React.FC<ExporterInfoProps> = ({
-  selectedExporter,
+  
   exporters,
-
-  companyAddress,
-  email,
-  taxid,
   invoiceNo,
-  invoiceDate,
-  setInvoiceNo,
-  setInvoiceDate,
-  ieCode,
-  panNo,
-  gstinNo,
-  stateCode,
-  setIeCode,
-  setPanNo,
-  setGstinNo,
-  setStateCode,
-  setTaxid,
-  setEmail,
+  
   setExporters,
-  hasInvoiceNumberError = false,
-  hasInvoiceDateError = false,
-  hasExporterError = false,
+  
+ 
   form
 }) => {
   const { formData, setInvoiceData } = useForm();
@@ -130,19 +96,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
     }
   };
 
-  //   useEffect(() => {
-  //   const exporter = exporters.find((e) => e.company_name === selectedExporter);
-  //   const newInvoiceNumber = exporter?.next_invoice_number || invoiceNo;
-
-  //   setInvoiceData(prev => ({
-  //     ...prev,
-  //     invoice_number: newInvoiceNumber,
-  //     invoice_date: invoiceDate ? format(invoiceDate, "dd/MM/yyyy") : "",
-  //     exporter: exporter
-  //   }));
-
-  //   // Updated invoice data with new invoice number, date and exporter
-  // }, [selectedExporter, invoiceNo, invoiceDate,exporters]);
+ 
 
   return (
     <Card>
@@ -155,9 +109,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
             <div className="space-y-2">
               <div className="flex justify-between">
                 <Label htmlFor="companyName">EXPORTER</Label>
-                {hasExporterError && (
-                  <span className="text-red-500 text-sm">Required</span>
-                )}
+                
               </div>
               <Controller
                 name="exporter"
@@ -224,9 +176,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label htmlFor="invoiceNo">INVOICE NUMBER</Label>
-                  {hasInvoiceNumberError && (
-                    <span className="text-red-500 text-sm">Required</span>
-                  )}
+                  
                 </div>
                 <Input
                   id="invoiceNo"
@@ -238,16 +188,14 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                     required: true,
                   })}
                   placeholder="Enter invoice number"
-                  className={hasInvoiceNumberError ? "border-red-500" : ""}
+                  // className={hasInvoiceNumberError ? "border-red-500" : ""}
                 />
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between">
                   <Label>INVOICE DATE</Label>
-                  {hasInvoiceDateError && (
-                    <span className="text-red-500 text-sm">Required</span>
-                  )}
+                  
                 </div>
                 <Controller
                   name="invoice_date"
