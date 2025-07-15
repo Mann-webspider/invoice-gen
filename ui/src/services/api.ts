@@ -39,9 +39,41 @@ export const invoiceApi = {
 };
 
 export const filesApi = {
-  uploadAndDownloadPdf : async (file: File,id:string) => {
+  uploadDoc: async (file: any, id: string) => {
+    const formData = new FormData();
+    const blob = new Blob([file], {
+  type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+});
+console.log(id.replace("/","-"));
+
+const docxFile = new File([blob], `${id.replace(/[(/)]/g, "-")}-doc.docx`,{
+  type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+});
+    formData.append('file', docxFile);
+    formData.append('id', id);
+    try {
+      const response = await api.post('/upload/doc', formData, {
+        responseType: 'blob', // 👈 important for binary download
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        timeout: 20 * 1000, // 20 seconds timeout
+      });
+      return response.data;
+    } catch (error) {
+      console.error('❌ Error uploading document:', error);
+    }
+  },
+  uploadAndDownloadPdf : async (file: any,id:string) => {
   const formData = new FormData();
-  formData.append('file', file);
+   const blob = new Blob([file.buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+
+  const excelFile = new File([blob], `${file.fileName}`, {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+  });
+  formData.append('file', excelFile);
   formData.append('id',id);
   try {
     const response = await api.post('/upload/excel', formData, {
@@ -51,26 +83,26 @@ export const filesApi = {
       },
       timeout: 20 * 1000, // 20 seconds timeout
     });
+    
+    // const blob = new Blob([response.data], { type: 'application/pdf' });
+    // const url = window.URL.createObjectURL(blob);
 
-    const blob = new Blob([response.data], { type: 'application/pdf' });
-    const url = window.URL.createObjectURL(blob);
-
-    const a = document.createElement('a');
-    a.href = url;
+    // const a = document.createElement('a');
+    // a.href = url;
 
     // Optional: Read filename from content-disposition header
-    const disposition = response.headers['content-disposition'];
-    const match = disposition && disposition.match(/filename="?(.+)"?/);
-    // const filename = fileName || 'custom_invoice.pdf';
-    const filename = file.name.replace(/\.[^/.]+$/, ".pdf");
+    // const disposition = response.headers['content-disposition'];
+    // const match = disposition && disposition.match(/filename="?(.+)"?/);
+    // // const filename = fileName || 'custom_invoice.pdf';
+    // const filename = file.name.replace(/\.[^/.]+$/, ".pdf");
 
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    window.URL.revokeObjectURL(url);
+    // a.download = filename;
+    // document.body.appendChild(a);
+    // a.click();
+    // a.remove();
+    // window.URL.revokeObjectURL(url);
     console.log('✅ PDF downloaded successfully');
-    return response
+    return response.data
 
   } catch (error) {
     console.error('❌ Error downloading PDF:', error);

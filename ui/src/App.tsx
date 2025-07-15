@@ -19,7 +19,7 @@ import NotFound from "./pages/NotFound";
 import PackagingList from "./pages/PackagingList";
 import Annexure from "./pages/Annexure";
 import VgmForm from "./pages/VgmForm";
-
+import ProcessQueue from "./components/ProcessQueue";
 import { QueryProvider } from "./providers/query-provider";
 
 import { FormProvider } from "./context/FormContext";
@@ -27,15 +27,16 @@ import { AuthProvider } from "@/context/AuthContext";
 import { SidebarProvider } from "@/context/SidebarContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/Login";
+import { Controller, useForm as rhf,FormProvider as FP  } from "react-hook-form";
 // QueryClient is handled by QueryProvider
 
 // Create a wrapper for PackagingList that loads data from localStorage
-const PackagingListWrapper = () => {
+const PackagingListWrapper = ({form}) => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+  
   useEffect(() => {
     // Retrieve data from localStorage
     const storedData = localStorage.getItem("invoiceFormData");
@@ -138,12 +139,13 @@ const PackagingListWrapper = () => {
       markNumber={formData.markNumber || ""}
       readOnly={formData.readOnly || false}
       invoiceHeader={formData.invoiceHeader || {}}
+      form={form}
     />
   );
 };
 
 // Create a wrapper for Annexure that loads data from localStorage
-const AnnexureWrapper = () => {
+const AnnexureWrapper = ({form}) => {
   const navigate = useNavigate();
   const [annexureData, setAnnexureData] = useState<any>(null);
 
@@ -180,12 +182,13 @@ const AnnexureWrapper = () => {
         containerRows: annexureData?.containerRows,
         totalPalletCount: annexureData?.totalPalletCount,
       }}
+      form={form}
     />
   );
 };
 
 // Create a wrapper for VgmForm that loads data from localStorage
-const VgmFormWrapper = () => {
+const VgmFormWrapper = ({form}) => {
   const navigate = useNavigate();
   const [vgmData, setVgmData] = useState<any>(null);
 
@@ -215,12 +218,17 @@ const VgmFormWrapper = () => {
       onBack={() => navigate("/annexure")}
       containerInfo={vgmData.containerInfo}
       invoiceHeader={vgmData.invoiceHeader}
+      form={form}
     />
   );
 };
 
-const App = () => (
+
+const App = () => {
+  const form = rhf();
+  return(
   <AuthProvider>
+    <FP {...form}>
     <FormProvider>
       <SidebarProvider>
         <QueryProvider>
@@ -248,7 +256,7 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <AdminLayout>
-                        <InvoiceGenerator />
+                        <InvoiceGenerator form={form}/>
                       </AdminLayout>
                     </ProtectedRoute>
                   }
@@ -258,7 +266,7 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <AdminLayout>
-                        <InvoiceGenerator />
+                        <InvoiceGenerator form={form}/>
                       </AdminLayout>
                     </ProtectedRoute>
                   }
@@ -268,7 +276,7 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <AdminLayout>
-                        <PackagingListWrapper />
+                        <PackagingListWrapper form={form}/>
                       </AdminLayout>
                     </ProtectedRoute>
                   }
@@ -278,7 +286,7 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <AdminLayout>
-                        <AnnexureWrapper />
+                        <AnnexureWrapper form={form} />
                       </AdminLayout>
                     </ProtectedRoute>
                   }
@@ -289,7 +297,17 @@ const App = () => (
                   element={
                     <ProtectedRoute>
                       <AdminLayout>
-                        <VgmFormWrapper />
+                        <VgmFormWrapper form={form}/>
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/backup"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <ProcessQueue />
                       </AdminLayout>
                     </ProtectedRoute>
                   }
@@ -315,7 +333,8 @@ const App = () => (
         </QueryProvider>
       </SidebarProvider>
     </FormProvider>
+    </FP>
   </AuthProvider>
-);
+)};
 
 export default App;

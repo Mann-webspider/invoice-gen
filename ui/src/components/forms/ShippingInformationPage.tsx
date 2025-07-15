@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import api from "@/lib/axios";
 import { useForm } from "@/context/FormContext";
-import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
+import { Controller, useForm as rhf, UseFormReturn,useFormContext } from "react-hook-form";
 
 const ShippingInformationPage = ({
   preCarriageBy,
@@ -57,7 +57,7 @@ const ShippingInformationPage = ({
     setValue,
     watch,
     formState: { errors },
-  } = form;
+  } = useFormContext();
   const shippingForm = watch("shipping");
   const [paymentField, setPaymentField] = useState("");
   async function getShipping() {
@@ -111,7 +111,7 @@ const ShippingInformationPage = ({
             <Label htmlFor="preCarriageBy">Pre-Carriage By</Label>
             <Input
               id="preCarriageBy"
-              value={preCarriageBy}
+              value={shippingForm?.pre_carriage_by || preCarriageBy}
               {...register("shipping.pre_carriage_by")}
               onChange={(e) => setPreCarriageBy(e.target.value)}
               placeholder="Enter pre-carriage method"
@@ -158,7 +158,7 @@ const ShippingInformationPage = ({
             <Label htmlFor="vesselFlightNo">Vessel/Flight No.</Label>
             <Input
               id="vesselFlightNo"
-              value={vesselFlightNo}
+              value={shippingForm?.vessel_flight_no || vesselFlightNo}
               {...register("shipping.vessel_flight_no",)}
               onChange={(e) => setVesselFlightNo(e.target.value)}
               placeholder="Enter vessel/flight number"

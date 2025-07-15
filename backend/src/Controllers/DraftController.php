@@ -77,5 +77,12 @@ class DraftController
         $draft->delete();
         return $response->withStatus(204);
     }
+    public function deleteAllDrafts(Request $request, Response $response){
+        $drafts = Draft::all();
+        foreach ($drafts as $draft) {
+            $draft->delete();
+        }
+        return $response->withStatus(204);
+    }
 
 }

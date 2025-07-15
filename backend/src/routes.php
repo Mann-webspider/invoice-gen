@@ -69,6 +69,7 @@ return function (App $app) {
     $app->get('/api/invoice/{id}', [$invoiceController, 'getInvoiceById']);
     $app->post('/api/invoice', [$invoiceController, 'createInvoice']);
     $app->put('/api/invoice/{id}', [$invoiceController, 'updateInvoice']);
+    $app->delete('/api/invoice/all', [$invoiceController, 'deleteAllInvoices']);
     $app->delete('/api/invoice/{id}', [$invoiceController, 'deleteInvoice']);
 
     // Exporter Routes
@@ -120,13 +121,16 @@ return function (App $app) {
     $app->get('/api/upload/signature/{exporterId}', [$documentUploadController, 'getSignature']);
 
      $app->post('/api/upload/excel', [$pdfController, 'convert']);
-     $app->get('/api/show/excel/{path:.+}', [$pdfController, 'streamByRelativePath']);
+     $app->post('/api/upload/doc', [$pdfController, 'uploadDoc']);
+     $app->get('/api/show/list', [$pdfController, 'listFiles']);
+     $app->get('/api/show/file/{path:.+}', [$pdfController, 'streamByRelativePath']);
 
     // Draft Routes
     $app->post('/api/draft', [$draftController, 'createDraft']);
     $app->get('/api/draft', [$draftController, 'getDrafts']); 
     $app->get('/api/draft/{id}', [$draftController, 'getDraftById']);
     $app->put('/api/draft/{id}', [$draftController, 'updateDraft']);
+    $app->delete('/api/draft/all', [$draftController, 'deleteAllDrafts']);
     $app->delete('/api/draft/{id}', [$draftController, 'deleteDraft']);
 
 

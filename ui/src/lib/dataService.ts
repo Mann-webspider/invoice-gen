@@ -15,44 +15,7 @@ import {
   LOCAL_STORAGE_KEYS 
 } from "./utils";
 
-// Company Profile
-export const getCompanyProfile = (): CompanyProfile => {
-  return getStorageItem<CompanyProfile>(LOCAL_STORAGE_KEYS.COMPANY, {
-    name: "",
-    address: "",
-    gstin: "",
-    pan: "",
-    declarationText: "",
-  });
-};
 
-export const saveCompanyProfile = (company: CompanyProfile): CompanyProfile => {
-  setStorageItem(LOCAL_STORAGE_KEYS.COMPANY, company);
-  return company;
-};
-
-// Clients
-export const getClients = (): Client[] => {
-  return getStorageItem<Client[]>(LOCAL_STORAGE_KEYS.CLIENTS, []);
-};
-
-export const saveClient = (client: Client): Client => {
-  const clients = getClients();
-  const newClient = { ...client, id: client.id || generateId() };
-  
-  const updatedClients = client.id
-    ? clients.map((c) => (c.id === client.id ? newClient : c))
-    : [...clients, newClient];
-  
-  setStorageItem(LOCAL_STORAGE_KEYS.CLIENTS, updatedClients);
-  return newClient;
-};
-
-export const deleteClient = (id: string): void => {
-  const clients = getClients();
-  const updatedClients = clients.filter((client) => client.id !== id);
-  setStorageItem(LOCAL_STORAGE_KEYS.CLIENTS, updatedClients);
-};
 
 // Products
 export const getProducts = (): Product[] => {

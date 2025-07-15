@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useForm } from "@/context/FormContext";
-import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
+import { Controller, useForm as rhf, UseFormReturn,useFormContext } from "react-hook-form";
 interface Supplier {
   id: string;
   name: string;
@@ -57,7 +57,7 @@ export const SupplierDetails = ({
     setValue,
     watch,
     formState: { errors },
-  } = form;
+  } = useFormContext();
   const supplierForm = watch("suppliers");
   // Load supplier options from backend
   useEffect(() => {

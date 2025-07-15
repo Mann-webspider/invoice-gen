@@ -23,7 +23,7 @@ import {
 import { useEffect } from "react";
 import api from "@/lib/axios";
 import { useForm } from "@/context/FormContext";
-import { Controller, useForm as rhf,UseFormReturn } from "react-hook-form";
+import { Controller, useForm as rhf,UseFormReturn,useFormContext  } from "react-hook-form";
 
 interface ExporterInfoProps {
   
@@ -61,7 +61,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
     setValue,
     watch,
     formState: { errors },
-  } = form;
+  } =  useFormContext();
   const selectedExporter2 = watch("exporter");
   // useEffect(() => {
   //   const subscribe = watch((value) => {

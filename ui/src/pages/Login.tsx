@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
-import { useAuth } from "@/context";
+import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/axios";
 import { log } from "node:console";
 
@@ -37,7 +37,7 @@ const Login = () => {
 
     try {
       let login_res = await login(email, password);
-      console.log(login_res);
+      
       if(login_res.status === 401) {
         throw new Error("Login failed");
       }

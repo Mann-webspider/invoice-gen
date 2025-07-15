@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProductSection } from "@/lib/types";
-import { useForm as rhf, Controller } from "react-hook-form";
+import { useForm as rhf, Controller,useFormContext } from "react-hook-form";
 
 // Handle date-fns import with try-catch to avoid TypeScript errors
 let format: (date: Date | number, format: string) => string;
@@ -39,6 +39,7 @@ import {
   getValueFromSection,
   saveFormSection,
 } from "@/lib/formDataUtils";
+import { useDraftForm } from "@/hooks/useDraftForm";
 
 // Handle toast notifications with error handling to avoid import errors
 let toast: any = {
@@ -56,6 +57,7 @@ interface AnnexureProps {
   onBack: () => void;
   importedSections?: ProductSection[];
   markNumber?: string;
+  form?:any;
   invoiceHeader?: {
     invoiceNo: string;
     invoiceDate: Date;
@@ -113,17 +115,24 @@ const Annexure = ({
   buyerInfo,
   shippingInfo,
   containerInfo,
+  form:fm
 }: AnnexureProps) => {
   const { formData, setAnnexureData, ensureFormDataFromLocalStorage } =
     useForm();
-  const {
-    register,
-    watch,
-    setValue,
-    formState: { errors },
-    handleSubmit,
-    control,
-  } = rhf();
+    
+    
+    const { methods:form, isReady,hydrated } = useDraftForm({
+      formType: 'annexure',
+      methods:fm
+    });
+    const {
+      register,
+      watch,
+      setValue,
+      formState: { errors },
+      handleSubmit,
+      control,
+    } = form;
   const annexureForm = watch();
 
   let invoiceData = JSON.parse(localStorage.getItem("invoiceData2")|| "{}");

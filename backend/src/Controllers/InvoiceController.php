@@ -3,6 +3,7 @@ namespace Shelby\OpenSwoole\Controllers;
 
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use Shelby\OpenSwoole\Models\Draft;
 use Shelby\OpenSwoole\Models\ExporterDropdown;
 use Shelby\OpenSwoole\Models\Invoice;
 use Shelby\OpenSwoole\Models\ExporterDetails;
@@ -414,6 +415,16 @@ class InvoiceController
 
                 return $invoice;
             });
+            // get all draft 
+           $drafts = Draft::select('id', 'data', 'last_page', 'updated_at')
+    ->whereNotNull('data')
+    ->whereRaw("TRIM(data) != ''")
+    ->get()
+    ->each(function ($draft) {
+        $draft->data = json_decode($draft->data, true);
+        return $draft;
+    });
+
             // Apply limit if provided
             // Build response
             $responseData = [
@@ -424,6 +435,7 @@ class InvoiceController
                     'productCount' => $productCount
                 ],
                 'invoices' => $invoicesWithProducts,
+                'drafts' => $drafts
 
             ];
 
@@ -697,7 +709,64 @@ class InvoiceController
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
     }
+    // delete all 
+    // DELETE all invoices and related data
+    public function deleteAllInvoices(Request $request, Response $response)
+    {
+        try {
+            // Start transaction
+            DB::beginTransaction();
 
+            // Fetch all invoices
+            $invoices = Invoice::all();
+            if ($invoices->isEmpty()) {
+                DB::rollBack();
+                $response->getBody()->write(json_encode(['message' => 'No invoices found']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            }
+
+            foreach ($invoices as $invoice) {
+                // Delete related records
+                ExporterDetails::destroy($invoice->exporter_id);
+                BuyerDetails::destroy($invoice->buyer_id);
+
+                $productDetails = ProductDetails::find($invoice->product_id);
+                if ($productDetails) {
+                    $productIds = json_decode($productDetails->product_ids, true);
+                    $containerIds = json_decode($productDetails->container_ids, true);
+
+                    ProductLists::destroy($productIds);
+                    ContainerInformation::destroy($containerIds);
+                    $productDetails->delete();
+                }
+
+                SupplierDetails::destroy($invoice->supplier_id);
+                ShippingDetail::destroy($invoice->shipping_id);
+                PackageInformation::destroy($invoice->package_id);
+                Vgm::destroy($invoice->vgm_id);
+                Annexure::destroy($invoice->annexure_id);
+                // VgmContainer::whereIn('id', json_decode($invoice->vgm->containers_id, true))->delete();
+                // Finally, delete the invoice
+                $invoice->delete();
+            }
+
+            // Commit transaction
+            DB::commit();
+
+            $response->getBody()->write(json_encode(['message' => 'All invoices and related data deleted successfully']));
+            return $response->withHeader('Content-Type', 'application/json');
+
+        } catch (\Exception $e) {
+            // Rollback transaction on error
+            DB::rollBack();
+
+            $response->getBody()->write(json_encode([
+                'error' => 'Failed to delete all invoices',
+                'message' => $e->getMessage()
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
     // DELETE invoice and related data
     public function deleteInvoice(Request $request, Response $response, $args)
     {
@@ -721,7 +790,7 @@ class InvoiceController
                 $productIds = json_decode($productDetails->product_ids, true);
                 $containerIds = json_decode($productDetails->container_ids, true);
 
-                ProductList::destroy($productIds);
+                ProductLists::destroy($productIds);
                 ContainerInformation::destroy($containerIds);
                 $productDetails->delete();
             }

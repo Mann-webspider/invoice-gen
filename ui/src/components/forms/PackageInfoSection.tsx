@@ -8,7 +8,7 @@ import React, { useEffect } from "react";
 import { useForm } from "@/context/FormContext";
 import api from "@/lib/axios";
 
-import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
+import { Controller, useForm as rhf, UseFormReturn,useFormContext } from "react-hook-form";
 interface Supplier {
   id: string;
   name: string;
@@ -61,7 +61,7 @@ const PackageInfoSection = ({
     setValue,
     watch,
     formState: { errors },
-  } = form;
+  } = useFormContext();
   const packageForm = watch("package");
   // const productForm = watch("products");
 

@@ -83,12 +83,12 @@ const buildUrl = (endpoint: string) => `${BASE_URL}${endpoint.startsWith('/') ? 
 
 // API endpoints for invoices
 export const  invoiceApi = {
-  getAll: async (): Promise<Invoice[]> => {
+  getAll: async (): Promise<any> => {
     try {
       const data = await api.get(buildUrl('/invoice'));
       // Data received - handled silently
       
-      return data.invoices || [];
+      return {invoices:data.invoices || [],drafts:data.drafts || []};
     } catch (error) {
       // Error fetching invoices - handled silently
       return [];

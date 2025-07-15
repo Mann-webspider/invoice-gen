@@ -26,7 +26,7 @@ export const Sidebar = () => {
     // Silent error handling for logout functionality
     try {
       // Clear any stored session/user data
-      let res = await api.post("/logout",{})
+      let res = await api.post("/auth/logout",{})
       localStorage.removeItem('authToken');
       // You can add redirect to login page or other logout logic here
       window.location.href = '/login';

@@ -15,7 +15,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useForm } from "@/context/FormContext";
 import { useEffect } from "react";
-import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
+import { Controller, useForm as rhf, UseFormReturn,useFormContext } from "react-hook-form";
 import { Textarea } from "../ui/textarea";
 import { useState } from "react";
 import { useRef } from "react";
@@ -37,7 +37,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
     setValue,
     watch,
     formState: { errors },
-  } = form;
+  } = useFormContext();
   const buyerForm = watch("buyer");
   // useEffect(() => {
   //   const subscribe = watch((value) => {

@@ -295,7 +295,8 @@ import { saveAs } from "file-saver";
   });
 
   const blob = await Packer.toBlob(doc);
-  saveAs(blob, "shipping_details.docx");
+  // saveAs(blob, "shipping_details.docx");
+  return blob
 }
 
 // Utility for bold style

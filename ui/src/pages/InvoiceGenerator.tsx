@@ -72,7 +72,8 @@ import PackageInfoSection from "@/components/forms/PackageInfoSection";
 import ProductInformation from "@/components/forms/ProductInfomation";
 import { useForm } from "@/context/FormContext";
 import api from "@/lib/axios";
-import { Controller, useForm as rhf } from "react-hook-form";
+import { Controller, useForm as rhf,FormProvider,useFormContext  } from "react-hook-form";
+import { useDraftForm } from "@/hooks/useDraftForm";
 
 // Check if invoice data exists in local storage
 const invoiceData = localStorage.getItem("invoiceData");
@@ -165,7 +166,7 @@ function numberToWords(num: number) {
   return result.join(" ") + " ONLY";
 }
 
-const InvoiceGenerator = () => {
+const InvoiceGenerator = ({form:methods}) => {
   const navigate = useNavigate(); // Use useNavigate from react-router-dom
   const { formData, setInvoiceData } = useForm();
 
@@ -175,108 +176,11 @@ const InvoiceGenerator = () => {
 
   const [taxOptionDialogOpen, setTaxOptionDialogOpen] = useState(false);
 
-  const form = rhf({
-    invoice_number: "",
-    exporter: {
-      id: "",
-      company_name: "",
-      company_address: "",
-      contact_number: "",
-      email: "",
-      tax_id: "",
-      ie_code: "",
-      pan_number: "",
-      gstin_number: "",
-      state_code: "",
-      authorized_name: "",
-      authorized_designation: "",
-      company_prefix: "",
-      last_invoice_number: 0,
-      invoice_year: "",
-      letterhead_top_image: "",
-      letterhead_bottom_image: "",
-      stamp_image: "",
-      next_invoice_number: "",
-    },
-    invoice_date: "",
-    buyer: {
-      buyer_order_no: "",
-      po_no: "",
-      consignee: "",
-      notify_party: "",
-      buyer_order_date: "",
-    },
-    shipping: {
-      pre_carriage_by: "",
-      vessel_flight_no: "",
-      country_of_origin: "",
-      origin_details: "",
-      terms_of_delivery: "",
-      payment: "",
-      place_of_receipt: "",
-      place_of_loading: "",
-      place_of_discharge: "",
-      final_destination: "",
-      country_of_final_destination: "",
-      shipping_method: "",
-    },
-    currency_rate: 0,
-    currancy_type: "",
-    products: {
-      nos: "",
-      marks: "",
-      rightValue: "",
-      leftValue: "",
-      insurance: 0,
-      freight: 0,
-      product_list: [
-        {
-          category_id: "",
-          category_name: "",
-          product_name: "",
-          size: "",
-          quantity: 0,
-          sqm: 0,
-          total_sqm: 0,
-          price: 0,
-          unit: "",
-          total: 0,
-          net_weight: 0,
-          gross_weight: 0,
-        },
-      ],
-      total_price: 0,
-      containers: [],
-    },
-    package: {
-      no_of_packages: "",
-      no_of_sqm: "",
-      gross_weight: "",
-      net_weight: "",
-      gst_circular: "",
-      arn_no: "",
-      lut_date: "",
-      total_fob: "",
-      amount_in_words: "",
-      gst_amount: 0,
-      taxable_value: 0,
-    },
-    invoice: {
-      integrated_tax: "",
-      product_type: "",
-    },
-    integrated_tax_option: "",
-    payment_terms: "",
-    product_type: "",
-    suppliers: [
-      {
-        tax_invoice_number: "",
-        date: "",
-        name: "",
-        gstin_number: "",
-      },
-    ],
-  });
+  
+  const { methods:form, handleSubmit, isReady,hydrated } = useDraftForm({
+  formType: 'invoice',
+  methods
+});
 
   // Invoice Header
   const [invoiceNo, setInvoiceNo] = useState<string>("");
@@ -647,7 +551,7 @@ const InvoiceGenerator = () => {
   const handleNext = (data) => {
     // Track if any validation errors occurred
     
-    console.log(data);
+    // console.log(data);
     localStorage.setItem(`invoiceData2`, JSON.stringify(data));
 
     //Prepare supplier data for WITHOUT PAYMENT OF INTEGRATED TAX option
@@ -715,7 +619,7 @@ const InvoiceGenerator = () => {
       },
       supplier: supplierData,
       sections: sections,
-      markNumber: markNumber,
+      markNumbeformData2r: markNumber,
     };
 
     // Update the form context with the complete invoice data
@@ -900,7 +804,9 @@ const InvoiceGenerator = () => {
               </p>
             </CardHeader>
           </Card>
+          <FormProvider {...form}>
 
+          
           {/* Exporter Information */}
           <ExporterInfo
             exporters={exporters}
@@ -972,6 +878,7 @@ const InvoiceGenerator = () => {
             productType={productType}
             sizeToSqmMap={sizeToSqmMap}
             form={form}
+            hydrated={hydrated}
           />
 
           {/* Package Information */}
@@ -1008,6 +915,7 @@ const InvoiceGenerator = () => {
               </Button>
             </CardFooter>
           </Card>
+          </FormProvider>
         </div>
 
         {/* Dialogs */}
@@ -1177,6 +1085,7 @@ const InvoiceGenerator = () => {
             </div>
           </DialogContent>
         </Dialog>
+        
       </div>
     </div>
   );

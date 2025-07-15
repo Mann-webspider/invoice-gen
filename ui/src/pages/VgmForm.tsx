@@ -40,7 +40,10 @@ import { generateInvoiceExcel } from "@/lib/excelGenerator";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { generateInvoigenerateDocxceExcel } from "@/lib/wordGenerator";
-import { useForm as rhf, Controller } from "react-hook-form";
+import { useForm as rhf, Controller ,useFormContext} from "react-hook-form";
+import { useDraftForm } from "@/hooks/useDraftForm";
+import ProgressQueue, { ProcessItem } from '@/components/ProcessQueue';
+
 // Handle date-fns import with proper TypeScript handling
 let format: (date: Date | number, format: string) => string = (date, fmt) =>
   new Date(date).toLocaleDateString();
@@ -105,6 +108,7 @@ interface VgmFormProps {
     containerRows: any[];
     totalPalletCount: string;
   };
+  form?:any;
   invoiceHeader?: {
     invoiceNo: string;
     invoiceDate: Date;
@@ -182,10 +186,15 @@ interface FormContextType {
 // Comment: We're using useState without explicit type annotations to avoid TypeScript errors
 // TypeScript will infer the types from the initial values
 
-const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
+const VgmForm = ({ onBack, containerInfo, invoiceHeader ,form:fm}: VgmFormProps) => {
   // State for form data
   const { formData, setVGMData, ensureFormDataFromLocalStorage } =
     useForm() as FormContextType;
+
+     const { methods:form, isReady,hydrated } = useDraftForm({
+          formType: 'vgm',
+          methods:fm
+        });
   const {
     register,
     watch,
@@ -193,10 +202,19 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
     formState: { errors },
     handleSubmit,
     control,
-  } = rhf();
+  } = form;
+
+
   const vgnForm = watch();
   let invoiceData = JSON.parse(localStorage.getItem("invoiceData2") || "null");
   const navigate = useNavigate();
+
+// progress model 
+const [isProgressOpen, setIsProgressOpen] = useState(false);
+  const [processes, setProcesses] = useState<ProcessItem[]>([
+    
+  ]);
+
   useEffect(() => {
     const subscribe = watch((data) => {
       // Save the form data to localStorage whenever it changes
@@ -499,36 +517,64 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
     // Save to localStorage
     saveFieldToLocalStorage("tareWeights", newTareWeights);
   };
-
-  const handleFiles = async (data: any) => {
-    // handle file generate by using this data and use functions like generateInvoiceExcel, generateInvoigenerateDocxceExcel to generate excel and word file then after generate this excel file and then send a apipost call to backend with filesapi.uploadPdf(excelFile)
-    try {
-      // Generate Excel file
-      const {allBuffers:excelBlob, fileName:excelFileName} = await generateInvoiceExcel(data);
-      
-      
-      const docxFile = await generateInvoigenerateDocxceExcel(data);
-      // Upload the generated Excel file
-      // excelFile return void change it the excel file is downloaded automatically in broswer and save it to machine
-     
-      const response = await filesApi.uploadMultipleExcelAndDownloadPDFs(excelBlob,data.invoice_number);
-      console.log(response);
-      
-      if (response.status === 200) {
-       
-
-     
-        toast.success("Excel file uploaded successfully");
-      } else {
-        toast.error("Failed to upload Excel file");
-      }
-    } catch (error) {
-      console.error("Error generating or uploading Excel file:", error);
-      toast.error(
-        "An error occurred while generating or uploading the Excel file"
-      );
-    }
+  const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
+    setProcesses(prev => prev.map(p => (p.id === id ? { ...p, status } : p)));
   };
+  const updateProcess = (id: string, status: ProcessItem["status"]) => {
+  setProcesses((prev) =>
+    prev.map((p) => (p.id === id ? { ...p, status } : p))
+  );
+  
+};
+  const handleFiles = async (data: any) => {
+  try {
+    // Generate Excel and Docx
+    const { allBuffers: excelBlobs, fileName: excelFileName } = await generateInvoiceExcel(data);
+    const docxFile = await generateInvoigenerateDocxceExcel(data);
+
+    let resDoc = await filesApi.uploadDoc(docxFile, data.invoice_number);
+    if (resDoc) {
+      console.log("Document uploaded successfully:", resDoc);
+    }
+    // Create process list for queue
+    const newProcesses: ProcessItem[] = excelBlobs.map((file: any, index: number) => ({
+      id: `${index + 1}`,
+      title: `${file.fileName || 'Excel file'} Upload`,
+      status: 'pending',
+      description: `Uploading ${file.fileName || 'Excel file'}`
+    }));
+
+    setProcesses(()=>newProcesses);
+    setIsProgressOpen(true);
+
+    const results: any[] = [];
+
+    for (let i = 0; i < excelBlobs.length; i++) {
+      const id = `${i + 1}`;
+      const { buffer, fileName } = excelBlobs[i];
+      // Set process to running
+       handleProcessUpdate(`${i+1}`, "running");
+      
+       try {
+        const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number);
+
+        // 👇 Mark as completed
+        handleProcessUpdate(`${i+1}`, "completed");
+      } catch (err) {
+        // 👇 Mark as failed
+        handleProcessUpdate(`${i+1}`, "failed");
+        console.error(`${fileName} upload failed:`, err);
+      }
+    }
+
+    toast.success("Upload complete");
+    console.log("Upload results:", results);
+  } catch (error) {
+    console.error("Error generating or uploading files:", error);
+    toast.error("An error occurred during file processing");
+  }
+};
+
   const handleSave = async (data) => {
     try {
       localStorage.setItem("taxDialogBox", "false");
@@ -613,570 +659,7 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
     }
   };
 
-  // Function to collect all form data from localStorage
-  const collectFormDataFromLocalStorage = () => {
-    try {
-      // Get the current form ID
-      const formId = currentFormId;
-
-      // Get the full form data first to ensure we have everything
-      const fullFormData = localStorage.getItem(`form_${formId}`);
-      let parsedFullForm = {};
-      if (fullFormData) {
-        parsedFullForm = JSON.parse(fullFormData);
-      }
-
-      // Collect all form sections from localStorage
-      // First try to get from section-specific storage, then fall back to full form data
-      let invoice = loadFormSection(formId, "invoiceData2");
-      let packagingList = loadFormSection(formId, "packagingList");
-      let annexure = loadFormSection(formId, "annexureData2");
-      let vgm = loadFormSection(formId, "vgm");
-
-      // If invoice is null but exists in parsedFullForm, use that
-      if (
-        !invoice &&
-        parsedFullForm &&
-        typeof parsedFullForm === "object" &&
-        "invoice" in parsedFullForm
-      ) {
-        invoice = parsedFullForm.invoice;
-        // Also save it to section-specific storage for future use
-        typedSaveFormSection(formId, "invoice", invoice);
-      }
-
-      // Same for other sections
-      if (
-        !packagingList &&
-        parsedFullForm &&
-        typeof parsedFullForm === "object" &&
-        "packagingList" in parsedFullForm
-      ) {
-        packagingList = parsedFullForm.packagingList;
-        typedSaveFormSection(formId, "packagingList", packagingList);
-      }
-
-      if (
-        !annexure &&
-        parsedFullForm &&
-        typeof parsedFullForm === "object" &&
-        "annexure" in parsedFullForm
-      ) {
-        annexure = parsedFullForm.annexure;
-        typedSaveFormSection(formId, "annexure", annexure);
-      }
-
-      if (
-        !vgm &&
-        parsedFullForm &&
-        typeof parsedFullForm === "object" &&
-        "vgm" in parsedFullForm
-      ) {
-        vgm = parsedFullForm.vgm;
-        typedSaveFormSection(formId, "vgm", vgm);
-      }
-
-      // Create a comprehensive invoice structure if it doesn't exist or is empty
-      if (!invoice || Object.keys(invoice).length === 0) {
-        // Get data from other sections to populate invoice
-        const manufacturerName = annexure?.selected_manufacturer?.name || "";
-        const manufacturerAddress =
-          annexure?.selected_manufacturer?.address || "";
-        const gstinNumber = annexure?.selected_manufacturer?.gstin_number || "";
-        const currentDate = new Date();
-        const formattedDate = `${currentDate
-          .getDate()
-          .toString()
-          .padStart(2, "0")}/${(currentDate.getMonth() + 1)
-          .toString()
-          .padStart(2, "0")}/${currentDate.getFullYear()}`;
-
-        // Create a comprehensive invoice structure with data from other sections
-        invoice = {
-          package: {
-            no_of_packages: "14000 BOX",
-            gross_weight: "250000.00",
-            net_weight: "241236.00",
-            gst_circular:
-              "As per Circular No. 123/45/2025-GST dated 05-05-2025, supply of packing material with industrial goods shall be treated as a composite supply, taxed at the rate applicable to the principal supply.",
-            integrated_tax_option: "WITH",
-            arn_no: "AA240505005678W",
-            lut_date: "08/05/2025",
-            total_fob: 20000,
-            amount_in_words: "TWENTY THOUSAND ONLY",
-            payment_terms: "FOB",
-            selected_currency: "USD",
-            total_sqm: 2880,
-            taxable_value: 1779000,
-            gst_amount: 320220,
-          },
-          integrated_tax: "WITH",
-          payment_term: "FOB",
-          product_type: "Tiles",
-          invoice_number: "INV/025/2025",
-          invoice_date: "08/05/2025",
-          exporter: {
-            id: selectedShipper?.id || "9f08c509-d7c9-4c91-8465-8ae92116361c",
-            company_name:
-              selectedShipper?.company_name || "SkyPort Global Exports",
-            company_address:
-              selectedShipper?.company_address ||
-              "89 Cargo Complex, Ahmedabad, Gujarat, India",
-            contact_number:
-              selectedShipper?.contact_number ||
-              contactDetails ||
-              "+91-9123456780",
-            email: selectedShipper?.email || "support@skyportglobal.com",
-            tax_id: selectedShipper?.tax_id || "TAX3456789",
-            ie_code: selectedShipper?.ie_code || "IEC5678901234",
-            pan_number: selectedShipper?.pan_number || "LMNOP6789Z",
-            gstin_number: selectedShipper?.gstin_number || "24LMNOP6789Z1Z2",
-            state_code: selectedShipper?.state_code || "24",
-            authorized_name:
-              selectedShipper?.authorized_name ||
-              authorizedPerson ||
-              "Amit Doshi",
-            authorized_designation:
-              selectedShipper?.authorized_designation || "Logistics Head",
-            company_prefix: selectedShipper?.company_prefix || "SGE",
-            last_invoice_number: 0,
-            invoice_year: new Date().getFullYear().toString(),
-            letterhead_top_image:
-              "/upload/header/9f08c509-d7c9-4c91-8465-8ae92116361c",
-            letterhead_bottom_image:
-              "/upload/footer/9f08c509-d7c9-4c91-8465-8ae92116361c",
-            stamp_image:
-              "/upload/signature/9f08c509-d7c9-4c91-8465-8ae92116361c",
-            next_invoice_number: `SGE/0001/${new Date().getFullYear()}`,
-          },
-          buyer: {
-            buyer_order_no: bookingNumbers[0] || "2587493266",
-            buyer_order_date: formattedDate,
-            po_no: "linvifnvpin",
-            consignee: "mmmmm",
-            notify_party: ",,,,,,,mmmmmmmmm",
-          },
-          currency_type: "USD",
-          currency_rate: 88.95,
-          shipping: {
-            pre_carriage_by: "Truck",
-            shipping_method: "SHIPPING - THROUGH SEA",
-            place_of_receipt: "KUTCH",
-            port_of_loading: "KUTCH",
-            port_of_discharge: "MUNDRA",
-            final_destination: "USA",
-            country_of_origin: "INDIA",
-            origin_details: "DISTRICT MORBI, STATE GUJARAT",
-            country_of_final_destination: "USA",
-            terms_of_delivery: "FOB AT KUTCH",
-            payment: "dd",
-            vessel_flight_no: "GJ 04 CJ 1542",
-          },
-          products: {
-            marks: "10 X 20 ft",
-            nos: "FCL",
-            frieght: 0,
-            insurance: 0,
-            total_price: 20000,
-            product_list: [
-              {
-                category_id: "",
-                category_name: "Glazed porcelain Floor Tiles",
-                hsn_code: 6254100,
-                product_name: "mkkmm",
-                size: "600 X 1200",
-                quantity: 1000,
-                sqm: 1.44,
-                total_sqm: 1440,
-                price: 10,
-                unit: "Box",
-                total: 10000,
-                net_weight: 0,
-                gross_weight: 0,
-              },
-              {
-                category_id: "1746652161923",
-                category_name: "Polished Vitrified Tiles",
-                hsn_code: 6254400,
-                product_name: "siwsvniwv",
-                size: "600 X 1200",
-                quantity: 1000,
-                sqm: 1.44,
-                total_sqm: 1440,
-                price: 10,
-                unit: "Box",
-                total: 10000,
-                net_weight: 0,
-                gross_weight: 0,
-              },
-            ],
-            containers: [
-              {
-                id: "1",
-                container_no: "ehbvaebv",
-                line_seal_no: "lkebveb",
-                rfid_seal: ";jkrnsb",
-                design_no: "kajdvd",
-                quantity: 100,
-                net_weight: "241236",
-                gross_weight: "250000",
-              },
-            ],
-          },
-        };
-
-        // Save the created invoice to localStorage
-        typedSaveFormSection(formId, "invoice", invoice);
-      }
-
-      // Make sure VGM data is up-to-date by getting the latest from the form state
-      // and ensuring it's saved to localStorage before collecting
-      const vgmData = {
-        // Shipper information
-        shipper_name: selectedShipper?.company_name || "",
-        shipper_address: selectedShipper?.company_address || "",
-        ie_code: selectedShipper?.ie_code || "",
-        authorized_name: selectedShipper?.authorized_name || authorizedPerson,
-        authorized_contact: selectedShipper?.contact_number || contactDetails,
-
-        // Container information
-        container_number: containerNumber,
-        container_size: containerSize,
-        permissible_weight: "AS PER ANNEXURE",
-
-        // Registration and certification
-        weighbridge_registration: weighBridgeNo,
-        verified_gross_mass: verifiedGrossMass,
-        unit_of_measurement: unitOfMeasure,
-        dt_weighing: `${weighingDate} ${weighingTime}`,
-        weighing_slip_no: weighingSlipNo,
-        type: containerType,
-        IMDG_class: hazardousClass,
-
-        // Additional fields that need to be saved
-        shipperRegistration: shipperRegistration,
-        shipperOfficial: shipperOfficial,
-        contactDetails: contactDetails,
-        weighingDate: weighingDate,
-        weighingTime: weighingTime,
-        weighingLocation: weighingLocation,
-        weighingMethod: weighingMethod,
-        authorizedPerson: authorizedPerson,
-        signatureImage: signatureImage,
-        selectedExporter: selectedExporter,
-        selectedShipperName: selectedShipperName,
-
-        // Arrays for container data
-        bookingNumbers: bookingNumbers,
-        containerNumbers: containerNumbers,
-        sealNumbers: sealNumbers,
-        tareWeights: tareWeights,
-        cargoWeights: cargoWeights,
-        totalWeights: totalWeights,
-
-        // Container details mapped from containerInfo
-        containers:
-          containerData?.map((row, index) => {
-            // Get the gross weight from the container row
-            const grossWeight = row.gross_weight || "0.00";
-            // Get the tare weight from the tareWeights array or use a default
-            const tareWeight = tareWeights[index] || "0";
-            // Calculate the total VGM using our improved function
-            const totalVgm = calculateTotalVGM(grossWeight, tareWeight);
-
-            return {
-              booking_no: bookingNumbers[index] || "",
-              container_no: row.containerNo || "",
-              gross_weight: grossWeight,
-              tare_weight: tareWeight,
-              total_vgm: totalVgm,
-            };
-          }) || [],
-      };
-
-      // Save the latest VGM data to localStorage
-      typedSaveFormSection(formId, "vgm", vgmData);
-
-      // Ensure invoice data is never empty
-      if (!invoice || Object.keys(invoice).length === 0) {
-        console.warn(
-          "Invoice data is empty in final form submission, this should not happen"
-        );
-      }
-
-      // Create the final form data structure with all required fields
-      const finalFormData: {
-        invoice: any;
-        packagingList: any;
-        annexure: any;
-        vgm: any;
-        fullForm: any;
-        status: string;
-        lastSaved: string;
-        temp_form: string;
-      } = {
-        invoice: invoice || {},
-        packagingList: packagingList || {},
-        annexure: annexure || {},
-        vgm: vgm || {},
-        fullForm: parsedFullForm,
-        status: "draft",
-        lastSaved: new Date().toISOString(),
-        temp_form: "draft", // Add temp_form property to fix TypeScript error
-      };
-
-      // Final check to ensure all sections match the reference format
-      // Create a comprehensive invoice structure exactly matching the reference format
-      finalFormData.invoice = {
-        package: {
-          no_of_packages: "14000 BOX",
-          gross_weight: "250000.00",
-          net_weight: "241236.00",
-          gst_circular:
-            "As per Circular No. 123/45/2025-GST dated 05-05-2025, supply of packing material with industrial goods shall be treated as a composite supply, taxed at the rate applicable to the principal supply.",
-          integrated_tax_option: "WITH",
-          arn_no: "AA240505005678W",
-          lut_date: "08/05/2025",
-          total_fob: 20000,
-          amount_in_words: "TWENTY THOUSAND ONLY",
-          payment_terms: "FOB",
-          selected_currency: "USD",
-          total_sqm: 2880,
-          taxable_value: 1779000,
-          gst_amount: 320220,
-        },
-        integrated_tax: "WITH",
-        payment_term: "FOB",
-        product_type: "Tiles",
-        invoice_number: "INV/025/2025",
-        invoice_date: "08/05/2025",
-        exporter: {
-          id: "9f08c509-d7c9-4c91-8465-8ae92116361c",
-          company_name: "SkyPort Global Exports",
-          company_address: "89 Cargo Complex, Ahmedabad, Gujarat, India",
-          contact_number: "+91-9123456780",
-          email: "support@skyportglobal.com",
-          tax_id: "TAX3456789",
-          ie_code: "IEC5678901234",
-          pan_number: "LMNOP6789Z",
-          gstin_number: "24LMNOP6789Z1Z2",
-          state_code: "24",
-          authorized_name: "Amit Doshi",
-          authorized_designation: "Logistics Head",
-          company_prefix: "SGE",
-          last_invoice_number: 0,
-          invoice_year: "2025",
-          letterhead_top_image:
-            "/upload/header/9f08c509-d7c9-4c91-8465-8ae92116361c",
-          letterhead_bottom_image:
-            "/upload/footer/9f08c509-d7c9-4c91-8465-8ae92116361c",
-          stamp_image: "/upload/signature/9f08c509-d7c9-4c91-8465-8ae92116361c",
-          next_invoice_number: "SGE/0001/2025",
-        },
-        buyer: {
-          buyer_order_no: "2587493266",
-          buyer_order_date: "08/05/2025",
-          po_no: "linvifnvpin",
-          consignee: "mmmmm",
-          notify_party: ",,,,,,,mmmmmmmmm",
-        },
-        currency_type: "USD",
-        currency_rate: 88.95,
-        shipping: {
-          pre_carriage_by: "Truck",
-          shipping_method: "SHIPPING - THROUGH SEA",
-          place_of_receipt: "KUTCH",
-          port_of_loading: "KUTCH",
-          port_of_discharge: "MUNDRA",
-          final_destination: "USA",
-          country_of_origin: "INDIA",
-          origin_details: "DISTRICT MORBI, STATE GUJARAT",
-          country_of_final_destination: "USA",
-          terms_of_delivery: "FOB AT KUTCH",
-          payment: "dd",
-          vessel_flight_no: "GJ 04 CJ 1542",
-        },
-        products: {
-          marks: "10 X 20 ft",
-          nos: "FCL",
-          frieght: 0,
-          insurance: 0,
-          total_price: 20000,
-          product_list: [
-            {
-              category_id: "",
-              category_name: "Glazed porcelain Floor Tiles",
-              hsn_code: 6254100,
-              product_name: "mkkmm",
-              size: "600 X 1200",
-              quantity: 1000,
-              sqm: 1.44,
-              total_sqm: 1440,
-              price: 10,
-              unit: "Box",
-              total: 10000,
-              net_weight: 0,
-              gross_weight: 0,
-            },
-            {
-              category_id: "1746652161923",
-              category_name: "Polished Vitrified Tiles",
-              hsn_code: 6254400,
-              product_name: "siwsvniwv",
-              size: "600 X 1200",
-              quantity: 1000,
-              sqm: 1.44,
-              total_sqm: 1440,
-              price: 10,
-              unit: "Box",
-              total: 10000,
-              net_weight: 0,
-              gross_weight: 0,
-            },
-          ],
-          containers: [
-            {
-              id: "1",
-              container_no: "ehbvaebv",
-              line_seal_no: "lkebveb",
-              rfid_seal: ";jkrnsb",
-              design_no: "kajdvd",
-              quantity: 100,
-              net_weight: "241236",
-              gross_weight: "250000",
-            },
-          ],
-        },
-      };
-
-      // Update packagingList to match reference format
-      finalFormData.packagingList = {
-        containerRows: [
-          {
-            id: "1",
-            container_no: "ehbvaebv",
-            line_seal_no: "lkebveb",
-            rfid_seal: ";jkrnsb",
-            design_no: "kajdvd",
-            quantity: 100,
-            net_weight: "241236",
-            gross_weight: "250000",
-          },
-        ],
-        totalPalletCount: "000",
-        sections: [
-          {
-            id: "1",
-            title: "Glazed porcelain Floor Tiles",
-            items: [],
-          },
-          {
-            id: "2",
-            title: "Glazed Ceramic Wall tiles",
-            items: [],
-          },
-        ],
-        markNumber: "10X20 FCLLCL",
-      };
-
-      // Update annexure to match reference format
-      finalFormData.annexure = {
-        range: "MORBI",
-        division: "MORBI II",
-        commissionerate: "RAJKOT",
-        exam_date: "08.05.2025",
-        invoice_date: "08.05.2025",
-        net_weight: "241236",
-        gross_weight: "250000",
-        total_packages: "100",
-        officer_designation1: "SELF SEALING",
-        officer_designation2: "SELF SEALING",
-        selected_manufacturer: {
-          name: "Shree Components Ltd.",
-          address: "Plot No. 21, Industrial Estate, Rajkot, Gujarat, India",
-          gstin_number: "24SHRCM1234X1Z1",
-          permission: "Valid for export",
-        },
-        lut_date: "27/03/2024",
-        location_code: "365",
-        question9c: "N/A",
-        question9a: "YES",
-        question9b: "NO",
-        non_containerized: "SELF SEALING",
-        containerized: "SELF SEALING",
-      };
-
-      // Update vgm to match reference format with all required fields
-      finalFormData.vgm = {
-        shipper_name: "SkyPort Global Exports",
-        shipper_address: "89 Cargo Complex, Ahmedabad, Gujarat, India",
-        ie_code: "IEC5678901234",
-        authorized_name: "Amit Doshi",
-        authorized_contact: "+91-9123456780",
-        container_number: "AS PER ANNEXURE",
-        container_size: "20'",
-        permissible_weight: "AS PER ANNEXURE",
-        weighbridge_registration: "AS PER ANNEXURE",
-        verified_gross_mass: "method-1",
-        unit_of_measurement: "KG",
-        dt_weighing: "08.05.2025 02:39",
-        weighing_slip_no: "AS PER ANNEXURE",
-        type: "NORMAL",
-        IMDG_class: "NA",
-        // Additional fields required by the type
-        shipperRegistration: "IEC5678901234",
-        shipperOfficial: "Amit Doshi",
-        contactDetails: "+91-9123456780",
-        weighingDate: "08.05.2025",
-        weighingTime: "02:39",
-        weighingLocation: "MORBI",
-        weighingMethod: "method-1",
-        authorizedPerson: "Amit Doshi",
-        signatureImage:
-          "/upload/signature/9f08c509-d7c9-4c91-8465-8ae92116361c",
-        selectedExporter: "SkyPort Global Exports",
-        selectedShipperName: "SkyPort Global Exports",
-        bookingNumbers: ["EI*"],
-        containerNumbers: ["ehbvaebv"],
-        sealNumbers: ["lkebveb"],
-        tareWeights: ["2180"],
-        cargoWeights: ["250000"],
-        totalWeights: ["252180.00"],
-        containers: [
-          {
-            booking_no: "EI*",
-            container_no: "ehbvaebv",
-            gross_weight: "250000",
-            tare_weight: "2180",
-            total_vgm: "252180.00",
-          },
-        ],
-      };
-
-      // Add status, lastSaved, and temp_form to match reference format
-      finalFormData.status = "draft";
-      finalFormData.lastSaved = "2025-05-07T21:10:01.129Z";
-      finalFormData.temp_form = "draft";
-
-      // Create a copy of the data for fullForm instead of creating a circular reference
-      // This prevents the "Maximum call stack size exceeded" error
-      finalFormData.fullForm = {
-        invoice: finalFormData.invoice,
-        packagingList: finalFormData.packagingList,
-        annexure: finalFormData.annexure,
-        vgm: finalFormData.vgm,
-        status: finalFormData.status,
-        lastSaved: finalFormData.lastSaved,
-        temp_form: finalFormData.temp_form,
-      };
-
-      return finalFormData;
-    } catch (error) {
-      console.error("Error collecting form data from localStorage:", error);
-      toast.error("Error collecting form data");
-      return {};
-    }
-  };
+ 
 
   // Function to clear localStorage after successful submission
   const clearLocalStorage = () => {
@@ -1323,6 +806,16 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader }: VgmFormProps) => {
 
   return (
     <div className="space-y-6">
+      {isProgressOpen?(<ProgressQueue
+  isOpen={isProgressOpen}
+  onClose={() => setIsProgressOpen(false)}
+  onDashboardNavigate={() => {
+    setIsProgressOpen(false);
+    navigate("/"); // or your custom action
+  }}
+  processes={processes}
+/>):<></>}
+      
       {/* Header */}
       <div className="bg-white p-6 shadow-sm border rounded-lg">
         <h1 className="text-3xl font-bold text-center mb-2">VGM</h1>

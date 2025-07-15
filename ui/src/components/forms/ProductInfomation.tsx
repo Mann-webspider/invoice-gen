@@ -18,15 +18,14 @@ import {
   TableBody,
   TableCell,
 } from "@/components/ui/table";
-import { ContainerDetails } from "@/components/forms/ContainerDetails";
-import { InsuranceFreightSection } from "@/components/forms/InsuranceFreightSection";
-import ProductInformationCard from "./ProductInformationCard";
+
 import MarksAndNumbers from "../MarksAndNumbers";
 import { useForm } from "@/context/FormContext";
 import { useEffect } from "react";
 import api from "@/lib/axios";
-import { set } from "date-fns";
-import { Controller, useForm as rhf, UseFormReturn } from "react-hook-form";
+
+import { Controller, useForm as rhf, UseFormReturn,useFormContext } from "react-hook-form";
+import { useRef } from "react";
 const ProductInformation = ({
   addNewSection,
 
@@ -59,16 +58,18 @@ const ProductInformation = ({
   productType,
   sizeToSqmMap,
   form,
+  hydrated, // Default to true for hydration
 }) => {
-  const { formData, setInvoiceData } = useForm();
+ 
   const {
     register,
     handleSubmit,
     control,
     setValue,
+    getValues,
     watch,
     formState: { errors },
-  } = form;
+  } = useFormContext();
 
   function getLastWordsCommaString(sections: Section[]): string {
     const lastWords = sections.map((section) => {
@@ -80,6 +81,44 @@ const ProductInformation = ({
 
     return uniqueWords.join(", ");
   }
+  function convertToSection(productArray) {
+  if (!Array.isArray(productArray)) productArray = [productArray];
+
+  const sectionMap = new Map();
+
+  for (const item of productArray) {
+    const sectionKey = item.category_id + "::" + item.category_name;
+
+    if (!sectionMap.has(sectionKey)) {
+      sectionMap.set(sectionKey, {
+        id: Date.now().toString(), // or use uuidv4()
+        title: item.category_name,
+        items: [],
+      });
+    }
+
+    sectionMap.get(sectionKey).items.push({
+      id: Date.now().toString(),
+      product: {
+        hsnCode: item.hsn_code,
+        description: item.product_name || "",
+        size: item.size,
+        sqmPerBox: item.sqm,
+        price: item.price,
+        netWeight: item.net_weight,
+        grossWeight: item.gross_weight,
+        marksAndNos: "1020 FCL",
+      },
+      quantity: item.quantity,
+      unitType: item.unit,
+      totalSQM: item.quantity * item.sqm,
+      totalFOB: item.quantity * item.price,
+    });
+  }
+
+  return Array.from(sectionMap.values());
+}
+
 
   useEffect(() => {
     const subscription = watch((allValues) => {
@@ -102,11 +141,13 @@ const ProductInformation = ({
       );
 
       // Only update if the product list has changed
-      const current = allValues?.products?.product_list || [];
+      // const current = allValues?.products?.product_list || [];
+      const current = getValues("products.product_list") || [];
 
       const isSame = JSON.stringify(current) === JSON.stringify(newProductList);
       let titleLastWords = getLastWordsCommaString(sections);
       if (!isSame) {
+        setValue("products.sections", sections);
         setValue("products.product_list", newProductList);
         setValue("products.total_price", totalFOBEuro);
         setValue("products.insurance", insuranceAmount);
@@ -116,7 +157,28 @@ const ProductInformation = ({
     });
 
     return () => subscription.unsubscribe();
-  }, [sections, setValue]);
+  }, [sections, setValue,watch]);
+  useEffect(() => {
+  register("products.product_list");
+  register("products.total_price");
+  register("products.insurance");
+  register("products.frieght");
+  register("products.goods");
+}, [register]);
+
+  const prevList = useRef<string>("");
+
+  useEffect(() => {
+  if (!hydrated) return;
+
+  const productList = getValues("products.product_list") || [];
+  console.log("Product list from getValues:", productList);
+  const current = JSON.stringify(productList);
+  if (productList.length > 0 && current !== prevList.current) {
+    prevList.current = current;
+    setSections(convertToSection(productList));
+  }
+}, [hydrated, getValues]);
 
   useEffect(() => {
     async function fetchCategory() {
@@ -178,6 +240,7 @@ const ProductInformation = ({
       setUnits(unit.unit_type.map((item) => item.value));
     };
     fetchData();
+    
   }, []);
 
  
@@ -236,6 +299,7 @@ const ProductInformation = ({
         </div>
 
         <div className="overflow-x-auto">
+          {JSON.stringify(sections)}
           {sections.map((section, sectionIndex) => (
             <div key={section.id} className="mb-6">
               <div className="flex items-center gap-4 mb-2">

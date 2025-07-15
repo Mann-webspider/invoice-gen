@@ -27,7 +27,7 @@ import {
 } from "@/components/ui/select";
 import { Plus, Save, Trash } from "lucide-react";
 import { Product, InvoiceItem, ProductSection } from "@/lib/types";
-import { Controller, useForm as rhf } from "react-hook-form";
+import { Controller, useForm as rhf , useFormContext,FormProvider} from "react-hook-form";
 import { parse, isValid, format } from "date-fns";
 import MarksAndNumbers from "@/components/MarksAndNumbers";
 import { useForm } from "@/context/FormContext";
@@ -48,6 +48,8 @@ import {
   getValueFromSection,
   saveFormSection,
 } from "@/lib/formDataUtils";
+import { get } from "http";
+import { useDraftForm } from "@/hooks/useDraftForm";
 
 // Update the props interface to receive data from InvoiceGenerator
 interface PackagingListProps {
@@ -55,6 +57,7 @@ interface PackagingListProps {
   importedSections?: ProductSection[];
   markNumber?: string;
   readOnly?: boolean;
+  form?:any;
   invoiceHeader?: {
     invoiceNo: string;
     invoice_number?: string; // Add this property to match what's being passed
@@ -99,23 +102,30 @@ const PackagingList = ({
   markNumber: initialMarkNumber,
   readOnly = false,
   invoiceHeader,
+  form:fm
   
 }: PackagingListProps) => {
+  const { methods:form, isReady,hydrated } = useDraftForm({
+   formType: 'pakingList',
+   methods:fm
+ });
   const {
     setInvoiceData,
     setPackagingListData,
     ensureFormDataFromLocalStorage,
   } = useForm();
-  const { register, watch, handleSubmit } = rhf();
+  const { register, watch, handleSubmit ,getValues} = form;
+  // console.log(getValues());
+  
   let formData = JSON.parse(localStorage.getItem("invoiceData2") || "null");
   // console.log("Form Data:", formData);
 
-  useEffect(() => {
-    const subscribe = watch((value) => {
-      console.log(value);
-    });
-    return () => subscribe.unsubscribe();
-  }, [watch]);
+  // useEffect(() => {
+  //   const subscribe = watch((value) => {
+  //     console.log(value);
+  //   });
+  //   return () => subscribe.unsubscribe();
+  // }, [watch]);
 
   // Add missing state variables
 
@@ -948,7 +958,7 @@ const PackagingList = ({
 
   function handleNext(data) {
     let finalData = updateInvoiceProducts(formData, data);
-    console.log(finalData);
+    // console.log(finalData);
     localStorage.setItem("invoiceData2", JSON.stringify(finalData));
 
     navigate("/annexure");
