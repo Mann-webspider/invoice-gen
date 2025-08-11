@@ -21,7 +21,7 @@ export interface Product {
   description: string;
   hsnCode: string;
   size: string;
-  price: number;
+  price: string;
   sqmPerBox: number;
   marksAndNos?: string;
   netWeight?: string;

@@ -13,7 +13,7 @@ class ProductDetails extends Model
     protected $fillable = [
         'marks',
         'nos',
-        'frieght',
+        'freight',
         'insurance',
         'total_pallet_count',
         'total_price',

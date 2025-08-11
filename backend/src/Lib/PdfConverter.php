@@ -5,7 +5,7 @@ require __DIR__ . '/../../vendor/autoload.php';
 
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-
+use PhpOffice\PhpSpreadsheet\Reader\Xlsx as XlsxReader;
 class PdfConverter
 {
     public static function changeInvoice($invoiceId)
@@ -90,17 +90,35 @@ class PdfConverter
             $normalizedPaths = array_map(function ($path) {
                 return str_replace(['/', '\\'], DIRECTORY_SEPARATOR, realpath($path));
             }, $filePaths);
-
+            // error_log("Normalised paths: " . json_encode($normalizedPaths));
             $normalisedOutputFilePath = realpath(dirname($outputPath)) . DIRECTORY_SEPARATOR . basename($outputPath);
+            // error_log("Normalised output file path: " . $normalisedOutputFilePath);
             $combined = new Spreadsheet();
             $combined->removeSheetByIndex(0); // Remove default sheet
 
+
+
+            
             foreach ($normalizedPaths as $filePath) {
+                 $reader = new XlsxReader();
+                    // Read data only – formulas are not evaluated, errors are ignored
+                    $reader->setReadDataOnly(true);
+
+                    // Optional: speed-up – don’t load charts, styles, etc.
+                    // $reader->setReadEmptyCells(false);
+                    // $reader->setIncludeCharts(false);
+
+                    try {
+                        $spreadsheet = $reader->load($filePath);
+                    } catch (\PhpOffice\PhpSpreadsheet\Reader\Exception $e) {
+                        error_log("❌ Could not load {$filePath}: " . $e->getMessage());
+                        continue;   // skip this file and carry on
+                    }
                 if (!file_exists($filePath)) {
                     error_log("❌ File missing: $filePath");
                     continue;
                 }
-
+                
                 $spreadsheet = IOFactory::load($filePath);
 
                 foreach ($spreadsheet->getAllSheets() as $sheet) {
@@ -113,8 +131,8 @@ class PdfConverter
                     // Optional: ensure sheet name is unique
 
                     $clonedSheet->setTitle($sheetName);
-
                     $combined->addExternalSheet($clonedSheet);
+                    
                 }
             }
 

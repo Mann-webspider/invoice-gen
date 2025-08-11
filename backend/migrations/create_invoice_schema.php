@@ -60,7 +60,7 @@ class CreateInvoiceSchema
             id TEXT PRIMARY KEY,
             marks INT,
             nos INT,
-            frieght INT,
+            freight INT,
             insurance INT,
             total_price INT,
             total_pallet_count INT,

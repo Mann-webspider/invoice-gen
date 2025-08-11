@@ -43,56 +43,56 @@ class InvoiceController
 
             // Create exporter record
             $exporter = ExporterDetails::create([
-                'company_name' => $data['exporter']['company_name'],
-                'company_address' => $data['exporter']['company_address'],
-                'email' => $data['exporter']['email'],
-                'contact_number' => $data['exporter']['contact_number'],
-                'authorized_name' => $data['exporter']['authorized_name'],
-                'authorized_designation' => $data['exporter']['authorized_designation'],
-                'tax_id' => $data['exporter']['tax_id'],
-                'ie_code' => $data['exporter']['ie_code'],
-                'pan_number' => $data['exporter']['pan_number'],
-                'gstin_number' => $data['exporter']['gstin_number'],
-                'state_code' => $data['exporter']['state_code']
+                'company_name' => $data['exporter']['company_name']?? "-",
+                'company_address' => $data['exporter']['company_address']?? "-",
+                'email' => $data['exporter']['email']?? "-",
+                'contact_number' => $data['exporter']['contact_number']?? "-",
+                'authorized_name' => $data['exporter']['authorized_name']?? "-",
+                'authorized_designation' => $data['exporter']['authorized_designation']?? "-",
+                'tax_id' => $data['exporter']['tax_id']?? "-",
+                'ie_code' => $data['exporter']['ie_code']?? "-",
+                'pan_number' => $data['exporter']['pan_number']?? "-",
+                'gstin_number' => $data['exporter']['gstin_number']?? "-",
+                'state_code' => $data['exporter']['state_code']?? "-"
             ]);
 
             // Create buyer record
             $buyer = BuyerDetails::create([
-                'order_number' => $data['buyer']['buyer_order_no'],
-                'order_date' => $data['buyer']['buyer_order_date'],
-                'po_number' => $data['buyer']['po_no'],
-                'consignee' => $data['buyer']['consignee'],
-                'notify_party' => $data['buyer']['notify_party']
+                'order_number' => $data['buyer']['buyer_order_no']?? "-",
+                'order_date' => $data['buyer']['buyer_order_date']?? "-",
+                'po_number' => $data['buyer']['po_no']?? "-",
+                'consignee' => $data['buyer']['consignee']?? "-",
+                'notify_party' => $data['buyer']['notify_party']?? "-"
             ]);
 
             // Create products
             $productIds = [];
             foreach ($data['products']['product_list'] as $product) {
                 // Check if category exists by ID
-                $categoryName = $product['category_name'];
+                $categoryName = $product['category_name']?? "-";
                 $category = ProductCategory::where('description', $categoryName)->first();
 
                 // If category doesn't exist, create a new one
                 if (!$category) {
                     $category = ProductCategory::create([
-                        'description' => $product['category_name'],
-                        'hsn_code' => $product['hsn_code']
+                        'description' => $product['category_name']?? "-",
+                        'hsn_code' => $product['hsn_code']?? "-"
                     ]);
                 }
 
                 // Create product record with the category
                 $productRecord = ProductLists::create([
                     'category_id' => $category->id,
-                    'product_name' => $product['product_name'],
-                    'size' => $product['size'],
-                    'quantity' => $product['quantity'],
-                    'sqm' => $product['sqm'],
-                    'total_sqm' => $product['total_sqm'],
-                    'total_price' => $product['total'],
-                    'price' => $product['price'],
-                    'unit' => $product['unit'],
-                    'net_weight' => $product['net_weight'],
-                    'gross_weight' => $product['gross_weight']
+                    'product_name' => $product['product_name']?? "-",
+                    'size' => $product['size']?? "-",
+                    'quantity' => $product['quantity']?? "-",
+                    'sqm' => $product['sqm']?? "-",
+                    'total_sqm' => $product['total_sqm']?? "-",
+                    'total_price' => $product['total']?? "-",
+                    'price' => $product['price']?? "-",
+                    'unit' => $product['unit']?? "-",
+                    'net_weight' => $product['net_weight']?? "-",
+                    'gross_weight' => $product["gross_weight"]?? "-"
                 ]);
                 $productIds[] = $productRecord->id;
             }
@@ -101,25 +101,25 @@ class InvoiceController
             $containerIds = [];
             foreach ($data['products']['containers'] as $container) {
                 $containerRecord = ContainerInformation::create([
-                    'container_number' => $container['container_no'],
-                    'line_seal_number' => $container['line_seal_no'],
-                    'rfid_number' => $container['rfid_seal'],
-                    'design_no' => $container['design_no'],
-                    'quantity_box' => $container['quantity'],
-                    'net_weight' => $container['net_weight'],
-                    'gross_weight' => $container['gross_weight']
+                    'container_number' => $container['container_no']?? "-",
+                    'line_seal_number' => $container['line_seal_no']?? "-",
+                    'rfid_number' => $container['rfid_seal']?? "-",
+                    'design_no' => $container['design_no']?? "-",
+                    'quantity_box' => $container['quantity']?? "-",
+                    'net_weight' => $container['net_weight']?? "-",
+                    'gross_weight' => $container['gross_weight']?? "-"
                 ]);
                 $containerIds[] = $containerRecord->id;
             }
 
             // Create product details
             $productDetails = ProductDetails::create([
-                'marks' => $data['products']['marks'],
-                'nos' => $data['products']['nos'],
-                'frieght' => $data['products']['frieght'],
-                'total_pallet_count' => $data['products']['total_pallet_count'],
-                'insurance' => $data['products']['insurance'],
-                'total_price' => $data['products']['total_price'],
+                'marks' => $data['products']['marks']?? "-",
+                'nos' => $data['products']['nos']?? "-",
+                'freight' => $data['products']['freight']?? "0",
+                'total_pallet_count' => $data['products']['total_pallet_count']?? "-",
+                'insurance' => $data['products']['insurance']?? "0",
+                'total_price' => $data['products']['total_price']?? "-",
                 'product_ids' => json_encode($productIds),
                 'container_ids' => json_encode($containerIds)
             ]);
@@ -130,10 +130,10 @@ class InvoiceController
             if (isset($data['suppliers']) && is_array($data['suppliers'])) {
                 foreach ($data['suppliers'] as $supplierData) {
                     $supplierRecord = SupplierDetails::create([
-                        'supplier_name' => $supplierData['name'] ?? '',
-                        'supplier_address' => $supplierData['address'] ?? '',
-                        'gstin_number' => $supplierData['gstin_number'] ?? '',
-                        'tax_invoice_no' => $supplierData['tax_invoice_number'] ?? '',
+                        'supplier_name' => $supplierData['name'] ?? '-',
+                        'supplier_address' => $supplierData['address'] ?? '-',
+                        'gstin_number' => $supplierData['gstin_number'] ?? '-',
+                        'tax_invoice_no' => $supplierData['tax_invoice_number'] ?? '-',
                         'date' => $supplierData['date'] ?? null,
                     ]);
 
@@ -145,92 +145,92 @@ class InvoiceController
 
             // Create shipping record
             $shipping = ShippingDetail::create([
-                'place_of_receipt' => $data['shipping']['place_of_receipt'],
-                'port_of_loading' => $data['shipping']['port_of_loading'],
-                'port_of_discharge' => $data['shipping']['port_of_discharge'],
-                'pre_carriage' => $data['shipping']['pre_carriage_by'],
-                'shipping_number' => $data['shipping']['vessel_flight_no'],
-                'country_of_origin' => $data['shipping']['country_of_origin'],
-                'origin_details' => $data['shipping']['origin_details'],
-                'country_of_final_destination' => $data['shipping']['country_of_final_destination'],
-                'terms_of_delivery' => $data['shipping']['terms_of_delivery'],
-                'payment' => $data['shipping']['payment'],
-                'shipping_method' => $data['shipping']['shipping_method'],
-                'vessel_flight_no' => $data['shipping']['vessel_flight_no'],
-                'final_destination' => $data['shipping']['final_destination']
+                'place_of_receipt' => $data['shipping']['place_of_receipt']?? "-",
+                'port_of_loading' => $data['shipping']['port_of_loading']?? "-",
+                'port_of_discharge' => $data['shipping']['port_of_discharge']?? "-",
+                'pre_carriage' => $data['shipping']['pre_carriage_by']?? "-",
+                
+                'country_of_origin' => $data['shipping']['country_of_origin']?? "-",
+                'origin_details' => $data['shipping']['origin_details']?? "-",
+                'country_of_final_destination' => $data['shipping']['country_of_final_destination']?? "-",
+                'terms_of_delivery' => $data['shipping']['terms_of_delivery']?? "-",
+                'payment' => $data['shipping']['payment']?? "-",
+                'shipping_method' => $data['shipping']['shipping_method']?? "-",
+                'vessel_flight_no' => $data['shipping']['vessel_flight_no']?? "-",
+                'final_destination' => $data['shipping']['final_destination']?? "-"
             ]);
 
             // Create package record
             $package = PackageInformation::create([
-                'number_of_package' => $data['package']['no_of_packages'],
-                'total_gross_weight' => $data['package']['gross_weight'],
-                'total_net_weight' => $data['package']['net_weight'],
-                'gst_amount' => $data['package']['gst_amount'],
-                'taxable_value' => $data['package']['taxable_value'],
-                'total_sqm' => $data['package']['total_sqm'],
-                'gst_circular' => $data['package']['gst_circular'],
-                'app_ref_number' => $data['package']['arn_no'],
-                'lut_date' => $data['package']['lut_date'],
-                'total_amount' => $data['package']['total_fob'],
-                'amount_in_words' => $data['package']['amount_in_words']
+                'number_of_package' => $data['package']['no_of_packages']?? "-",
+                'total_gross_weight' => $data['package']['gross_weight']?? "-",
+                'total_net_weight' => $data['package']['net_weight']?? "-",
+                'gst_amount' => $data['package']['gst_amount']?? "-",
+                'taxable_value' => $data['package']['taxable_value']?? "-",
+                'total_sqm' => $data['package']['total_sqm']?? "-",
+                'gst_circular' => $data['package']['gst_circular']?? "-",
+                'app_ref_number' => $data['package']['arn_no']?? "-",
+                'lut_date' => $data['package']['lut_date']?? "-",
+                'total_amount' => $data['package']['total_fob']?? "-",
+                'amount_in_words' => $data['package']['amount_in_words']?? "-"
             ]);
 
             //create annexure record
             $anx = Annexure::create([
-                'invoice_number' => $data['invoice_number'],
+                'invoice_number' => $data['invoice_number']?? "-",
 
-                'range' => $annxure['range'],
-                'division' => $annxure['division'],
-                'commissionerate' => $annxure['commissionerate'],
-                'exam_date' => $annxure['exam_date'],
-                'invoice_date' => $annxure['invoice_date'],
-                'net_weight' => $annxure['net_weight'],
-                'gross_weight' => $annxure['gross_weight'],
-                'total_packages' => $annxure['total_packages'],
-                'officer_designation1' => $annxure['officer_designation1'],
-                'officer_designation2' => $annxure['officer_designation2'],
-                'lut_date' => $annxure['lut_date'],
-                'location_code' => $annxure['location_code'],
-                'question9c' => $annxure['question9c'],
-                'question9a' => $annxure['question9a'],
-                'question9b' => $annxure['question9b'],
-                'non_containerized' => $annxure['non_containerized'],
-                'containerized' => $annxure['containerized'],
-                'manufacturer_name' => $annxure['selected_manufacturer']['name'],
-                'manufacturer_address' => $annxure['selected_manufacturer']['address'],
-                'manufacturer_gstin_no' => $annxure['selected_manufacturer']['gstin_number'],
-                'manufacturer_permission' => $annxure['selected_manufacturer']['permission']
+                'range' => $annxure['range']?? "-",
+                'division' => $annxure['division']?? "-",
+                'commissionerate' => $annxure['commissionerate']?? "-",
+                'exam_date' => $annxure['exam_date']?? "-",
+                'invoice_date' => $annxure['invoice_date']?? "-",
+                'net_weight' => $annxure['net_weight']?? "-",
+                'gross_weight' => $annxure['gross_weight']?? "-",
+                'total_packages' => $annxure['total_packages']?? "-",
+                'officer_designation1' => $annxure['officer_designation1']?? "-",
+                'officer_designation2' => $annxure['officer_designation2']?? "-",
+                'lut_date' => $annxure['lut_date']?? "-",
+                'location_code' => $annxure['location_code']?? "-",
+                'question9c' => $annxure['question9c']?? "-",
+                'question9a' => $annxure['question9a']?? "-",
+                'question9b' => $annxure['question9b']?? "-",
+                'non_containerized' => $annxure['non_containerized']?? "-",
+                'containerized' => $annxure['containerized']?? "-",
+                'manufacturer_name' => $annxure['selected_manufacturer']['name']?? "-",
+                'manufacturer_address' => $annxure['selected_manufacturer']['address']?? "-",
+                'manufacturer_gstin_no' => $annxure['selected_manufacturer']['gstin_number']?? "-",
+                'manufacturer_permission' => $annxure['selected_manufacturer']['permission']?? "-"
             ]);
 
             $vgmContainerIds = [];
             foreach ($vgm['containers'] as $container) {
                 $containerRecord = VgmContainer::create([
-                    'booking_no' => $container['booking_no'],
-                    'container_no' => $container['container_no'],
-                    'tare_weight' => $container['tare_weight'],
-                    'gross_weight' => $container['gross_weight'],
-                    'total_vgm' => $container['total_vgm'],
+                    'booking_no' => $container['booking_no']?? "-",
+                    'container_no' => $container['container_no']?? "-",
+                    'tare_weight' => $container['tare_weight']?? "-",
+                    'gross_weight' => $container['gross_weight']?? "-",
+                    'total_vgm' => $container['total_vgm']?? "-",
                 ]);
                 $vgmContainerIds[] = $containerRecord->id;
             }
             $vgm = Vgm::create([
-                'shipper_name' => $vgm['shipper_name'],
-                'ie_code' => $vgm['ie_code'],
-                'authorized_name' => $vgm['authorized_name'],
-                'authorized_contact' => $vgm['authorized_contact'],
-                'container_number' => $vgm['container_number'],
-                'container_size' => $vgm['container_size'],
-                'permissible_weight' => $vgm['permissible_weight'],
-                'weighbridge_registration' => $vgm['weighbridge_registration'],
-                'verified_gross_mass' => $vgm['verified_gross_mass'],
-                'unit_of_measurement' => $vgm['unit_of_measurement'],
-                'dt_weighing' => $vgm['dt_weighing'],
-                'weighing_slip_no' => $vgm['weighing_slip_no'],
-                'type' => $vgm['type'],
-                'IMDG_class' => $vgm['IMDG_class'],
-                'forwarder_email' => $vgm['forwarder_email'],
+                'shipper_name' => $vgm['shipper_name']?? "-",
+                'ie_code' => $vgm['ie_code']?? "-",
+                'authorized_name' => $vgm['authorized_name']?? "-",
+                'authorized_contact' => $vgm['authorized_contact']?? "-",
+                'container_number' => $vgm['container_number']?? "-",
+                'container_size' => $vgm['container_size']?? "-",
+                'permissible_weight' => $vgm['permissible_weight']?? "-",
+                'weighbridge_registration' => $vgm['weighbridge_registration']?? "-",
+                'verified_gross_mass' => $vgm['verified_gross_mass']?? "-",
+                'unit_of_measurement' => $vgm['unit_of_measurement']?? "-",
+                'dt_weighing' => $vgm['dt_weighing']?? "-",
+                'weighing_slip_no' => $vgm['weighing_slip_no']?? "-",
+                'type' => $vgm['type']?? "-",
+                'IMDG_class' => $vgm['IMDG_class']?? "-",
+                'forwarder_email' => $vgm['forwarder_email']?? "-",
                 'containers_id' => json_encode($vgmContainerIds),
-                'invoice_number' => $data['invoice_number'],
+                'invoice_number' => $data['invoice_number']?? "-",
             ]);
             // update exporterDropdown last_invoice_number by 1
             $exporterDropdown = ExporterDropdown::where('company_name', $data['exporter']['company_name'])->first();
@@ -248,13 +248,13 @@ class InvoiceController
             if (isset($data['suppliers'])) {
 
                 $invoice = Invoice::create([
-                    'invoice_number' => $data['invoice_number'],
-                    'invoice_date' => $data['invoice_date'],
-                    'integrated_tax' => $data['integrated_tax'],
-                    'payment_term' => $data['payment_term'],
-                    'product_type' => $data['product_type'],
-                    'currancy_type' => $data['currency_type'],
-                    'currancy_rate' => $data['currency_rate'],
+                    'invoice_number' => $data['invoice_number']?? "-",
+                    'invoice_date' => $data['invoice_date']?? "-",
+                    'integrated_tax' => $data['integrated_tax']?? "-",
+                    'payment_term' => $data['payment_term']?? "-",
+                    'product_type' => $data['product_type']?? "-",
+                    'currancy_type' => $data['currency_type']?? "-",
+                    'currancy_rate' => $data['currency_rate']?? "-",
                     'exporter_id' => $exporter->id,
                     'buyer_id' => $buyer->id,
                     'product_id' => $productDetails->id,
@@ -416,7 +416,7 @@ class InvoiceController
                 return $invoice;
             });
             // get all draft 
-           $drafts = Draft::select('id', 'data', 'last_page', 'updated_at')
+           $drafts = Draft::select('id', "invoice_number",'data', 'last_page', 'updated_at')
     ->whereNotNull('data')
     ->whereRaw("TRIM(data) != ''")
     ->get()
@@ -618,7 +618,7 @@ class InvoiceController
             $productDetails->update([
                 'marks' => $data['product']['marks'],
                 'nos' => $data['product']['nos'],
-                'frieght' => $data['product']['frieght'],
+                'freight' => $data['product']['freight'],
                 'insurance' => $data['product']['insurance'],
                 'total_price' => $data['product']['total_price'],
                 'product_ids' => json_encode($productIds),

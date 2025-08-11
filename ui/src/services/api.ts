@@ -64,7 +64,7 @@ const docxFile = new File([blob], `${id.replace(/[(/)]/g, "-")}-doc.docx`,{
       console.error('❌ Error uploading document:', error);
     }
   },
-  uploadAndDownloadPdf : async (file: any,id:string) => {
+  uploadAndDownloadPdf : async (file: any,id:string,product_terms:string) => {
   const formData = new FormData();
    const blob = new Blob([file.buffer], {
     type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -75,6 +75,7 @@ const docxFile = new File([blob], `${id.replace(/[(/)]/g, "-")}-doc.docx`,{
   });
   formData.append('file', excelFile);
   formData.append('id',id);
+  formData.append('files_to_combine',product_terms);
   try {
     const response = await api.post('/upload/excel', formData, {
       responseType: 'blob', // 👈 important for binary download

@@ -1,102 +1,176 @@
-import { useForm } from 'react-hook-form';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from "@/lib/axios";
-import debounce from 'lodash.debounce';
-import { log } from 'console';
+import { Toast } from '@/components/ui/toast';
+import { useToast } from './use-toast';
 
 interface UseDraftFormOptions {
-  formType: string; // e.g., 'invoice', 'order'
+  formType: string;
   methods: any;
+  isDraftMode?: boolean;
 }
 
-export const useDraftForm = ({ formType ,methods}: UseDraftFormOptions) => {
+export const useDraftForm = ({ formType, methods, isDraftMode }: UseDraftFormOptions) => {
+  const {toast} = useToast();
   const { id: draftIdFromURL } = useParams();
   const navigate = useNavigate();
   const [draftId, setDraftId] = useState<string | null>(null);
   const [isReady, setIsReady] = useState(false);
-//   const methods = useForm();
-const [hydrated, setHydrated] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
 
-  const { reset, watch ,getValues} = methods;
-  const DRAFT_KEY = `${formType}_draft_id`;
+  const { reset, getValues } = methods;
+
+  // ✅ Move loadDraftData inside useEffect or use useCallback
+  const loadDraftData = useCallback(async (id: string) => {
+    try {
+      const res = await api.get(`/draft/${id}`);
+      const { data, last_page } = res?.data;
+
+      // ✅ Fix: Only parse once
+      const parsed = JSON.parse(data);
+      console.log('📄 Loaded draft data:', JSON.parse(parsed));
+      console.log('📄 Loaded draft page:', last_page);
+      
+      // Reset with parsed data (no double parsing)
+      methods.reset(JSON.parse(parsed));
+      
+      // ✅ Mark as hydrated after a short delay
+      setHydrated(true);
+      
+
+     
+      
+     
+     
+      
+      if ( last_page && isDraftMode) {
+        
+        navigate(`/${last_page}/drafts/${id}`);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load draft data:', error);
+      // Set ready even if loading fails
+      setIsReady(true);
+      throw error;
+    }
+  }, [methods, isDraftMode, navigate]);
 
   // Load or create draft ID
   useEffect(() => {
     const initDraft = async () => {
-      const localDraft = localStorage.getItem(DRAFT_KEY);
-      let isUrl = window.location.href.includes('/drafts/');
-      // console.log("🔗 Local draft ID:", isUrl);
       try {
         if (draftIdFromURL) {
-          // console.log("🔗 Draft ID from URL:", draftIdFromURL);
+          if (!isDraftMode) {
+            setIsReady(true);
+            return;
+          }
           setDraftId(draftIdFromURL);
           await loadDraftData(draftIdFromURL);
-        } else if (localDraft && isUrl) {
-          // console.log("🔗 Using local draft ID:", localDraft);
-          setDraftId(localDraft);
-          await loadDraftData(localDraft);
-        } else {
-          const res = await api
-        .post('/draft',{
-          data:"",
-          last_page:"invoice"
-        }) ;
-          const newId = res.data.id;
-          setDraftId(newId);
-          localStorage.setItem(DRAFT_KEY, newId);
         }
+      } catch (error) {
+        console.error('❌ Failed to initialize draft:', error);
       } finally {
         setIsReady(true);
       }
     };
 
     initDraft();
-  }, [draftIdFromURL]);
+  }, [draftIdFromURL, isDraftMode]);
 
-  // Load data from backend
-  const loadDraftData = async (id: string) => {
-  const res = await api.get(`/draft/${id}`);
-  const parsed = JSON.parse(res.data?.data);
-  console.log("✅ Loaded draft data:", parsed);
-  if (parsed) {
-    reset(parsed);
-    setHydrated(true); // ✅ trigger hydration complete
+  // Fixed: Make exitSaveDraft properly async
+  // const exitSaveDraft = async () => {
+  //   console.log("🚀 exitSaveDraft called - waiting for save to complete");
+    
+  //   if (!draftId) {
+  //     console.log("📝 No draftId, creating new draft");
+  //     await handleSubmit();
+  //     return;
+  //   }
+
+  //   // Wait for the save to complete before returning
+  //   await saveDraft();
+  //   console.log("✅ exitSaveDraft completed successfully");
+  // };
+
+  // Fixed: Make saveDraft properly async
+  const saveDraft = async (extraData: Record<string, any> = {}) => {
+  console.log("💾 saveDraft called with draftId:", draftId);
+  
+  try {
+    console.log(extraData);
+    
+    if (!draftId) {
+      console.log("📝 No draftId in saveDraft, creating new draft");
+      let res = await handleSubmit(extraData);
+      return res; // ✅ This already returns
+    }
+
+    const formData = getValues();
+    console.log("💾 Saving draft with data:", formData);
+    
+    console.log("📤 Sending PUT request to save draft...");
+    
+    const response = await api.put(`/draft/${draftId}`, {
+      data: JSON.stringify({
+        ...formData
+      }),
+      last_page: extraData.last_page || formType,
+      invoice_number: formData.invoice?.invoice_number || "",
+    });
+    
+    // console.log("✅ Draft updated successfully:", response.data);
+    
+    toast({
+      title: "Draft Saved",
+      description: "Your draft has been saved successfully.",
+      variant: "default"
+    });
+    
+    // ✅ Return the response or success indicator
+    return response.data; // or return "success" or return response
+    
+  } catch (error) {
+    console.error("❌ Failed to save draft:", error);
+    
+    toast({
+      title: "Draft Failed to Save",
+      description: "❌ Failed to save draft",
+      variant: "destructive"
+    });
+    
+    throw error; // ✅ This is correct - throw error so caller can catch it
   }
 };
 
-  // Auto-save
-  useEffect(() => {
-  if (!draftId || !hydrated) return;
 
-  const debouncedSave = debounce((data) => {
-    
-    console.log("✅ Auto-saving:", data);
-
-    api
-      .put(`/draft/${draftId}`, {
-        data: data,
-        last_page: formType,
-      })
-      .catch(console.error);
-  }, 1500);
-
-  const subscription = watch(() => {
-    console.log("🔄 Form changed, triggering auto-save");
+  // Fixed: Make handleSubmit properly async
+  const handleSubmit = async (extraData) => {
     const data = getValues();
-    debouncedSave(data);
-  });
+    console.log("📤 Submitting form data:", data);
+    
+    try {
+      const res = await api.post("/draft", {
+        data: JSON.stringify({ ...data }),
+        last_page: extraData.last_page || formType,
+        invoice_number: data.invoice?.invoice_number || "",
+      });
 
-  return () => subscription.unsubscribe();
-}, [draftId, hydrated, methods]);
-  // Submit handler (you can use your own too)
-  const handleSubmit = async (data: any, submitUrl: string, redirectUrl: string) => {
-    await api.post(submitUrl, {
-      draft_id: draftId,
-      data,
-    });
-    localStorage.removeItem(DRAFT_KEY);
-    navigate(redirectUrl);
+      const newId = res.data.id;
+      console.log("✅ New draft created with ID:", newId);
+      toast({
+        title: "Draft Saved",
+        description: "Your draft has been saved successfully.",
+        variant: "success"})
+      setDraftId(newId);
+      return  res.data;
+    } catch (error) {
+      console.error("❌ Failed to create draft:", error);
+      toast({
+        title: "Draft Failed to Save",
+        description: "❌ Failed to save draft",
+        variant: "destructive"})
+      throw error;
+    }
   };
 
   return {
@@ -104,6 +178,9 @@ const [hydrated, setHydrated] = useState(false);
     draftId,
     isReady,
     handleSubmit,
-    hydrated
+    hydrated,
+    isDraftMode,
+    // exitSaveDraft,
+    saveDraft,
   };
 };

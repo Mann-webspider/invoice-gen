@@ -26,6 +26,7 @@ class DraftController
             
             'data' => json_encode($data['data']),
             'last_page' => $data['last_page'] ?? '',
+            'invoice_number' => $data['invoice_number'] ?? '',
             'is_submitted' => 0,
         ]);
         $response->getBody()->write(json_encode($draft));

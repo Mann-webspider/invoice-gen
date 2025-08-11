@@ -51,6 +51,7 @@ import {
 import { Edit } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import api from "@/lib/axios";
+import { LoadingButton } from "@/components/LoadingButton";
 
 
 type DropdownOption = {
@@ -152,6 +153,7 @@ const sections = [
 const AdminPanel = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("exporter");
   const [exporters, setExporters] = useState<Exporter[]>([
     {
@@ -378,23 +380,26 @@ const AdminPanel = () => {
 
   // Function to save ARN & Declaration
   const handleSaveArnDeclaration = async () => {
+    try {
+    setIsLoading(true);
     // Here you would save to database
     async function createArn() {
-      try {
         let res = await api.post("/arn", arnDeclaration);
         console.log(res.data);
+        toast({
+          title: "Success",
+          description: "ARN & Declaration saved successfully",
+        });
         return res.data;
-      } catch (error) {
-        console.log(error);
-        return error.response.data;
       }
+      let data = await createArn();
+    } catch (error) {
+      console.log(error);
+      return error.response.data;
+    }finally {
+      setIsLoading(false);
     }
-    let data = await createArn();
 
-    toast({
-      title: "Success",
-      description: "ARN & Declaration saved successfully",
-    });
   };
   // Define an async function inside useEffect
   const fetchExporterDetails = async () => {
@@ -519,71 +524,74 @@ const AdminPanel = () => {
   const handleAddExporter = async () => {
     const createExporter = async (data) => {
       try {
-        // Check if there's a valid exporter id
-        let header = data.letterhead_top_image;
-        let footer = data.letterhead_bottom_image;
-        let signature = data.stamp_image;
-
-        delete data.id;
-        delete data.invoice_number;
-        delete data.createdAt;
-        delete data.updatedAt;
-        delete data.letterhead_top_image;
-        delete data.letterhead_bottom_image;
-        delete data.stamp_image;
-
-        const response = await api.post(`/exporter`, data);
-        const exporterData = response.data.data;
-
-        // add promise for 3 api post call for header, footer and signature with responses
-
-        if (header?.file) {
-          const headerFormData = new FormData();
-          headerFormData.append("image", header.file);
-          await api.post(`/upload/header/${exporterData.id}`, headerFormData, {
+        setIsLoading(true);
+      // Check if there's a valid exporter id
+      let header = data.letterhead_top_image;
+      let footer = data.letterhead_bottom_image;
+      let signature = data.stamp_image;
+      
+      delete data.id;
+      delete data.invoice_number;
+      delete data.createdAt;
+      delete data.updatedAt;
+      delete data.letterhead_top_image;
+      delete data.letterhead_bottom_image;
+      delete data.stamp_image;
+      
+      const response = await api.post(`/exporter`, data);
+      const exporterData = response.data.data;
+      
+      // add promise for 3 api post call for header, footer and signature with responses
+      
+      if (header?.file) {
+        const headerFormData = new FormData();
+        headerFormData.append("image", header.file);
+        await api.post(`/upload/header/${exporterData.id}`, headerFormData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+      
+      if (footer?.file) {
+        const footerFormData = new FormData();
+        footerFormData.append("image", footer.file);
+        await api.post(`/upload/footer/${exporterData.id}`, footerFormData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        });
+      }
+      
+      if (signature?.file) {
+        const signatureFormData = new FormData();
+        signatureFormData.append("image", signature.file);
+        await api.post(
+          `/upload/signature/${exporterData.id}`,
+          signatureFormData,
+          {
             headers: { "Content-Type": "multipart/form-data" },
-          });
-        }
-
-        if (footer?.file) {
-          const footerFormData = new FormData();
-          footerFormData.append("image", footer.file);
-          await api.post(`/upload/footer/${exporterData.id}`, footerFormData, {
-            headers: { "Content-Type": "multipart/form-data" },
-          });
-        }
-
-        if (signature?.file) {
-          const signatureFormData = new FormData();
-          signatureFormData.append("image", signature.file);
-          await api.post(
-            `/upload/signature/${exporterData.id}`,
-            signatureFormData,
-            {
-              headers: { "Content-Type": "multipart/form-data" },
-            }
-          );
-        }
-
-        // Exporter data received - handled silently
-
-        return exporterData;
-      } catch (error) {
-        console.log(error);
-
+          }
+        );
+      }
+      
+      // Exporter data received - handled silently
+      
+      return exporterData;
+    } catch (error) {
+      console.log(error);
+      
         if (error.status == 500) {
           // Failed to add exporter details - handled silently
-          return error.response.data;
         }
+        return error.response;
+      }finally {
+        setIsLoading(false);
       }
     };
     // Validate required fields
 
     const newExporter = await createExporter(formData);
-    if (newExporter.status == "error") {
+    if (newExporter.status == 400) {
       toast({
         title: "Error",
-        description: newExporter.message,
+        description: newExporter.data.message,
         variant: "destructive",
       });
       return;
@@ -729,17 +737,19 @@ const AdminPanel = () => {
   // ------------------------start shipping --------------------------------
 
   const handleAddShippingValue =async () => {
-    const addShipping = async (category, value) => {
+    try {
+    setIsLoading(true);
+      const addShipping = async (category, value) => {
       try {
         let res = await api.post("/dropdown-options", {
           category: category,
           value: value,
         });
-        console.log(res.data.all_options);
+        console.log(res.data.data);
 
         return res.data.data;
       } catch (error) {
-        return error.response.data;
+        return error.response;
       }
     };
     if (!editingCategory || !newValue.trim()) {
@@ -754,10 +764,10 @@ const AdminPanel = () => {
 
     let shipping_res = await addShipping(editingCategory, newValue);
 
-    if (!shipping_res || shipping_res.error) {
+    if (shipping_res.status == 400) {
     toast({
       title: "Error",
-      description: shipping_res?.message || "Failed to add shipping detail",
+      description: shipping_res?.data.error || "Failed to add shipping detail",
       variant: "destructive",
     });
     return;
@@ -785,6 +795,13 @@ const AdminPanel = () => {
       title: "Success",
       description: "Value added successfully",
     });
+    } catch (error) {
+      console.log(error);
+      
+    }finally {
+      setIsLoading(false);
+    }
+    
   };
 
   const handleEditShippingValue = () => {
@@ -852,6 +869,8 @@ const AdminPanel = () => {
 
   // ------------------------start table information --------------------------------
   const handleAddDescHsnPair = async () => {
+    try {
+    setIsLoading(true);
     if (!newDescHsnPair.description.trim() || !newDescHsnPair.hsn_code.trim()) {
       toast({
         title: "Error",
@@ -861,7 +880,6 @@ const AdminPanel = () => {
       return;
     }
 
-    try {
       const response = await api.post("/product-category", newDescHsnPair);
       console.log(response);
 
@@ -871,14 +889,14 @@ const AdminPanel = () => {
           descriptionHsnPairs: [
             ...prev.descriptionHsnPairs,
             {
-              id: response.data.id,
-              description: response.data.description,
-              hsn_code: response.data.hsn_code,
+              id: response.data.data.id,
+              description: response.data.data.description,
+              hsn_code: response.data.data.hsn_code,
             },
           ],
         }));
 
-        setNewDescHsnPair({ description: response.data.description, hsn_code: response.data.hsn_code });
+        setNewDescHsnPair({ description: response.data.data.description, hsn_code: response.data.data.hsn_code });
         setIsAddDescHsnDialogOpen(false);
 
         toast({
@@ -893,10 +911,12 @@ const AdminPanel = () => {
       toast({
         title: "Error",
         description:
-          error.response?.data?.message ||
+          error.response?.data?.error ||
           "Failed to add product category. Please try again.",
         variant: "destructive",
       });
+    }finally{
+      setIsLoading(false);
     }
   };
 
@@ -993,6 +1013,8 @@ const AdminPanel = () => {
   // ------------------------finish table information --------------------------------
   // ------------------------start size and sqm --------------------------------
   const handleAddSizeSqmPair = async () => {
+    try {
+    setIsLoading(true);
     if (!newSizeSqmPair.size.trim() || !newSizeSqmPair.sqm.trim()) {
       toast({
         title: "Error",
@@ -1002,7 +1024,6 @@ const AdminPanel = () => {
       return;
     }
 
-    try {
       const response = await api.post("/product-size", newSizeSqmPair);
 
       if (response.data && response.status === 201) {
@@ -1037,6 +1058,8 @@ const AdminPanel = () => {
           "Failed to add size and SQM pair. Please try again.",
         variant: "destructive",
       });
+    }finally{
+      setIsLoading(false);
     }
   };
 
@@ -1124,6 +1147,8 @@ const AdminPanel = () => {
   // ------------------------finish size and sqm --------------------------------
   // ------------------------start unit type --------------------------------
   const handleAddUnitType = async () => {
+    try {
+    setIsLoading(true);
     if (!newUnitType.trim()) {
       toast({
         title: "Error",
@@ -1133,7 +1158,6 @@ const AdminPanel = () => {
       return;
     }
 
-    try {
       const response = await api.post("/dropdown-options", {
         category: "unit_type",
         value: newUnitType,
@@ -1171,6 +1195,8 @@ const AdminPanel = () => {
           "Failed to add unit type. Please try again.",
         variant: "destructive",
       });
+    }finally{
+      setIsLoading(false);
     }
   };
 
@@ -1298,6 +1324,8 @@ const AdminPanel = () => {
   };
 
   const handleAddSupplier = async () => {
+    try {
+    setIsLoading(true);
     if (
       !supplierFormData.name.trim() ||
       !supplierFormData.gstin_number.trim()
@@ -1310,7 +1338,6 @@ const AdminPanel = () => {
       return;
     }
 
-    try {
       const response = await api.post("/supplier", supplierFormData);
 
       if (response.data && response.status === 201) {
@@ -1339,10 +1366,13 @@ const AdminPanel = () => {
           "Failed to add supplier. Please try again.",
         variant: "destructive",
       });
+    }finally{
+      setIsLoading(false);
     }
   };
 
   const handleEditSupplier = async () => {
+    setIsLoading(true);
     if (
       !selectedSupplier ||
       !supplierFormData.name.trim() ||
@@ -1396,6 +1426,8 @@ const AdminPanel = () => {
           "Failed to update supplier. Please try again.",
         variant: "destructive",
       });
+    }finally{
+      setIsLoading(false);
     }
   };
 
@@ -1448,6 +1480,7 @@ const AdminPanel = () => {
           <Plus className="h-4 w-4 mr-2" />
           Add New Exporter
         </Button>
+        
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -1563,6 +1596,7 @@ const AdminPanel = () => {
                       >
                         <Edit2 className="h-3.5 w-3.5 text-amber-600" />
                       </Button> */}
+                      
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1869,6 +1903,7 @@ const AdminPanel = () => {
                             >
                               <Edit2 className="h-3.5 w-3.5 text-green-600" />
                             </Button>
+                            
                             <Button
                               variant="ghost"
                               size="sm"
@@ -2276,12 +2311,18 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            <Button
+            <LoadingButton
+            isGenerating={isLoading}
+            onClick={handleAddSupplier}
+              className="bg-purple-600 hover:bg-purple-700">
+                Add
+            </LoadingButton>
+            {/* <Button
               onClick={handleAddSupplier}
               className="bg-purple-600 hover:bg-purple-700"
             >
               Add
-            </Button>
+            </Button> */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2431,13 +2472,20 @@ const AdminPanel = () => {
           </div>
 
           <div className="pt-4 flex justify-end">
-            <Button
+            {/* <Button
               className="bg-amber-600 hover:bg-amber-700"
               onClick={handleSaveArnDeclaration}
             >
               <Save className="h-4 w-4 mr-2" />
               Save ARN & Declaration
-            </Button>
+            </Button> */}
+            <LoadingButton
+              isGenerating={isLoading}
+              onClick={handleSaveArnDeclaration}
+              className="ml-2 bg-amber-600 hover:bg-amber-700">
+              <Save className="h-4 w-4 mr-2" />
+              Save ARN & Declaration
+              </LoadingButton>
           </div>
         </div>
       </div>
@@ -2958,7 +3006,12 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddExporter}>Save Exporter</Button>
+            {/* <Button onClick={handleAddExporter}>Save Exporter</Button> */}
+            <LoadingButton
+              isGenerating={isLoading}
+              onClick={handleAddExporter}
+              className="bg-black "
+              >Save Exporter</LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3170,7 +3223,14 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddShippingValue}>Add</Button>
+            <LoadingButton
+              isGenerating={isLoading}
+              onClick={handleAddShippingValue}
+              className="bg-black"
+              >
+                Add
+              </LoadingButton>
+            {/* <Button onClick={handleAddShippingValue}>Add</Button> */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3270,7 +3330,12 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddDescHsnPair}>Add</Button>
+            <LoadingButton
+              isGenerating={isLoading}
+              onClick={handleAddDescHsnPair}
+              className="bg-black"
+              >Add</LoadingButton>
+            {/* <Button onClick={handleAddDescHsnPair}>Add</Button> */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3379,7 +3444,12 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddSizeSqmPair}>Add</Button>
+            {/* <Button onClick={handleAddSizeSqmPair}>Add</Button> */}
+            <LoadingButton
+              isGenerating={isLoading}
+              onClick={handleAddSizeSqmPair}
+              className="bg-black"
+              >Add</LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3466,7 +3536,13 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            <Button onClick={handleAddUnitType}>Add</Button>
+            <LoadingButton
+              isGenerating={isLoading}
+              onClick={handleAddUnitType}
+              className="bg-black"
+              >Add</LoadingButton>
+            
+            {/* <Button onClick={handleAddUnitType}>Add</Button> */}
           </DialogFooter>
         </DialogContent>
       </Dialog>

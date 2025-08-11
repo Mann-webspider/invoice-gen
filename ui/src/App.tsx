@@ -28,6 +28,7 @@ import { SidebarProvider } from "@/context/SidebarContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Login from "@/pages/Login";
 import { Controller, useForm as rhf,FormProvider as FP  } from "react-hook-form";
+import InvoiceBackupPage from "./pages/backup";
 // QueryClient is handled by QueryProvider
 
 // Create a wrapper for PackagingList that loads data from localStorage
@@ -225,7 +226,7 @@ const VgmFormWrapper = ({form}) => {
 
 
 const App = () => {
-  const form = rhf();
+  const form = rhf({mode: "onChange", defaultValues: {}});
   return(
   <AuthProvider>
     <FP {...form}>
@@ -282,7 +283,27 @@ const App = () => {
                   }
                 />
                 <Route
+                  path="/packaging-list/drafts/:id"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <PackagingListWrapper form={form}/>
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/annexure"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <AnnexureWrapper form={form} />
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/annexure/drafts/:id"
                   element={
                     <ProtectedRoute>
                       <AdminLayout>
@@ -303,11 +324,21 @@ const App = () => {
                   }
                 />
                 <Route
+                  path="/vgm-form/drafts/:id"
+                  element={
+                    <ProtectedRoute>
+                      <AdminLayout>
+                        <VgmFormWrapper form={form}/>
+                      </AdminLayout>
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
                   path="/backup"
                   element={
                     <ProtectedRoute>
                       <AdminLayout>
-                        <ProcessQueue />
+                        <InvoiceBackupPage />
                       </AdminLayout>
                     </ProtectedRoute>
                   }

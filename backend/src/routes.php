@@ -39,7 +39,7 @@ return function (App $app) {
     
     $app->post('/api/auth/login', [$userController, 'login']);
     $app->post('/api/auth/logout', [$userController, 'logout']);
-    $app->post('/api/register', [$userController, 'register']);
+    $app->post('/api/auth/register', [$userController, 'register']);
 
     // Database Backup and Restore Routes
     $app->post('/api/database/backup', [$databaseController, 'createBackup']);
@@ -47,6 +47,7 @@ return function (App $app) {
     $app->post('/api/database/restore/upload', [$databaseController, 'restoreFromUpload']);
     $app->post('/api/database/restore/{filename}', [$databaseController, 'restoreBackup']);
     $app->get('/api/database/download/{filename}', [$databaseController, 'downloadBackup']);
+    $app->delete('/api/backup/{filename}', [$databaseController, 'deleteBackup']);
 
     // Get all dropdown values in a single call
     $app->get('/api/all-dropdowns', [$dropdownController, 'getAllDropdownValues']);

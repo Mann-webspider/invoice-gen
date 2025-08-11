@@ -11,6 +11,7 @@ class CreateDraftSchema
     
     data BLOB, -- Store JSON string
     last_page TEXT,
+    invoice_number TEXT,
     is_submitted INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP

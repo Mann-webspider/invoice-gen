@@ -514,7 +514,16 @@ class DropdownController
             ]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
         }
-
+        $isAvailable= DropdownOption::where('category', $data['category'])
+            ->where('value', $data['value'])
+            ->active()
+            ->exists();
+        if ($isAvailable) {
+            $response->getBody()->write(json_encode([
+                'error' => 'Option already exists'
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
         $option = DropdownOption::create([
 
             'category' => $data['category'],

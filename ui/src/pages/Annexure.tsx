@@ -117,32 +117,36 @@ const Annexure = ({
   containerInfo,
   form:fm
 }: AnnexureProps) => {
-  const { formData, setAnnexureData, ensureFormDataFromLocalStorage } =
+  const { formData, setAnnexureData } =
     useForm();
+     function onBack2(){
+    if(location.pathname.includes("/drafts/")){
+      navigate(`/packaging-list/drafts/${draftId}`)
+      return;
+    }
+    navigate("/packaging-list")
+  }
     
-    
-    const { methods:form, isReady,hydrated } = useDraftForm({
+   const methods = useFormContext()
+    const { methods:form, isReady,hydrated,saveDraft ,draftId,isDraftMode} = useDraftForm({
       formType: 'annexure',
-      methods:fm
+      methods,
+      isDraftMode: location.pathname.includes("/drafts/"),
     });
-    const {
-      register,
-      watch,
-      setValue,
-      formState: { errors },
-      handleSubmit,
-      control,
-    } = form;
-  const annexureForm = watch();
+    const { register, watch, handleSubmit ,getValues,setValue,formState:{errors},control} = methods;
+  const annexureForm = watch("annexure");
 
-  let invoiceData = JSON.parse(localStorage.getItem("invoiceData2")|| "{}");
-  let invoice = invoiceData;
+  let invoiceData = getValues()
+  // console.log(invoiceData);
+  
+  let invoice = invoiceData.invoice;
+  // console.log(invoice);
   // let packaging = formData.packagingList;
-  let buyer = invoiceData.buyer;
-  let shipping = invoiceData.shipping;
+  let buyer = invoiceData.invoice.buyer;
+  let shipping = invoiceData.invoice.shipping;
   
   // Get current form ID for localStorage
-  const currentFormId = invoiceHeader?.invoiceNo || getCurrentFormId();
+  const currentFormId = invoice?.invoice_number || getCurrentFormId();
   useEffect(() => {
       const subscribe = watch((data) => {
         // Save the form data to localStorage whenever it changes
@@ -153,11 +157,11 @@ const Annexure = ({
       };
     }, [watch]);
   // Load all form data from localStorage on component mount
-  useEffect(() => {
-    if (currentFormId) {
-      ensureFormDataFromLocalStorage(currentFormId);
-    }
-  }, [currentFormId, ensureFormDataFromLocalStorage]);
+  // useEffect(() => {
+  //   if (currentFormId) {
+  //     ensureFormDataFromLocalStorage(currentFormId);
+  //   }
+  // }, [currentFormId, ensureFormDataFromLocalStorage]);
 
   // Function to save a field to localStorage
   const saveFieldToLocalStorage = (field: string, value: any) => {
@@ -192,8 +196,8 @@ const Annexure = ({
     return getValueFromSection(
       "annexure",
       "examDate",
-      invoiceHeader?.invoiceDate
-        ? format(new Date(invoiceHeader.invoiceDate), "dd.MM.yyyy")
+      invoice?.invoice_date
+        ? format(invoice?.invoice_date, "dd.MM.yyyy")
         : format(new Date(), "dd.MM.yyyy")
     );
   });
@@ -201,8 +205,8 @@ const Annexure = ({
     return getValueFromSection(
       "annexure",
       "invoiceDate",
-      invoiceHeader?.invoiceDate
-        ? format(new Date(invoiceHeader.invoiceDate), "dd.MM.yyyy")
+      invoice?.invoice_date
+        ? format(invoice?.invoice_date, "dd.MM.yyyy")
         : format(new Date(), "dd.MM.yyyy")
     );
   });
@@ -218,50 +222,18 @@ const Annexure = ({
     return getValueFromSection("packagingList", "total_packages", "14000");
   });
 
-  const [officeDesignation1, setOfficeDesignation1] = useState(() => {
-    return getValueFromSection(
-      "annexure",
-      "officeDesignation1",
-      "SELF SEALING"
-    );
-  });
-  const [officeDesignation2, setOfficeDesignation2] = useState(() => {
-    return getValueFromSection(
-      "annexure",
-      "officeDesignation2",
-      "SELF SEALING"
-    );
-  });
-  const [selectedManufacturer, setSelectedManufacturer] = useState(() => {
-    return getValueFromSection("annexure", "selectedManufacturer", "");
-  });
-  const [containerSizes, setContainerSizes] = useState<string[]>(() => {
-    return getValueFromSection("annexure", "containerSizes", []);
-  });
-  const [lutDate, setLutDate] = useState(() => {
-    return getValueFromSection("annexure", "lutDate", "27/03/2024");
-  });
-  const [arn, setArn] = useState(() => {
-    return getValueFromSection("annexure", "arn", "AD240324********");
-  });
-  const [locationCode, setLocationCode] = useState(() => {
-    return getValueFromSection("annexure", "locationCode", "");
-  });
-  const [sampleSealNo, setSampleSealNo] = useState(() => {
-    return getValueFromSection("annexure", "sampleSealNo", "N/A");
-  });
-  const [question9a, setQuestion9a] = useState(() => {
-    return getValueFromSection("annexure", "question9a", "YES");
-  });
-  const [question9b, setQuestion9b] = useState(() => {
-    return getValueFromSection("annexure", "question9b", "NO");
-  });
-  const [sealType1, setSealType1] = useState(() => {
-    return getValueFromSection("annexure", "sealType1", "SELF SEALING");
-  });
-  const [sealType2, setSealType2] = useState(() => {
-    return getValueFromSection("annexure", "sealType2", "SELF SEALING");
-  });
+  const [officeDesignation1, setOfficeDesignation1] = useState("SELF SEALING");
+  const [officeDesignation2, setOfficeDesignation2] = useState("SELF SEALING");
+  const [selectedManufacturer, setSelectedManufacturer] = useState("");
+  const [containerSizes, setContainerSizes] = useState([]);
+  const [lutDate, setLutDate] = useState("27/03/2024");
+  const [arn, setArn] = useState("AD240324");
+  const [locationCode, setLocationCode] = useState("");
+  const [sampleSealNo, setSampleSealNo] = useState("N/A");
+  const [question9a, setQuestion9a] = useState("YES");
+  const [question9b, setQuestion9b] = useState("NO");
+  const [sealType1, setSealType1] = useState("SELF SEALING");
+  const [sealType2, setSealType2] = useState("SELF SEALING");
   const navigate = useNavigate();
   // Predefined manufacturer options
   const manufacturers: Record<string, ManufacturerData> = {};
@@ -342,7 +314,7 @@ const Annexure = ({
   // }, [selectedManufacturer]);
 
   // Handle form submission - navigate to VGM form
-  const handleSave = (data) => {
+  const handleSave = async (data) => {
     // Store data for VGM form
     const vgmData = {
       containerInfo,
@@ -356,7 +328,8 @@ const Annexure = ({
     
     // Navigate to the VGM form page
 
-    navigate("/vgm-form");
+   let res = await saveDraft({ last_page: 'vgm-form' }); // Update to next page
+    navigate(`/vgm-form/drafts/${res.id}`)
   };
 
   // Handle container size change
@@ -374,36 +347,59 @@ const Annexure = ({
       gstin_number: selectedSupplier?.gstin_number || "",
       permission: selectedSupplier?.permission || "",
     };
-    setValue("selected_manufacturer",updatedManufacturerData)
+    setValue("annexure.selected_manufacturer",updatedManufacturerData)
     // Update state
+    console.log(updatedManufacturerData);
+    
     setManufacturerData(updatedManufacturerData);
-
+    setValue("annexure.exam_date", examDate);
+    setValue("annexure.net_weight", netWeight);
+    setValue("annexure.invoice_date", invoiceDate);
+    setValue("annexure.total_packages", totalPackages);
+    setValue("annexure.gross_weight", grossWeight);
+    setValue("annexure.lut_date", lutDate);
     // Save to localStorage
-    saveFieldToLocalStorage("selected_manufacturer", updatedManufacturerData);
+    setValue("annexure.range", range);
+    setValue("annexure.question9a", question9a);
+    setValue("annexure.commissionerate", commissionerate);
+    setValue("annexure.question9b", question9b);
+    setValue("annexure.question9c", sampleSealNo);
+    setValue("annexure.seal_type1", sealType1);
+    setValue("annexure.division", division);
+  
+    setValue("annexure.seal_type2", sealType2);
+    setValue("annexure.designation1", officeDesignation1);
+    // saveFieldToLocalStorage("selected_manufacturer", updatedManufacturerData);
+    setValue("annexure.designation2", officeDesignation2);
   };
 
+
 useEffect(() => {
-  const subscription = watch((formValues) => {
-    if (formValues.exam_date !== examDate) {
-      setValue("exam_date", examDate);
-    }
-    if (formValues.invoice_date !== invoiceDate) {
-      setValue("invoice_date", invoiceDate);
-    }
-    if (formValues.net_weight !== netWeight) {
-      setValue("net_weight", netWeight);
-    }
-    if (formValues.gross_weight !== grossWeight) {
-      setValue("gross_weight", grossWeight);
-    }
-    if (formValues.total_packages !== totalPackages) {
-      setValue("total_packages", totalPackages);
-    }
+  // Set all form values immediately when component mounts
+  const initialValues = {
+    "annexure.exam_date": examDate || "",
+    "annexure.invoice_date": invoiceDate || "",
+    "annexure.net_weight": netWeight || "",
+    "annexure.gross_weight": grossWeight || "",
+    "annexure.total_packages": totalPackages || "",
+    "annexure.range": range || "",
+    "annexure.division": division || "",
+    "annexure.commissionerate": commissionerate || "",
+    "annexure.question9a": question9a || "",
+    "annexure.question9b": question9b || "",
+    "annexure.question9c": sampleSealNo || "",
+ 
+    "annexure.seal_type1": sealType1 || "",
+    "annexure.seal_type2": sealType2 || "",
+    "annexure.designation1": officeDesignation1 || "",
+    "annexure.designation2": officeDesignation2 || "",
+  };
+
+  // Set all values at once on initial load
+  Object.entries(initialValues).forEach(([key, value]) => {
+    setValue(key, value);
   });
-
-  return () => subscription.unsubscribe();
-}, [watch, examDate, invoiceDate, netWeight, grossWeight]);
-
+}, []); 
   // add all the annexure data to the formData
   useEffect(() => {
     // Update formData with annexure data'
@@ -463,7 +459,7 @@ useEffect(() => {
             <span className="font-medium mr-2">RANGE:</span>
             <Input
               value={range}
-              {...register("range", { required: true })}
+              {...register("annexure.range", { required: false })}
               onChange={(e) => setRange(()=>e.target.value)}
             />
             {errors.range && (
@@ -474,7 +470,7 @@ useEffect(() => {
             <span className="font-medium mr-2">DIVISION:</span>
             <Input
               value={ division}
-              {...register("division", { required: true })}
+              {...register("annexure.division", { required: false })}
               onChange={(e) => setDivision(()=>e.target.value)}
             />
             {errors.division && (
@@ -485,7 +481,7 @@ useEffect(() => {
             <span className="font-medium mr-2">COMMISSIONERATE:</span>
             <Input
               value={ commissionerate}
-              {...register("commissionerate", { required: true })}
+              {...register("annexure.commissionerate", { required: false })}
               onChange={(e) => setCommissionerate(()=>e.target.value)}
             />
             {errors.commissionerate && (
@@ -546,14 +542,14 @@ useEffect(() => {
                 <div className="mt-3 border-t pt-3">
                   <Input
                     placeholder="Enter branch code"
-                    {...register("branch_code")}
+                    {...register("annexure.branch_code")}
                     className="mt-1"
                   />
                 </div>
                 <div className="mt-3 border-t pt-3">
                   <Input
                     placeholder="Enter BIN number"
-                    {...register("bin_number")}
+                    {...register("annexure.bin_number")}
                     className="mt-1"
                   />
                 </div>
@@ -571,7 +567,7 @@ useEffect(() => {
                 <div>
                   <Controller
                     control={control}
-                    name="selected_manufacturer.name" // Adjust based on your form schema
+                    name="annexure.selected_manufacturer.name" // Adjust based on your form schema
                     defaultValue={manufacturerData.name || ""}
                     render={({ field }) => (
                       <Select
@@ -631,11 +627,11 @@ useEffect(() => {
               <td className="border p-3">
                 <Controller
                   control={control}
-                  name="officer_designation1" // Adjust the name based on your form structure
+                  name="annexure.officer_designation1" // Adjust the name based on your form structure
                   defaultValue={officeDesignation1}
                   render={({ field }) => (
                     <Select
-                      value={field.value}
+                      value={field.value|| "SELF SEALING"}
                       onValueChange={(value) => {
                         field.onChange(value); // Update RHF state
                         setOfficeDesignation1(value); // Update external state if still needed
@@ -673,11 +669,11 @@ useEffect(() => {
               <td className="border p-3">
                 <Controller
                   control={control}
-                  name="officer_designation2" // Update this to match your form schema
+                  name="annexure.officer_designation2" // Update this to match your form schema
                   defaultValue={officeDesignation2 || ""}
                   render={({ field }) => (
                     <Select
-                      value={field.value}
+                      value={field.value|| "SELF SEALING"}
                       onValueChange={(value) => {
                         field.onChange(value); // updates RHF state
                         setOfficeDesignation2(value); // optional if still using local state
@@ -718,10 +714,11 @@ useEffect(() => {
                 <div className="mt-3 pt-3 border-t">
                   <Input
                     value={annexureForm?.location_code || locationCode}
-                    {...register("location_code", { required: true })}
+                    {...register("annexure.location_code", { required: false })}
                     onChange={(e) => {
                       setLocationCode(e.target.value);
                       saveFieldToLocalStorage("location_code", e.target.value);
+                      setValue("annexure.location_code", e.target.value); // Update RHF state
                     }}
                     placeholder="Enter location code"
                   />
@@ -746,8 +743,8 @@ useEffect(() => {
               </td>
               <td className="border p-3">
                 <div className="h-4"></div>
-                <div className="border-t pt-2">{`${invoiceData?.invoice_number} Dt. ${invoiceData?.invoice_date}`}</div>
-                <div className="border-t pt-2 mt-2">{invoiceData?.package.no_of_packages}</div>
+                <div className="border-t pt-2">{`${invoice?.invoice_number} Dt. ${invoice?.invoice_date}`}</div>
+                <div className="border-t pt-2 mt-2">{invoice?.package.no_of_packages}</div>
                 <div className="border-t pt-2 mt-2">
                   <div>{buyer?.consignee}</div>
                   <div>{shipping?.final_destination}</div>
@@ -773,11 +770,11 @@ useEffect(() => {
               <td className="border p-3">
                 <Controller
                   control={control}
-                  name="question9a"
-                  defaultValue={question9a || ""}
+                  name="annexure.question9a"
+                  value={question9a || ""}
                   render={({ field }) => (
                     <Select
-                      value={field.value}
+                      value={field.value|| "YES"}
                       onValueChange={(value) => {
                         field.onChange(value); // RHF state update
                         setQuestion9a(value); // Optional if you still use local state
@@ -807,11 +804,11 @@ useEffect(() => {
               <td className="border p-3">
                 <Controller
                   control={control}
-                  name="question9b"
+                  name="annexure.question9b"
                   defaultValue={question9b || ""}
                   render={({ field }) => (
                     <Select
-                      value={field.value}
+                      value={field.value|| "NO"}
                       onValueChange={(value) => {
                         field.onChange(value); // RHF internal state
                         setQuestion9b(value); // optional local state
@@ -840,8 +837,8 @@ useEffect(() => {
               </td>
               <td className="border p-3">
                 <Input
-                  value={annexureForm?.sample_seal_no || sampleSealNo}
-                  {...register("question9c", { required: true })}
+                  value={sampleSealNo|| annexureForm?.question9c || ""}
+                  {...register("annexure.question9c", { required: false })}
                   onChange={(e) => {
                     setSampleSealNo(e.target.value);
                     saveFieldToLocalStorage("sample_seal_no", e.target.value);
@@ -871,11 +868,11 @@ useEffect(() => {
               <td className="border p-3">
                 <Controller
                   control={control}
-                  name="non_containerized"
+                  name="annexure.non_containerized"
                   defaultValue={sealType1 || ""}
                   render={({ field }) => (
                     <Select
-                      value={field.value}
+                      value={field.value|| "SELF SEALING"}
                       onValueChange={(value) => {
                         field.onChange(value); // Update RHF state
                         setSealType1(value); // Optional: update local state
@@ -904,11 +901,11 @@ useEffect(() => {
               <td className="border p-3">
                 <Controller
                   control={control}
-                  name="containerized"
+                  name="annexure.containerized"
                   defaultValue={sealType2 || ""}
                   render={({ field }) => (
                     <Select
-                      value={field.value}
+                      value={field.value|| "SELF SEALING"}
                       onValueChange={(value) => {
                         field.onChange(value); // RHF state update
                         setSealType2(value); // Optional local state
@@ -1044,7 +1041,7 @@ useEffect(() => {
                   <Input
                     value={lutDate}
                     // type="date"
-                    {...register("lut_date", { required: true })}
+                    {...register("annexure.lut_date", { required: false })}
                     onChange={(e) => {
                       setLutDate(e.target.value);
                       saveFieldToLocalStorage("lut_date", e.target.value);
@@ -1056,7 +1053,7 @@ useEffect(() => {
               <div className="mt-2">
                 EXAMINED THE EXPORT GOODS COVERED UNDER THIS INVOICE,
                 DESCRIPTION OF THE GOODS WITH REFERENCE TO DBK & MEIS SCHEME &
-                NET WEIGHT OF ALL {invoiceData?.products.goods} ARE AS UNDER
+                NET WEIGHT OF ALL {invoiceData?.invoice.products.goods} ARE AS UNDER
               </div>
             </div>
           </div>
@@ -1098,12 +1095,21 @@ useEffect(() => {
 
       {/* Footer Buttons */}
       <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="outline" onClick={onBack2}>
           Back
         </Button>
+        <div className="flex gap-2">
+                    <Button onClick={() => console.log(getValues())}>
+                                    Debug Form
+                                  </Button>
+        <Button onClick={saveDraft}>
+                        
+                        save
+                      </Button>
         <Button variant="default" onClick={handleSubmit(handleSave)}>
           Next
         </Button>
+        </div>
       </div>
     </div>
   );

@@ -55,10 +55,12 @@ export const SupplierDetails = ({
     handleSubmit,
     control,
     setValue,
+    getValues,
     watch,
     formState: { errors },
   } = useFormContext();
-  const supplierForm = watch("suppliers");
+  const supplierForm = getValues("invoice.suppliers");
+  
   // Load supplier options from backend
   useEffect(() => {
     (async () => {
@@ -69,6 +71,9 @@ export const SupplierDetails = ({
         // Failed to fetch suppliers - handled with toast
       }
     })();
+    if(supplierForm && supplierForm.length > 0) {
+      setSuppliers(supplierForm);
+    }
   }, []);
 
   // Sync suppliers with formData
@@ -91,9 +96,9 @@ export const SupplierDetails = ({
   const index = suppliers.findIndex((s) => s.id === supplierId);
   if (index === -1) return;
 
-  setValue(`suppliers.${index}.name`, selected.name);
-  setValue(`suppliers.${index}.gstin_number`, selected.gstin_number);
-  setValue(`suppliers.${index}.address`, selected.address);
+  setValue(`invoice.suppliers.${index}.name`, selected.name);
+  setValue(`invoice.suppliers.${index}.gstin_number`, selected.gstin_number);
+  setValue(`invoice.suppliers.${index}.address`, selected.address);
   setSuppliers(updated);
 };
 
@@ -150,7 +155,7 @@ export const SupplierDetails = ({
         <Label>NAME :</Label>
         <Controller
   control={control}
-  name={`suppliers.${index}.name`}
+  name={`invoice.suppliers.${index}.name`}
   defaultValue={supplier.name}
   render={({ field }) => (
     <Select
@@ -185,7 +190,7 @@ export const SupplierDetails = ({
         <div className="space-y-2">
           <Label>TAX INVOICE NO :</Label>
           <Input
-            {...register(`suppliers.${index}.tax_invoice_number`)}
+            {...register(`invoice.suppliers.${index}.tax_invoice_number`)}
             defaultValue={supplier.tax_invoice_number}
           />
         </div>
@@ -193,7 +198,7 @@ export const SupplierDetails = ({
           <Label>DATE :</Label>
           <Input
             type="date"
-            {...register(`suppliers.${index}.date`)}
+            {...register(`invoice.suppliers.${index}.date`)}
             defaultValue={supplier.date}
           />
         </div>

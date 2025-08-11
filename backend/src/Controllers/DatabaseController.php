@@ -282,4 +282,37 @@ class DatabaseController
             throw new Exception('Database verification failed: ' . $e->getMessage());
         }
     }
+
+    // delete backup file
+    public function deleteBackup(Request $request, Response $response, array $args)
+    {
+        try {
+            if (!isset($args['filename'])) {
+                throw new Exception('Backup filename is required');
+            }
+
+            $backupFile = $this->backupDir . '/' . $args['filename'];
+            if (!file_exists($backupFile)) {
+                throw new Exception('Backup file not found');
+            }
+
+            // Delete the backup file
+            if (!unlink($backupFile)) {
+                throw new Exception('Failed to delete backup file');
+            }
+
+            $response->getBody()->write(json_encode([
+                'status' => 'success',
+                'message' => 'Backup deleted successfully'
+            ]));
+            return $response->withHeader('Content-Type', 'application/json');
+
+        } catch (Exception $e) {
+            $response->getBody()->write(json_encode([
+                'status' => 'error',
+                'message' => 'Delete failed: ' . $e->getMessage()
+            ]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
 } 

@@ -86,7 +86,7 @@ const ProgressQueue: React.FC<ProgressQueueProps> = ({
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
-              // disabled={!allCompleted && !hasFailure}
+              disabled={!allCompleted && !hasFailure}
             >
               <X className="w-5 h-5" />
             </button>
@@ -125,7 +125,7 @@ const ProgressQueue: React.FC<ProgressQueueProps> = ({
           {(allCompleted || hasFailure) && (
             <div className="p-6 border-t border-gray-200 bg-gray-50">
               <div className="flex space-x-3">
-                <button onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md">
+                <button onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md ">
                   Done!
                 </button>
                 <button

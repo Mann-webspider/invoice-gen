@@ -43,6 +43,7 @@ import { generateInvoigenerateDocxceExcel } from "@/lib/wordGenerator";
 import { useForm as rhf, Controller ,useFormContext} from "react-hook-form";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import ProgressQueue, { ProcessItem } from '@/components/ProcessQueue';
+import { useToast } from "@/hooks/use-toast";
 
 // Handle date-fns import with proper TypeScript handling
 let format: (date: Date | number, format: string) => string = (date, fmt) =>
@@ -67,40 +68,11 @@ importDateFns().then((formatFn) => {
   format = formatFn;
 });
 
-// Define a type for toast functions
-type ToastType = {
-  success: (message: string) => void;
-  error: (message: string) => void;
-};
 
-let toast: ToastType = {
-  success: (message: string) => console.log(`[SUCCESS] ${message}`),
-  error: (message: string) => console.error(`[ERROR] ${message}`),
-};
 
-// Using dynamic import for sonner toast library
-const importToast = async () => {
-  try {
-    // Use a type assertion to handle the dynamic import
-    const sonner = await import(/* @vite-ignore */ "sonner" as any);
-    return sonner.toast as {
-      success: (message: string) => void;
-      error: (message: string) => void;
-    };
-  } catch (error) {
-    console.error("Error importing sonner:", error);
-    // Fallback implementation if sonner fails to load
-    return {
-      success: (message: string) => console.log("Success:", message),
-      error: (message: string) => console.error("Error:", message),
-    };
-  }
-};
 
-// Initialize toast function
-importToast().then((toastFn) => {
-  toast = toastFn;
-});
+
+
 
 interface VgmFormProps {
   onBack: () => void;
@@ -179,7 +151,7 @@ interface VGMFormData {
 interface FormContextType {
   formData: Record<string, any>;
   setVGMData: (data: VGMFormData) => void;
-  ensureFormDataFromLocalStorage: (formId: string) => void;
+  
   [key: string]: any;
 }
 
@@ -188,13 +160,14 @@ interface FormContextType {
 
 const VgmForm = ({ onBack, containerInfo, invoiceHeader ,form:fm}: VgmFormProps) => {
   // State for form data
-  const { formData, setVGMData, ensureFormDataFromLocalStorage } =
-    useForm() as FormContextType;
-
-     const { methods:form, isReady,hydrated } = useDraftForm({
-          formType: 'vgm',
-          methods:fm
-        });
+  const { formData, setVGMData } =
+  useForm() as FormContextType;
+  const { toast } = useToast();
+  const methods = useFormContext()
+  const { methods:form, isReady,hydrated,draftId } = useDraftForm({
+    formType: 'vgm-form',
+    methods
+  });
   const {
     register,
     watch,
@@ -202,30 +175,39 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader ,form:fm}: VgmFormProps)
     formState: { errors },
     handleSubmit,
     control,
-  } = form;
-
+    getValues
+  } = methods;
+  
+  function onBack2(){
+   if(location.pathname.includes("/drafts/")){
+     navigate(`/annexure/drafts/${draftId}`)
+     return;
+   }
+   navigate("/annexure")
+ }
 
   const vgnForm = watch();
-  let invoiceData = JSON.parse(localStorage.getItem("invoiceData2") || "null");
+  let invoiceData = getValues();
   const navigate = useNavigate();
 
 // progress model 
 const [isProgressOpen, setIsProgressOpen] = useState(false);
-  const [processes, setProcesses] = useState<ProcessItem[]>([
-    
-  ]);
+const [isSubmitting, setIsSubmitting] = useState(false);
+  const [processes, setProcesses] = useState<ProcessItem[]>([]);
 
   useEffect(() => {
     const subscribe = watch((data) => {
       // Save the form data to localStorage whenever it changes
       console.log(data);
+      console.log(invoiceData?.invoice?.products?.nos === "FCL" ? invoiceData?.invoice?.products?.rightValue : "");
+      
     });
     return () => {
       subscribe.unsubscribe();
     };
-  }, [watch, invoiceHeader]);
+  }, [watch]);
   // Get current form ID for localStorage
-  const currentFormId = invoiceData?.invoice_number || getCurrentFormId();
+  const currentFormId = invoiceData?.invoice.invoice_number || getCurrentFormId();
 
   // State for form data
   const [selectedShipper, setSelectedShipper] = useState(null);
@@ -277,58 +259,58 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
   const typedLoadFormSection = loadFormSection as LoadFormSectionType;
   const typedSaveFormSection = saveFormSection as SaveFormSectionType;
 
-  // Load form data from localStorage on component mount
-  useEffect(() => {
-    if (currentFormId) {
-      ensureFormDataFromLocalStorage(currentFormId);
+  // // Load form data from localStorage on component mount
+  // useEffect(() => {
+  //   if (currentFormId) {
+  //     ensureFormDataFromLocalStorage(currentFormId);
 
-      // Load VGM data from localStorage with proper typing
-      const savedVgmData = typedLoadFormSection<VGMFormData>(
-        currentFormId,
-        "vgm"
-      );
-      if (savedVgmData) {
-        setVGMData(savedVgmData);
+  //     // Load VGM data from localStorage with proper typing
+  //     const savedVgmData = typedLoadFormSection<VGMFormData>(
+  //       currentFormId,
+  //       "vgm"
+  //     );
+  //     if (savedVgmData) {
+  //       setVGMData(savedVgmData);
 
-        // Set individual state variables from savedVgmData
-        setShipperName(savedVgmData.shipperName || "");
-        setShipperAddress(savedVgmData.shipperAddress || "");
-        setBookingNumbers(savedVgmData.bookingNumbers || []);
-        setContainerNumbers(savedVgmData.containerNumbers || []);
-        setSealNumbers(savedVgmData.sealNumbers || []);
-        setTareWeights(savedVgmData.tareWeights || []);
-        setCargoWeights(savedVgmData.cargoWeights || []);
-        setTotalWeights(savedVgmData.totalWeights || []);
-        setWeighingDate(
-           format(new Date(), "dd.MM.yyyy")
-        );
-        setWeighingLocation(savedVgmData.weighingLocation || "");
-        setWeighingMethod(savedVgmData.weighingMethod || "");
-        setAuthorizedPerson(savedVgmData.authorizedPerson || "");
-        setSignatureImage(savedVgmData.signatureImage || "");
-        setShipperRegistration(savedVgmData.shipperRegistration || "");
-        setShipperOfficial(savedVgmData.shipperOfficial || "");
-        setContactDetails(savedVgmData.contactDetails || "");
-        setWeighingTime(
-          savedVgmData.weighingTime || format(new Date(), "HH:mm")
-        );
-        setContainerSize(savedVgmData.containerSize || "20'");
-        setContainerNumber(savedVgmData.containerNumber || "AS PER ANNEXURE");
-        setSelectedExporter(savedVgmData.selectedExporter || "");
-        setSelectedShipperName(savedVgmData.selectedShipperName || "");
+  //       // Set individual state variables from savedVgmData
+  //       setShipperName(savedVgmData.shipperName || "");
+  //       setShipperAddress(savedVgmData.shipperAddress || "");
+  //       setBookingNumbers(savedVgmData.bookingNumbers || []);
+  //       setContainerNumbers(savedVgmData.containerNumbers || []);
+  //       setSealNumbers(savedVgmData.sealNumbers || []);
+  //       setTareWeights(savedVgmData.tareWeights || []);
+  //       setCargoWeights(savedVgmData.cargoWeights || []);
+  //       setTotalWeights(savedVgmData.totalWeights || []);
+  //       setWeighingDate(
+  //          format(new Date(), "dd.MM.yyyy")
+  //       );
+  //       setWeighingLocation(savedVgmData.weighingLocation || "");
+  //       setWeighingMethod(savedVgmData.weighingMethod || "");
+  //       setAuthorizedPerson(savedVgmData.authorizedPerson || "");
+  //       setSignatureImage(savedVgmData.signatureImage || "");
+  //       setShipperRegistration(savedVgmData.shipperRegistration || "");
+  //       setShipperOfficial(savedVgmData.shipperOfficial || "");
+  //       setContactDetails(savedVgmData.contactDetails || "");
+  //       setWeighingTime(
+  //         savedVgmData.weighingTime || format(new Date(), "HH:mm")
+  //       );
+  //       setContainerSize(savedVgmData.containerSize || "20'");
+  //       setContainerNumber(savedVgmData.containerNumber || "AS PER ANNEXURE");
+  //       setSelectedExporter(savedVgmData.selectedExporter || "");
+  //       setSelectedShipperName(savedVgmData.selectedShipperName || "");
 
-        // Set additional fields that were previously duplicated
-        setWeighBridgeNo(
-          savedVgmData.weighbridge_registration || "AS PER ANNEXURE"
-        );
-        setVerifiedGrossMass(savedVgmData.verified_gross_mass || "method-1");
-        setUnitOfMeasure(savedVgmData.unit_of_measurement || "KG");
-        setWeighingSlipNo(savedVgmData.weighing_slip_no || "AS PER ANNEXURE");
-        setContainerType(savedVgmData.type || "NORMAL");
-        setHazardousClass(savedVgmData.IMDG_class || "NA");
-      }
-    }
-  }, [currentFormId, ensureFormDataFromLocalStorage, setVGMData]);
+  //       // Set additional fields that were previously duplicated
+  //       setWeighBridgeNo(
+  //         savedVgmData.weighbridge_registration || "AS PER ANNEXURE"
+  //       );
+  //       setVerifiedGrossMass(savedVgmData.verified_gross_mass || "method-1");
+  //       setUnitOfMeasure(savedVgmData.unit_of_measurement || "KG");
+  //       setWeighingSlipNo(savedVgmData.weighing_slip_no || "AS PER ANNEXURE");
+  //       setContainerType(savedVgmData.type || "NORMAL");
+  //       setHazardousClass(savedVgmData.IMDG_class || "NA");
+  //     }
+  //   }
+  // }, [currentFormId, ensureFormDataFromLocalStorage, setVGMData]);
 
   // Function to save a field to localStorage
   const saveFieldToLocalStorage = (field: string, value: any) => {
@@ -359,7 +341,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
     async function fetchData() {
       try {
         // Ensure all form data is loaded from localStorage
-        ensureFormDataFromLocalStorage(currentFormId);
+        // ensureFormDataFromLocalStorage(currentFormId);
 
         // Fetch exporters from API
         const exporterData = await getExporters();
@@ -402,36 +384,25 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
         break;
     }
   };
-
-  const handleSupplierSelect = (value: string) => {
-    const selectedSupplier = availableSuppliers.find(
-      (s) => s.company_name === value
-    );
-    setValue("ie_code", selectedSupplier?.ie_code || "");
-    setValue("authorized_name", selectedSupplier?.authorized_name || "");
-    setValue("authorized_contact", selectedSupplier?.contact_number || "");
-    setValue("permissible_weight", "AS PER ANNEXURE");
-    setValue("weighing_slip_no", "AS PER ANNEXURE");
-    setValue("dt_weighing", weighingDate);
-    setSelectedShipper(selectedSupplier);
-
+  
+  const applyLetterHeadImages = (exporter)=>{
     // Check if the supplier has letterhead images
-    if (selectedSupplier) {
+    if (exporter) {
       setImagesLoaded(false);
 
       // Set letterhead top image
-      if (selectedSupplier.letterhead_top_image) {
-        getImageUrl(selectedSupplier.id, "header");
-        setLetterheadTopImage(() => getImageUrl(selectedSupplier.id, "header"));
+      if (exporter.letterhead_top_image) {
+        getImageUrl(exporter.id, "header");
+        setLetterheadTopImage(() => getImageUrl(exporter.id, "header"));
         setImagesLoaded(true);
       } else {
         setLetterheadTopImage("");
       }
 
       // Set letterhead bottom image
-      if (selectedSupplier.letterhead_bottom_image) {
+      if (exporter.letterhead_bottom_image) {
         setLetterheadBottomImage(() =>
-          getImageUrl(selectedSupplier.id, "footer")
+          getImageUrl(exporter.id, "footer")
         );
         setImagesLoaded(true);
       } else {
@@ -439,8 +410,8 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
       }
 
       // Set stamp image
-      if (selectedSupplier.stamp_image) {
-        setStampImage(() => getImageUrl(selectedSupplier.id, "signature"));
+      if (exporter.stamp_image) {
+        setStampImage(() => getImageUrl(exporter.id, "signature"));
       } else {
         setStampImage("");
       }
@@ -450,6 +421,55 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
       setStampImage("");
       setImagesLoaded(false);
     }
+  }
+  const handleSupplierSelect = (value: string) => {
+    const selectedSupplier = availableSuppliers.find(
+      (s) => s.company_name === value
+    );
+    setValue("vgm.ie_code", selectedSupplier?.ie_code || "");
+    setValue("vgm.authorized_name", selectedSupplier?.authorized_name || "");
+    setValue("vgm.authorized_contact", selectedSupplier?.contact_number || "");
+    setValue("vgm.permissible_weight", "AS PER ANNEXURE");
+    setValue("vgm.weighing_slip_no", "AS PER ANNEXURE");
+    setValue("vgm.dt_weighing", weighingDate);
+    setSelectedShipper(selectedSupplier);
+
+    // Check if the supplier has letterhead images
+    applyLetterHeadImages(selectedSupplier);
+    // if (selectedSupplier) {
+    //   setImagesLoaded(false);
+
+    //   // Set letterhead top image
+    //   if (selectedSupplier.letterhead_top_image) {
+    //     getImageUrl(selectedSupplier.id, "header");
+    //     setLetterheadTopImage(() => getImageUrl(selectedSupplier.id, "header"));
+    //     setImagesLoaded(true);
+    //   } else {
+    //     setLetterheadTopImage("");
+    //   }
+
+    //   // Set letterhead bottom image
+    //   if (selectedSupplier.letterhead_bottom_image) {
+    //     setLetterheadBottomImage(() =>
+    //       getImageUrl(selectedSupplier.id, "footer")
+    //     );
+    //     setImagesLoaded(true);
+    //   } else {
+    //     setLetterheadBottomImage("");
+    //   }
+
+    //   // Set stamp image
+    //   if (selectedSupplier.stamp_image) {
+    //     setStampImage(() => getImageUrl(selectedSupplier.id, "signature"));
+    //   } else {
+    //     setStampImage("");
+    //   }
+    // } else {
+    //   setLetterheadTopImage("");
+    //   setLetterheadBottomImage("");
+    //   setStampImage("");
+    //   setImagesLoaded(false);
+    // }
   };
   // Predefined shipper options
   const shippers: { [key: string]: any } = {
@@ -464,13 +484,15 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
     //   contact: "**13******",
     // },
   };
-  let containerData = invoiceData.products.containers || [];
+
+  let containerData = invoiceData.invoice.products.containers || [];
   useEffect(() => {
     // Initialize with containerInfo data if available
     if (containerData) {
       // Default shipper to the one from invoice header
-      if (invoiceData?.exporter) {
-        handleShipperSelect(invoiceData.exporter);
+      if (invoiceData?.invoice.exporter) {
+        handleShipperSelect(invoiceData.invoice.exporter);
+        // applyLetterHeadImages(invoiceData.invoice.exporter);
       }
 
       // Initialize booking numbers and tare weights arrays
@@ -480,7 +502,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
       setBookingNumbers(newBookingNumbers);
       setTareWeights(newTareWeights);
     }
-  }, [containerData, invoiceHeader]);
+  }, [containerData]);
 
   const handleShipperSelect = (shipper: string) => {
     setSelectedShipper(shipper);
@@ -548,7 +570,8 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
     setIsProgressOpen(true);
 
     const results: any[] = [];
-
+    
+    
     for (let i = 0; i < excelBlobs.length; i++) {
       const id = `${i + 1}`;
       const { buffer, fileName } = excelBlobs[i];
@@ -556,7 +579,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
        handleProcessUpdate(`${i+1}`, "running");
       
        try {
-        const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number);
+        const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number,data.payment_term);
 
         // 👇 Mark as completed
         handleProcessUpdate(`${i+1}`, "completed");
@@ -567,72 +590,34 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
       }
     }
 
-    toast.success("Upload complete");
+    
+    toast({
+      title: "Upload Complete",
+      description: "All files have been successfully uploaded.",
+      variant: "success",
+    });
     console.log("Upload results:", results);
   } catch (error) {
     console.error("Error generating or uploading files:", error);
-    toast.error("An error occurred during file processing");
+    
+    toast({
+      title: "Error",
+      description: "An error occurred while processing the files" + error.message,
+      variant: "destructive",
+    });
   }
 };
 
   const handleSave = async (data) => {
+    setIsSubmitting(true); // Start loading
     try {
       localStorage.setItem("taxDialogBox", "false");
-      // Update the form context with the current VGM data
-      // setVGMData({
-      //   shipperRegistration,
-      //   shipperOfficial,
-      //   contactDetails,
-      //   weighingDate,
-      //   containerNumber,
-      //   bookingNumbers,
-      //   tareWeights,
-      //   selectedExporter,
-      //   selectedShipperName,
-      //   containerSize,
-      //   weighBridgeNo,
-      //   verifiedGrossMass,
-      //   unitOfMeasure,
-      //   weighingSlipNo,
-      //   containerType,
-      //   hazardousClass,
-      // });
-
-      // Collect all form data from localStorage
-      // const allFormData = collectFormDataFromLocalStorage();
-
-      // Use JSON.stringify with replacer function to handle circular references and pretty print
-      // console.log(
-      //   "Form data for submission:",
-      //   JSON.stringify(
-      //     allFormData,
-      //     (key, value) => {
-      //       // Prevent circular references by not including fullForm in the logged output
-      //       if (key === "fullForm") return "[Circular Reference - Not Shown]";
-      //       return value;
-      //     },
-      //     2
-      //   )
-      // );
+      
       // Send the data to the PHP backend API
-      let invoiceData = JSON.parse(
-        localStorage.getItem("invoiceData2") || "null"
-      );
-      let packagingData = JSON.parse(
-        localStorage.getItem("packagingList") || "null"
-      );
-      let annexureData = JSON.parse(
-        localStorage.getItem("annexureData2") || "null"
-      );
-
-      const allFormData = {
-        invoice: { ...invoiceData },
-
-        annexure: { ...annexureData },
-        vgm: { ...data },
-      };
-      console.log(allFormData);
-      const response = await invoiceApi.generate(allFormData);
+      
+      let hmmData = getValues()
+      console.log(hmmData);
+      const response = await invoiceApi.generate(hmmData);
       console.log(response.data);
       const actualData = await invoiceApi.getSpecific(response.data.id);
       console.log(actualData.data);
@@ -646,16 +631,33 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
         clearLocalStorage();
 
         // Show success message
-        toast.success("Form submitted successfully to backend");
+        
+        toast({
+          title: "Success",
+          description: "Form submitted successfully to backend",
+          variant: "success",
+        });
 
         // Navigate to the dashboard or success page
         // navigate("/");
       } else {
-        toast.error("Failed to submit form to backend");
+       
+        toast({
+          title: "Error",
+          description: "Failed to submit form to backend",
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Error submitting form:", error);
-      toast.error("An error occurred while submitting the form");
+      toast({
+        title: "Error",
+        description: "An error occurred while submitting the form",
+        variant: "destructive",
+      });
+      
+    }finally{
+      setIsSubmitting(false); // Stop loading
     }
   };
 
@@ -854,7 +856,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
               <div className="space-y-2">
                 <Label className="font-medium">1. Name of the shipper</Label>
                 <Controller
-                  name="shipper_name"
+                  name="vgm.shipper_name"
                   control={control}
                   render={({ field }) => (
                     <Select
@@ -895,6 +897,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                 </Label>
                 <Input
                   value={selectedShipper?.ie_code || ""}
+                 
                   readOnly
                   className="bg-gray-50"
                 />
@@ -947,7 +950,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                 <Label className="font-medium">5. Container No.</Label>
                 <Input
                   value={containerNumber}
-                  {...register("container_number")}
+                  {...register("vgm.container_number")}
                   onChange={(e) => {
                     setContainerNumber(e.target.value);
                     saveFieldToLocalStorage("container_number", e.target.value);
@@ -965,29 +968,33 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                   6. Container Size ( TEU/FEU/other)
                 </Label>
                 <Controller
-                  name="container_size"
-                  control={control}
-                  rules={{ required: true }}
-                  render={({ field, fieldState: { error } }) => (
-                    <Select
-                      value={field.value}
-                      onValueChange={(value) => field.onChange(value)}
-                    >
-                      <SelectTrigger className={error ? "border-red-500" : ""}>
-                        <SelectValue placeholder="Select container size" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="20'">20'</SelectItem>
-                        <SelectItem value="40'">40'</SelectItem>
-                        <SelectItem value="20' 40'">20' 40'</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
+  name="vgm.container_size"
+  control={control}
+  rules={{ required: true }}
+   defaultValue={invoiceData?.invoice?.products?.nos === "FCL" 
+      ? invoiceData?.invoice?.products?.rightValue || ""
+      : ""}
+  render={({ field, fieldState: { error } }) => (
+    <Select
+      value={field.value || invoiceData?.invoice?.products?.nos === "FCL" ? invoiceData?.invoice?.products?.rightValue : ""}
+      onValueChange={(value) => field.onChange(value)}
+    >
+      <SelectTrigger className={error ? "border-red-500" : ""}>
+        <SelectValue placeholder="Select container size" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="20'">20'</SelectItem>
+        <SelectItem value="40'">40'</SelectItem>
+        <SelectItem value="20' 40'">20' 40'</SelectItem>
+      </SelectContent>
+    </Select>
+  )}
+/>
+
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  {containerSize ? vgnForm.container_size : ""}
+                  {containerSize ? vgnForm?.vgm?.container_size : ""}
                 </div>
               </div>
             </div>
@@ -1012,7 +1019,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                 </Label>
                 <Input
                   value={weighBridgeNo}
-                  {...register("weighbridge_registration")}
+                  {...register("vgm.weighbridge_registration")}
                   onChange={(e) => {
                     setWeighBridgeNo(e.target.value);
                     saveFieldToLocalStorage(
@@ -1033,9 +1040,10 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                   9. Verified gross mass of container (method-1/method-2)
                 </Label>
                 <Controller
-                  name="verified_gross_mass"
+                  name="vgm.verified_gross_mass"
                   control={control}
                   rules={{ required: true }}
+                  defaultValue="method-1"
                   render={({ field, fieldState: { error } }) => (
                     <Select
                       value={field.value}
@@ -1057,7 +1065,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  {verifiedGrossMass ? vgnForm.verified_gross_mass : ""}
+                  {verifiedGrossMass ? vgnForm?.vgm.verified_gross_mass : ""}
                 </div>
               </div>
             </div>
@@ -1068,12 +1076,13 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                   10. Unit of measure (KG / MT/ LBS)
                 </Label>
                 <Controller
-                  name="unit_of_measurement"
+                  name="vgm.unit_of_measurement"
                   control={control}
                   rules={{ required: true }}
+                  defaultValue="KG"
                   render={({ field, fieldState: { error } }) => (
                     <Select
-                      value={field.value}
+                      value={field.value||"KG"}
                       onValueChange={(value) => {
                         field.onChange(value); // Update RHF state
                         saveFieldToLocalStorage("unit_of_measurement", value); // Persist to local storage
@@ -1093,7 +1102,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  {unitOfMeasure ? vgnForm.unit_of_measurement : ""}
+                  {unitOfMeasure ? vgnForm?.vgm.unit_of_measurement : ""}
                 </div>
               </div>
             </div>
@@ -1113,7 +1122,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  Dt. {weighingDate ? vgnForm.dt_weighing : ""}
+                  Dt. {weighingDate ? vgnForm?.vgm.dt_weighing : ""}
                 </div>
               </div>
             </div>
@@ -1140,12 +1149,13 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                   13. Type (Normal/Reefer/Hazardous/others)
                 </Label>
                 <Controller
-                  name="type"
+                  name="vgm.type"
                   control={control}
                   rules={{ required: true }}
+                  defaultValue="NORMAL"
                   render={({ field, fieldState: { error } }) => (
                     <Select
-                      value={field.value}
+                      value={field.value||"NORMAL"}
                       onValueChange={(value) => {
                         field.onChange(value); // Update RHF state
                         saveFieldToLocalStorage("type", value); // Save to local storage
@@ -1166,7 +1176,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  {containerType ? vgnForm.type : ""}
+                  {containerType ? vgnForm?.vgm?.type : ""}
                 </div>
               </div>
             </div>
@@ -1178,7 +1188,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                 </Label>
                 <Input
                   value={hazardousClass}
-                  {...register("IMDG_class", { defaultValue: "NA" })}
+                  {...register("vgm.IMDG_class", { defaultValue: "NA" })}
                   onChange={(e) => {
                     setHazardousClass(e.target.value);
                     saveFieldToLocalStorage("IMDG_class", e.target.value);
@@ -1226,13 +1236,13 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                 {containerData ? (
                   containerData.map((row, index) => {
                     const tare =
-                      vgnForm?.containers?.[index]?.tare_weight || "0";
+                      vgnForm?.vgm?.containers?.[index]?.tare_weight || "0";
                     const gross = row.gross_weight || "0";
                     const vgm = calculateTotalVGM(gross, tare);
 
                     // Optional: keep total_vgm synced in the form (for submission)
                     useEffect(() => {
-                      setValue(`containers.${index}.total_vgm`, vgm);
+                      setValue(`vgm.containers.${index}.total_vgm`, vgm);
                     }, [tare, gross]);
                     return (
                       <TableRow
@@ -1242,7 +1252,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                         <TableCell className="border p-0">
                           <Input
                             // value={bookingNumbers[index] || ""}
-                            {...register(`containers.${index}.booking_no`, {
+                            {...register(`vgm.containers.${index}.booking_no`, {
                               required: true,
                             })}
                             // onChange={(e) =>
@@ -1259,7 +1269,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                         <TableCell className="border text-center">
                           <Input
                             value={row.container_no || ""}
-                            {...register(`containers.${index}.container_no`, {
+                            {...register(`vgm.containers.${index}.container_no`, {
                               required: true,
                               defaultValue: row?.container_no,
                             })}
@@ -1275,7 +1285,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                               <Input
                                 value={row.gross_weight || "0.00"}
                                 {...register(
-                                  `containers.${index}.gross_weight`,
+                                  `vgm.containers.${index}.gross_weight`,
                                   {
                                     required: true,
                                     defaultValue: row.gross_weight || "0.00",
@@ -1289,7 +1299,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                             <div className="px-2">+</div>
                             <Input
                               // value={tareWeights[index] || ""}
-                              {...register(`containers.${index}.tare_weight`, {
+                              {...register(`vgm.containers.${index}.tare_weight`, {
                                 required: true,
                                 defaultValue: tare || "0",
                                 pattern: {
@@ -1303,9 +1313,11 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                               // }
                               onChange={(e) => {
                                 const value = e.target.value;
+
                                 if (/^\d*\.?\d*$/.test(value)) {
+                                  handleTareWeightChange(index, value)
                                   setValue(
-                                    `containers.${index}.tare_weight`,
+                                    `vgm.containers.${index}.tare_weight`,
                                     value
                                   ); // update form manually
                                 }
@@ -1320,21 +1332,20 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
 
                             <div className="px-2">=</div>
                             <div className="text-right pl-2 w-1/3 font-medium">
-                              <Input
-                                value={vgm}
-                                readOnly
-                                placeholder="Total VGM"
-                                className="h-10 border-0 text-center w-28"
-                              />
-
-                              {/* Hidden input to keep in form submission */}
-                              <input
-                                className="hidden "
-                                {...register(`containers.${index}.total_vgm`, {
-                                  required: true,
-                                })}
-                                value={vgm}
-                              />
+                              {/* ✅ Use watch to get real-time value or controlled input */}
+              <Controller
+                name={`vgm.containers.${index}.total_vgm`}
+                control={control}
+                defaultValue={vgm}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    readOnly
+                    placeholder="Total VGM"
+                    className="h-10 border-0 text-center w-28"
+                  />
+                )}
+              />
                             </div>
                           </div>
                         </TableCell>
@@ -1382,7 +1393,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
                 <Input
                   type="text"
                   placeholder="Enter forwarder email"
-                  {...register("forwarder_email", {required:"Enter the email", defaultValue: "" })}
+                  {...register("vgm.forwarder_email", {required:"Enter the email", defaultValue: "" })}
                   className=""
                 />
                 {errors.forwarder_email && (
@@ -1396,10 +1407,49 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
 
       {/* Footer Buttons */}
       <div className="flex justify-between mt-8">
-        <Button variant="outline" onClick={onBack}>
+        <Button variant="outline" onClick={onBack2}>
           Back
         </Button>
-        <Button onClick={handleSubmit(handleSave)}>Submit</Button>
+
+        <Button 
+  onClick={handleSubmit(handleSave)}
+  disabled={isSubmitting}
+  className={`
+    transition-all duration-300 ease-in-out
+    ${isSubmitting 
+      ? 'opacity-70 cursor-not-allowed' 
+      : 'hover:scale-105 active:scale-95'
+    }
+  `}
+>
+  {isSubmitting ? (
+    <div className="flex items-center gap-2">
+      <svg 
+        className="animate-spin h-4 w-4" 
+        xmlns="http://www.w3.org/2000/svg" 
+        fill="none" 
+        viewBox="0 0 24 24"
+      >
+        <circle 
+          className="opacity-25" 
+          cx="12" 
+          cy="12" 
+          r="10" 
+          stroke="currentColor" 
+          strokeWidth="4"
+        />
+        <path 
+          className="opacity-75" 
+          fill="currentColor" 
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+      Submitting...
+    </div>
+  ) : (
+    'Submit'
+  )}
+</Button>
       </div>
 
       {/* Letterhead Bottom Image */}

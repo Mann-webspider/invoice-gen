@@ -74,6 +74,7 @@ import { useForm } from "@/context/FormContext";
 import api from "@/lib/axios";
 import { Controller, useForm as rhf,FormProvider,useFormContext  } from "react-hook-form";
 import { useDraftForm } from "@/hooks/useDraftForm";
+import { nanoid } from "nanoid"; 
 
 // Check if invoice data exists in local storage
 const invoiceData = localStorage.getItem("invoiceData");
@@ -166,7 +167,7 @@ function numberToWords(num: number) {
   return result.join(" ") + " ONLY";
 }
 
-const InvoiceGenerator = ({form:methods}) => {
+const InvoiceGenerator = () => {
   const navigate = useNavigate(); // Use useNavigate from react-router-dom
   const { formData, setInvoiceData } = useForm();
 
@@ -176,11 +177,56 @@ const InvoiceGenerator = ({form:methods}) => {
 
   const [taxOptionDialogOpen, setTaxOptionDialogOpen] = useState(false);
 
-  
-  const { methods:form, handleSubmit, isReady,hydrated } = useDraftForm({
+  // Add state to force isDirty detection after draft load
+  const [forceIsDirty, setForceIsDirty] = useState(false);
+  const methods = useFormContext();
+  const { methods:draftMethods,hydrated,saveDraft,isDraftMode,draftId} = useDraftForm({
   formType: 'invoice',
-  methods
+  methods,
+  isDraftMode: location.pathname.includes("/drafts/"), // Pass the isDraft flag to useDraftForm
 });
+const form = draftMethods || methods;
+
+const { 
+    watch, 
+    handleSubmit,
+    control, 
+    getValues,
+    setValue,
+    formState: { isDirty } 
+  } = form;
+
+
+ useEffect(() => {
+  if (!isDraftMode) {
+    methods.reset({}); // Clear the form if not in draft mode
+  }
+}, [isDraftMode]);
+
+// On mount, check if integrated_tax is present — if so, don’t show the dialog:
+const integratedTaxDialog = watch("invoice.integrated_tax");
+const paymentTermsDialog = watch("invoice.payment_term");
+const productTypeDialog = watch("invoice.product_type");
+
+useEffect(() => {
+  if (!hydrated) return;
+
+  const shouldShowTaxDialog = !integratedTaxDialog;
+  const shouldShowPaymentTermsDialog = !paymentTermsDialog;
+  const shouldShowProductTypeDialog = !productTypeDialog;
+
+  const anyMissing = shouldShowTaxDialog || shouldShowPaymentTermsDialog || shouldShowProductTypeDialog;
+
+  console.log("Any field missing:", anyMissing);
+  if(anyMissing== false) {
+    setIntegratedTaxOption(integratedTaxDialog);
+    setPaymentTerms(paymentTermsDialog);
+    handlePaymentTermsChange(paymentTermsDialog)
+    setProductType(productTypeDialog);
+  }
+  setTaxOptionDialogOpen(anyMissing); // ⬅ open only if something is missing
+}, [hydrated, integratedTaxDialog, paymentTermsDialog, productTypeDialog]);
+
 
   // Invoice Header
   const [invoiceNo, setInvoiceNo] = useState<string>("");
@@ -265,6 +311,7 @@ const InvoiceGenerator = ({form:methods}) => {
     "FOB",
     "CIF",
     "CNF",
+    "CIF -> FOB",
   ]);
 
   const [productType, setProductType] = useState<string>("Tiles");
@@ -337,7 +384,7 @@ const InvoiceGenerator = ({form:methods}) => {
     setTaxOptionDialogOpen(true);
 
     // Reset localStorage value to ensure dialog shows
-    localStorage.removeItem("taxDialogBox");
+    // localStorage.removeItem("taxDialogBox");
 
     // Set initial data from companyProfile
     if (companyProfile) {
@@ -428,6 +475,8 @@ const InvoiceGenerator = ({form:methods}) => {
       finalTotal += insuranceAmount + freightAmount;
     } else if (paymentTerms === "CNF") {
       finalTotal += freightAmount;
+    }else if (paymentTerms === "CIF -> FOB"){
+      finalTotal += insuranceAmount + freightAmount;
     }
 
     setTotalFOBEuro(finalTotal);
@@ -481,14 +530,14 @@ const InvoiceGenerator = ({form:methods}) => {
     const defaultSize = sizes[0];
     const defaultSqmPerBox = sizeToSqmMap[defaultSize] || 1.44;
 
-    const newItem: InvoiceItem = {
-      id: Date.now().toString(),
+    const newItem = {
+      id: nanoid(),
       product: {
         id: "",
         description: "",
         hsnCode: hsnCode,
         size: defaultSize,
-        price: 0,
+        price: "",
         sqmPerBox: defaultSqmPerBox,
         marksAndNos: `${marksAndNumbersValues.leftValue}${marksAndNumbersValues.rightValue} ${marksAndNumbersValues.containerType}`,
       },
@@ -513,7 +562,7 @@ const InvoiceGenerator = ({form:methods}) => {
     const defaultTitle = sectionOptions[0] || "Glazed porcelain Floor Tiles";
 
     const newSection: ProductSection = {
-      id: Date.now().toString(),
+      id: nanoid(),
       title: defaultTitle,
       items: [],
     };
@@ -548,8 +597,9 @@ const InvoiceGenerator = ({form:methods}) => {
 
   
   // Update the handleNext function to pass data to PackagingList
-  const handleNext = (data) => {
+  const handleNext = async (data) => {
     // Track if any validation errors occurred
+    console.log("i clieked in handleNext");
     
     // console.log(data);
     localStorage.setItem(`invoiceData2`, JSON.stringify(data));
@@ -712,23 +762,30 @@ const InvoiceGenerator = ({form:methods}) => {
       JSON.stringify(directExporterData)
     );
     localStorage.setItem("orderData", JSON.stringify(orderData));
-
+    console.log(getValues());
+    
     // // Navigate to the packaging list page
-    navigate("/packaging-list");
+    const result = await saveDraft({ last_page: 'packaging-list' }); // Update to next page
+    
+      navigate(`/packaging-list/drafts/${result.id}`);
   };
 
   // Update the paymentTerms handler to show/hide insurance and freight fields
   const handlePaymentTermsChange = (value: string) => {
     setPaymentTerms(value);
 
-    // Show insurance and freight fields for CIF and CNF
-    if (value === "CIF" || value === "CNF") {
+   
+    
+    if (value === "CIF" || value === "CNF" || value === "CIF -> FOB") {
       setShowInsuranceFreight(true);
 
       // Update Terms of Delivery based on payment terms
       if (value === "CIF") {
         setTermsOfDelivery(`CIF AT ${portOfDischarge}`);
-      } else {
+      } 
+      if (value === "CIF -> FOB"){
+        setTermsOfDelivery(`CIF -> FOB AT ${portOfDischarge}`);
+      }else {
         setTermsOfDelivery(`CNF AT ${portOfDischarge}`);
       }
     } else {
@@ -747,6 +804,7 @@ const InvoiceGenerator = ({form:methods}) => {
     setMarkNumber(markNumber);
   }, [sections]);
 
+  
   // Add handler for product type change
   const handleProductTypeChange = (newType: string) => {
     setProductType(newType);
@@ -868,6 +926,7 @@ const InvoiceGenerator = ({form:methods}) => {
             freightAmount={freightAmount}
             setFreightAmount={setFreightAmount}
             totalFOBEuro={totalFOBEuro}
+            setTotalFOBEuro={setTotalFOBEuro}
             paymentTerms={paymentTerms}
             marksAndNumbersValues={marksAndNumbersValues}
             setMarksAndNumbersValues={setMarksAndNumbersValues}
@@ -909,13 +968,29 @@ const InvoiceGenerator = ({form:methods}) => {
           {/* Footer Buttons */}
           <Card className="mt-6">
             <CardFooter className="flex justify-end gap-4">
-              <Button onClick={form.handleSubmit(handleNext)}>
+              {/* debug  */}
+              <Button onClick={() => console.log(getValues())}>
+                Debug Form
+              </Button>
+              <Button onClick={saveDraft}>
+                <ArrowRight className="mr-2 h-4 w-4" />
+                save
+              </Button>
+              <Button onClick={handleSubmit(handleNext)}>
                 <ArrowRight className="mr-2 h-4 w-4" />
                 Next
               </Button>
             </CardFooter>
           </Card>
           </FormProvider>
+          {/* <FormExitPrompt
+        show={showPrompt}
+        isProcessing={isProcessing}
+        onSaveDraft={handleSaveAndContinue}
+        onContinue={handleContinueWithoutSaving}
+        onDiscard={handleDiscard}
+        onCancel={handleCancel}
+      /> */}
         </div>
 
         {/* Dialogs */}
@@ -972,12 +1047,13 @@ const InvoiceGenerator = ({form:methods}) => {
                         Integrated Tax Option
                       </Label>
                       <Controller
-                        control={form.control}
-                        name="integrated_tax" // change this path based on your form structure
+                        control={control}
+                        name="invoice.integrated_tax" // change this path based on your form structure
+                        
                         defaultValue={integratedTaxOption}
                         render={({ field }) => (
                           <Select
-                            value={field.value}
+                            value={field.value || "WITHOUT"}
                             onValueChange={(value: "WITH" | "WITHOUT") => {
                               field.onChange(value);
                               setIntegratedTaxOption(value); // still updates local state if needed
@@ -997,17 +1073,19 @@ const InvoiceGenerator = ({form:methods}) => {
                           </Select>
                         )}
                       />
+
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="paymentTerms">Payment Terms</Label>
                       <Controller
-                        control={form.control}
-                        name="payment_term" // Update the name based on your form structure
+                        control={control}
+                        name="invoice.payment_term" // Update the name based on your form structure
+                        
                         defaultValue={paymentTerms}
                         render={({ field }) => (
                           <Select
-                            value={field.value}
+                            value={field.value || "FOB"}
                             onValueChange={(value) => {
                               field.onChange(value);
                               handlePaymentTermsChange(value); // still call your handler if needed
@@ -1031,12 +1109,13 @@ const InvoiceGenerator = ({form:methods}) => {
                     <div className="space-y-2">
                       <Label htmlFor="productType">Product Type</Label>
                       <Controller
-                        control={form.control}
-                        name="product_type" // Change to match your schema
+                        control={control}
+                        name="invoice.product_type" // Change to match your schema
+                       
                         defaultValue={productType}
                         render={({ field }) => (
                           <Select
-                            value={field.value}
+                            value={field.value || "Tiles"}
                             onValueChange={(value: string) => {
                               field.onChange(value);
                               handleProductTypeChange(value); // Optional: for local side effects
@@ -1070,14 +1149,11 @@ const InvoiceGenerator = ({form:methods}) => {
                     return;
                   }
 
-                  localStorage.setItem("taxDialogBox", "false");
+                  // localStorage.setItem("taxDialogBox", "false");
                   setTaxOptionDialogOpen(false);
-                  setInvoiceData({
-                    ...formData.invoice,
-                    integrated_tax: integratedTaxOption,
-                    payment_term: paymentTerms,
-                    product_type: productType,
-                  });
+                  setValue("invoice.integrated_tax", integratedTaxOption);
+                  setValue("invoice.payment_term", paymentTerms);
+                  setValue("invoice.product_type", productType);
                 }}
               >
                 Submit

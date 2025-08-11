@@ -38,7 +38,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
     watch,
     formState: { errors },
   } = useFormContext();
-  const buyerForm = watch("buyer");
+  const buyerForm = watch("invoice.buyer");
   // useEffect(() => {
   //   const subscribe = watch((value) => {
   //     console.log(value);
@@ -76,10 +76,13 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
                 <Input
                   id="buyersOrderNo"
                   value={buyerForm?.buyer_order_no || ""}
-                  {...register("buyer.buyer_order_no", { required: true })}
+                  {...register("invoice.buyer.buyer_order_no", { required: true })}
                   // onChange={(e) => setBuyersOrderNo(e.target.value)}
                   placeholder="Enter buyer's order number"
                 />
+                {errors?.invoice?.buyer?.buyer_order_no && (
+                  <span className="text-red-500 text-sm">Required</span>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -87,7 +90,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
                 
 
 <Controller
-  name="buyer.buyer_order_date"
+  name="invoice.buyer.buyer_order_date"
   control={control}
   rules={{ required: true }}
   render={({ field }) => {
@@ -96,7 +99,12 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
 
     const handleDateChange = (date: Date | undefined) => {
       if (date) {
-        const formatted = date.toISOString().split("T")[0]; // yyyy-mm-dd
+        // ✅ Use local timezone instead of UTC to avoid date shifting
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        const formatted = `${day}/${month}/${year}`; // yyyy-mm-dd
+        
         field.onChange(formatted);
         setIsOpen(false);
       }
@@ -133,7 +141,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
           className={cn(
             "w-full pr-10",
             !field.value && "text-muted-foreground",
-            errors?.buyer?.buyer_order_date && "border-red-500"
+            errors?.invoice?.buyer?.buyer_order_date && "border-red-500"
           )}
         />
         <CalendarIcon
@@ -145,7 +153,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
             <Calendar
               mode="single"
               selected={
-                field.value ? new Date(field.value) : undefined
+                field.value ? new Date(field.value + 'T00:00:00') : undefined
               }
               onSelect={handleDateChange}
               initialFocus
@@ -158,7 +166,9 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
 />
 
 
-                {errors.buyer_order_date && (
+
+
+                {errors?.invoice?.buyer?.buyer_order_date && (
                   <span className="text-red-500 text-sm">Required</span>
                 )}
               </div>
@@ -168,10 +178,13 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
               <Input
                 id="poNo"
                 value={buyerForm?.po_no || ""}
-                {...register("buyer.po_no", { required: true })}
+                {...register("invoice.buyer.po_no", { required: true })}
                 // onChange={(e) => setPoNo(e.target.value)}
                 placeholder="Enter PO number"
               />
+              {errors?.invoice?.buyer?.po_no && (
+                  <span className="text-red-500 text-sm">Required</span>
+                )}
             </div>
 
             <div className="grid grid-cols-2 gap-4 mt-6">
@@ -180,19 +193,23 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
                 <Input
                   id="consignee"
                   value={buyerForm?.consignee || ""}
-                  {...register("buyer.consignee", { required: true })}
+                  {...register("invoice.buyer.consignee", { required: true })}
                   // onChange={(e) => setConsignee(e.target.value)}
                   placeholder="Enter consignee details"
                 />
+                {errors?.invoice?.buyer?.consignee && (
+                  <span className="text-red-500 text-sm">Required</span>
+                )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="notifyParty">NOTIFY PARTY</Label>
                 <Textarea
                   id="notifyParty"
                   value={buyerForm?.notify_party || ""}
-                  {...register("buyer.notify_party", { required: true })}
+                  {...register("invoice.buyer.notify_party", { value: "-" })}
                   // onChange={(e) => setNotifyParty(e.target.value)}
                   placeholder="Enter notify party details"
+                  required={false}
                 />
               </div>
             </div>

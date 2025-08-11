@@ -2,6 +2,7 @@
 
 namespace Shelby\OpenSwoole\Controllers;
 
+use Exception;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
 use Shelby\OpenSwoole\Lib\PdfConverter;
@@ -24,93 +25,155 @@ class PdfController
 
     }
     public static function convert(Request $request, Response $response, $args)
-    {
-        $parsedBody = $request->getParsedBody();
-        $invoiceId = $parsedBody['id'] ?? null;
+{
+    $parsedBody = $request->getParsedBody();
+    $invoiceId = $parsedBody['id'] ?? null;
 
-        if (!$invoiceId) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'message' => 'Missing invoice ID.'
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-        }
-
-        $uploadedFiles = $request->getUploadedFiles();
-        if (!isset($uploadedFiles['file'])) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'message' => 'No file uploaded.'
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-        }
-
-        $uploadedFile = $uploadedFiles['file'];
-        if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
-            $response->getBody()->write(json_encode([
-                'success' => false,
-                'message' => 'Upload error.'
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
-        }
-        $formattedInvoice = self::changeInvoice($invoiceId);
-        // Define permanent storage folder: database/data/{invoiceId}
-        $storageDir = __DIR__ . '/../../database/data/' . $formattedInvoice;
-        if (!file_exists($storageDir)) {
-            mkdir($storageDir, 0755, true);
-        }
-
-        // all file paths
-        $files = [
-            $storageDir . DIRECTORY_SEPARATOR.'CUSTOM_INVOICE.xlsx',
-            $storageDir . DIRECTORY_SEPARATOR.'PACKING_LIST.xlsx',
-            $storageDir .DIRECTORY_SEPARATOR .'ANNEXURE.xlsx',
-            $storageDir .DIRECTORY_SEPARATOR .'VGN.xlsx',
-        ];
-        
-        // if all file exists then combine them otherwise just continue the rest of the process
-
-
-        // Save uploaded Excel file
-        $originalFilename = $uploadedFile->getClientFilename();
-        $savedExcelPath = $storageDir . DIRECTORY_SEPARATOR . $originalFilename;
-
-        $uploadedFile->moveTo($savedExcelPath);
-
-
-        // Convert Excel to PDF
-        // $result = PdfConverter::convertExcelToPdf($savedExcelPath, $storageDir); // Output PDF in same folder
-        $result = PdfConverter::convertExcelToPdf($savedExcelPath, $storageDir, $originalFilename); // Output PDF in same folder
-        if (file_exists($files[0]) && file_exists($files[1]) && file_exists($files[2]) && file_exists($files[3])) {
-            error_log("✅ All files exist. Combining them into one Excel file.\n");
-            $combineOutputFile = $storageDir . DIRECTORY_SEPARATOR.'COMBINED_INVOICE.xlsx';
-            // Combine all Excel files into one
-            $result = PdfConverter::combineExcelFilesIntoOne($files, $combineOutputFile);
-        } else {
-            error_log("❌ Some files are missing. Proceeding with the uploaded file only.\n");
-
-        }
-        $pdfFiles = $result['pdfFiles'] ?? [];
-        if (!$result['success']) {
-            return self::jsonError(
-                $response,
-                $result['message'] ?? 'Unknown conversion error occurred.',
-                500,
-                $result['error'] ?? $result['output'] ?? []
-            );
-
-        }
-
-        return self::jsonSuccess($response, 'File uploaded and converted successfully.', [
-            'excel' => $formattedInvoice . '/' . $originalFilename,
-
-            'pdfs' => array_map(function ($relativePath) use ($formattedInvoice) {
-                return $formattedInvoice . '/' . basename($relativePath);
-            }, $pdfFiles),
-        ]);
-
-
+    if (!$invoiceId) {
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => 'Missing invoice ID.'
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
     }
+
+    $uploadedFiles = $request->getUploadedFiles();
+    if (!isset($uploadedFiles['file'])) {
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => 'No file uploaded.'
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+    }
+
+    $uploadedFile = $uploadedFiles['file'];
+    if ($uploadedFile->getError() !== UPLOAD_ERR_OK) {
+        $response->getBody()->write(json_encode([
+            'success' => false,
+            'message' => 'Upload error.'
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+    }
+
+    $formattedInvoice = self::changeInvoice($invoiceId);
+    
+    // Fix path building - use realpath to normalize
+    $storageDir = realpath(__DIR__ . '/../../database/data') . DIRECTORY_SEPARATOR . $formattedInvoice;
+    if (!file_exists($storageDir)) {
+        mkdir($storageDir, 0755, true);
+    }
+
+    // Get list of files to combine from request (optional)
+    $filesToCombine = $parsedBody['files_to_combine'] ?? null;
+    error_log("Files to combine: " . json_encode($filesToCombine));
+    // If no specific files requested, use default list
+    if ($filesToCombine != "FOB") {
+        $filesToCombine = [
+            'CUSTOM_INVOICE.xlsx',
+            'WORKSHEET_COPY.xlsx', 
+            'PACKING_LIST.xlsx',
+            'ANNEXURE.xlsx',
+            'VGN.xlsx'
+        ];
+    }else{
+        $filesToCombine = [
+            'CUSTOM_INVOICE.xlsx',
+            'PACKING_LIST.xlsx',
+            'ANNEXURE.xlsx',
+            'VGN.xlsx'
+        ];
+    }
+
+    // Save uploaded Excel file first
+    $originalFilename = $uploadedFile->getClientFilename();
+    $savedExcelPath = $storageDir . DIRECTORY_SEPARATOR . $originalFilename;
+    $uploadedFile->moveTo($savedExcelPath);
+
+    // Build full paths for files to combine and check existence
+    $existingFiles = [];
+    $missingFiles = [];
+    
+    foreach ($filesToCombine as $filename) {
+        $fullPath = $storageDir . DIRECTORY_SEPARATOR . $filename;
+        $normalizedPath = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $fullPath);
+        $result = PdfConverter::convertExcelToPdf($savedExcelPath, $storageDir, $originalFilename);
+        if (file_exists($normalizedPath)) {
+            $existingFiles[] = $normalizedPath;
+            error_log("✅ Found file: " . $normalizedPath);
+        } else {
+            $missingFiles[] = $filename;
+            error_log("❌ Missing file: " . $normalizedPath);
+        }
+    }
+
+    // Log what we found
+    error_log("Storage directory: " . $storageDir);
+    error_log("Existing files count: " . count($existingFiles));
+    error_log("Missing files: " . implode(', ', $missingFiles));
+
+    $combineResult = null;
+    
+    // Only combine if we have files to combine
+    if (count($existingFiles) > 3) {
+        error_log("✅ Found " . count($existingFiles) . " files to combine.");
+        
+        $combineOutputFile = $storageDir . DIRECTORY_SEPARATOR . 'COMBINED_INVOICE.xlsx';
+        
+        // Try to combine files
+        try {
+            $combineResult = PdfConverter::combineExcelFilesIntoOne($existingFiles, $combineOutputFile);
+            
+            if ($combineResult['success']) {
+                error_log("✅ Successfully combined files into: " . $combineOutputFile);
+                
+                // Now convert the combined file to PDF
+                $pdfResult = PdfConverter::convertExcelToPdf($combineOutputFile, $storageDir, 'COMBINED_INVOICE.xlsx');
+                
+                if (!$pdfResult['success']) {
+                    error_log("❌ Failed to convert combined Excel to PDF: " . ($pdfResult['message'] ?? 'Unknown error'));
+                }
+                
+                $result = $pdfResult; // Use PDF conversion result as final result
+            } else {
+                error_log("❌ Failed to combine files: " . ($combineResult['error'] ?? 'Unknown error'));
+                // Fall back to converting individual uploaded file
+                $result = PdfConverter::convertExcelToPdf($savedExcelPath, $storageDir, $originalFilename);
+            }
+        } catch (Exception $e) {
+            error_log("❌ Exception during file combination: " . $e->getMessage());
+            // Fall back to converting individual uploaded file
+            $result = PdfConverter::convertExcelToPdf($savedExcelPath, $storageDir, $originalFilename);
+        }
+    } else {
+        error_log("❌ Not enough files to combine (" . count($existingFiles) . " found). Converting uploaded file only.");
+        // Convert only the uploaded Excel file to PDF
+        $result = PdfConverter::convertExcelToPdf($savedExcelPath, $storageDir, $originalFilename);
+    }
+
+    $pdfFiles = $result['pdfFiles'] ?? [];
+    if (!$result['success']) {
+        return self::jsonError(
+            $response,
+            $result['message'] ?? 'Unknown conversion error occurred.',
+            500,
+            $result['error'] ?? $result['output'] ?? []
+        );
+    }
+
+    return self::jsonSuccess($response, 'File uploaded and converted successfully.', [
+        'excel' => $formattedInvoice . '/' . $originalFilename,
+        'pdfs' => array_map(function ($relativePath) use ($formattedInvoice) {
+            return $formattedInvoice . '/' . basename($relativePath);
+        }, $pdfFiles),
+        'combined_files_count' => count($existingFiles),
+        'missing_files' => $missingFiles,
+        'existing_files' => array_map('basename', $existingFiles),
+        'combine_attempted' => count($existingFiles) > 1,
+        'combine_success' => $combineResult['success'] ?? false
+    ]);
+}
+
+
     public static function uploadDoc(Request $request, Response $response){
         try {
             $parsedBody = $request->getParsedBody();

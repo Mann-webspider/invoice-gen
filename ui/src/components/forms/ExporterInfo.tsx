@@ -62,7 +62,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
     watch,
     formState: { errors },
   } =  useFormContext();
-  const selectedExporter2 = watch("exporter");
+  const selectedExporter2 = watch("invoice.exporter");
   // useEffect(() => {
   //   const subscribe = watch((value) => {
   //     console.log(value);
@@ -85,14 +85,14 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
   const handleExporterSelect = (company_name: string) => {
     const exporterObj = exporters.find((e) => e.company_name === company_name);
     if (exporterObj) {
-      setValue("exporter", exporterObj); // update exporter object in form
+      setValue("invoice.exporter", exporterObj); // update exporter object in form
       // Convert invoiceDate to local date string (MM/DD/YYYY)
       // const localInvoiceDate = new Date(
       //   exporterObj.invoiceDate
       // ).toLocaleDateString();
 
       // setValue("invoice_date", localInvoiceDate);
-      setValue("invoice_number", exporterObj.next_invoice_number || ""); // set invoice number outside exporter
+      setValue("invoice.invoice_number", exporterObj.next_invoice_number || ""); // set invoice number outside exporter
     }
   };
 
@@ -112,7 +112,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                 
               </div>
               <Controller
-                name="exporter"
+                name="invoice.exporter"
                 control={control}
                 rules={{ required: true }}
                 render={({ field }) => (
@@ -184,7 +184,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                     invoiceNo || selectedExporter2?.next_invoice_number || ""
                   }
                   // onChange={(e) => setInvoiceNo(e.target.value)}
-                  {...register("invoice_number", {
+                  {...register("invoice.invoice_number", {
                     required: true,
                   })}
                   placeholder="Enter invoice number"
@@ -198,7 +198,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                   
                 </div>
                 <Controller
-                  name="invoice_date"
+                  name="invoice.invoice_date"
                   control={control}
                   rules={{ required: true }}
                   render={({ field }) => (
@@ -223,9 +223,20 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                             field.value ? new Date(field.value) : undefined
                           }
                           onSelect={(date) => {
+                            const handleDateChange = (date: Date | undefined) => {
+                                if (date) {
+                                  // ✅ Use local timezone instead of UTC to avoid date shifting
+                                  const year = date.getFullYear();
+                                  const month = String(date.getMonth() + 1).padStart(2, '0');
+                                  const day = String(date.getDate()).padStart(2, '0');
+                                  const formatted = `${day}/${month}/${year}`; // yyyy-mm-dd
+                                  
+                                  field.onChange(formatted);
+                                  
+                                }
+                              };
                             if (date) {
-                              const localeDate = date.toLocaleDateString();
-                              field.onChange(localeDate);
+                              handleDateChange(date);
                             }
                           }}
                           initialFocus

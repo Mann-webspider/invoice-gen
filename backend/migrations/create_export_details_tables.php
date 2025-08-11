@@ -55,6 +55,15 @@ class CreateExportDetailsTables
             size TEXT NOT NULL,
             sqm INT NOT NULL
         )");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS dropdown_options (
+        id TEXT PRIMARY KEY ,
+        category VARCHAR(50) NOT NULL,
+        value TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at  DATETIME DEFAULT UPDATED_TIMESTAMP
+    )");
+
         
 
     }
@@ -66,6 +75,7 @@ class CreateExportDetailsTables
         $pdo->exec("DROP TABLE IF EXISTS product_size_dropdown");
         $pdo->exec("DROP TABLE IF EXISTS suppliers_dropdown");
         $pdo->exec("DROP TABLE IF EXISTS arn_dropdown");
+        $pdo->exec("DROP TABLE IF EXISTS dropdown_options");
     }
 }
 

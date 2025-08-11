@@ -46,6 +46,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import api from "@/lib/axios";
+import { generateInvoiceExcel } from "@/lib/excelGenerator";
+import { generateInvoigenerateDocxceExcel } from "@/lib/wordGenerator";
+import { filesApi } from "@/services/api";
+import ProgressQueue, { ProcessItem } from '@/components/ProcessQueue';
+import {  useFormContext} from "react-hook-form";
+import { ConfirmationDialog } from "@/components/ConfirmationDialog";
 
 const Dashboard = () => {
   // State for dashboard data
@@ -74,14 +80,19 @@ const Dashboard = () => {
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [documentLoading, setDocumentLoading] = useState(false);
   const [bulkActionLoading, setBulkActionLoading] = useState(false);
-
+  const [isGenerating, setIsGenerating] = useState(false);
+const [isProgressOpen, setIsProgressOpen] = useState(false);
+  const [processes, setProcesses] = useState<ProcessItem[]>([]);
   const { user, isAdmin, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const baseUrl = import.meta.env.VITE_API_BASE_URL || `http://${window.location.hostname}/api`
+  const method = useFormContext()
   useEffect(()=>{
     // call the backend at /show/list?path=${invoiceId} to get the list of files
+    console.log("Resetting form data");
     
+    method.reset({})
   },[])
 
   // Mock data for documents - replace with API call
@@ -330,11 +341,14 @@ useEffect(() => {
           }
 
           if (recentInvoicesData && recentInvoicesData.length > 0) {
+            
+            console.log(recentInvoicesData);
             setRecentInvoices(recentInvoicesData);
           }
-
-          if (allInvoices && allInvoices.invoices.length > 0) {
+          
+          if (allInvoices ) {
             setInvoices(allInvoices.invoices);
+            console.log(allInvoices.drafts)
             setDraftInvoices(allInvoices.drafts || []);
           }
         } catch (apiError) {
@@ -352,7 +366,7 @@ useEffect(() => {
     };
 
     fetchDashboardData();
-  }, [toast]);
+  }, []);
 
   // Handle view invoice
   const handleViewInvoice = async (invoiceId: string) => {
@@ -394,6 +408,90 @@ useEffect(() => {
       setLoading(false);
     }
   };
+const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
+    setProcesses(prev => prev.map(p => (p.id === id ? { ...p, status } : p)));
+  };
+   const handleFiles = async (data: any) => {
+    try {
+      // Generate Excel and Docx
+      const { allBuffers: excelBlobs, fileName: excelFileName } = await generateInvoiceExcel(data);
+      const docxFile = await generateInvoigenerateDocxceExcel(data);
+  
+      let resDoc = await filesApi.uploadDoc(docxFile, data.invoice_number);
+      if (resDoc) {
+        console.log("Document uploaded successfully:", resDoc);
+      }
+      // Create process list for queue
+      const newProcesses = excelBlobs.map((file: any, index: number) => ({
+        id: `${index + 1}`,
+        title: `${file.fileName || 'Excel file'} Upload`,
+        status: 'pending',
+        description: `Uploading ${file.fileName || 'Excel file'}`
+      }));
+      
+      setIsProgressOpen(true);
+      setProcesses(()=>newProcesses);
+      
+  
+      const results: any[] = [];
+     
+      
+      for (let i = 0; i < excelBlobs.length; i++) {
+        const id = `${i + 1}`;
+        const { buffer, fileName } = excelBlobs[i];
+        // Set process to running
+         handleProcessUpdate(`${i+1}`, "running");
+        
+         try {
+          const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number,data.payment_term);
+  
+          // 👇 Mark as completed
+          handleProcessUpdate(`${i+1}`, "completed");
+        } catch (err) {
+          // 👇 Mark as failed
+          handleProcessUpdate(`${i+1}`, "failed");
+          console.error(`${fileName} upload failed:`, err);
+        }
+      }
+  
+      toast({
+        title: "Upload Success",
+        description: "Uplaod completed successfully",
+        variant: "success",
+      });
+      console.log("Upload results:", results);
+    } catch (error) {
+      console.error("Error generating or uploading files:", error);
+      ;
+      toast({
+        title: "Upload Failed",
+        description: "An error occurred during file processing",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateFile = async (invoiceId: string) => {
+    setIsGenerating(true);
+    try {
+      let res = await api.get(`/invoice/${invoiceId}`)
+      if (!res.data) {
+        toast({
+          title: "Error",
+          description: "Invoice data not found",
+          variant: "destructive",
+        });
+        return;
+      }
+      const data = res.data;
+      await handleFiles(data);
+      
+    } catch (error) {
+      console.log("Error generating files:", error);
+      
+    }finally{
+      setIsGenerating(false);
+    }}
   // handle delete invoice 
   const handleRemoveInvoice = async(invoiceId:string)=>{
     try {
@@ -414,6 +512,29 @@ useEffect(() => {
       toast({
         title: "Error",
         description: "Failed to remove invoice",
+        variant: "destructive",
+      });
+      
+    }
+  }
+  const handleDeleteDraft = async(invoiceId:string)=>{
+    try {
+      
+      const res = await api.delete(`/draft/${invoiceId}`);
+      
+      
+      if(res.status === 204) {
+        toast({
+          title: "Success",
+          description: "Draft removed successfully",
+        });
+        setDraftInvoices(draftInvoices.filter(inv => inv.id !== invoiceId));
+        setSelectedInvoice(null);
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to remove Draft",
         variant: "destructive",
       });
       
@@ -454,7 +575,9 @@ useEffect(() => {
   ];
 
   return (
+    
     <div>
+      
       <PageHeader
         title="Dashboard"
         description="Welcome to Invoice Forge Admin Panel"
@@ -527,6 +650,7 @@ useEffect(() => {
                       key={invoice.id}
                       className="flex justify-between items-center p-3 border rounded-md hover:bg-gray-50 transition-colors duration-200 group"
                     >
+
                       <div className="flex-1">
                         <div className="font-medium">{invoice.invoiceNo}</div>
                         <div className="text-xs text-muted-foreground">
@@ -583,7 +707,7 @@ useEffect(() => {
                 <FileText className="h-4 w-4" />
               </div>
             </CardHeader>
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 overflow-auto h-[calc(100vh-360px)]">
               {loading ? (
                 <div className="flex justify-center items-center h-40">
                   <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -598,38 +722,59 @@ useEffect(() => {
                       <div className="flex-1">
                         <div className="font-medium flex items-center">
                           <span className="mr-2">
-                            {invoice.invoiceNo || "Untitled Invoice"}
+                            {invoice.invoice_number || "Untitled Invoice"}
                           </span>
                           <span className="bg-gray-100 text-gray-700 text-xs px-1.5 py-0.5 rounded">
                             Draft
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground">
-                          {invoice.date
-                            ? new Date(
-                              parseIndianDate(invoice.date)
-                            ).toLocaleDateString()
+                          {invoice.updated_at
+                            ? new Date(invoice.updated_at).toLocaleDateString('en-IN', {
+                                year: 'numeric',
+                                month: 'short',
+                                day: 'numeric'
+                              })
                             : "Started recently"}
+
                         </div>
                       </div>
-                      <div className="flex-1 text-right">
-                        <div className="text-xs text-muted-foreground">
-                          {invoice.items?.length || 0} items
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Resume editing to complete
-                        </div>
-                      </div>
-                      <div className="ml-3">
+                      
+                      <div className="ml-3 gap-2 flex">
                         <Button
                           variant="outline"
-                          size="sm"
-                          className="h-7 px-2 text-xs"
+                          
+                          className="h-8 px-2  text-xs"
                           onClick={() => handleEditInvoice(invoice.id)}
                         >
-                          <Edit className="h-3 w-3 mr-1" />
+                          
                           Resume
                         </Button>
+                        <ConfirmationDialog
+  trigger={
+    <Button
+      variant="solid"
+      className="h-8 px-2 text-xs bg-red-500 text-white hover:bg-red-600"
+    >
+      Delete
+    </Button>
+  }
+  title="Delete Draft"
+  description={
+    <>
+      You are about to permanently delete the draft{' '}
+      <span className="font-medium text-gray-900">
+        "{invoice.invoice_number || "Untitled Invoice"}"
+      </span>
+      . This action cannot be undone and all progress will be lost.
+    </>
+  }
+  confirmText="Delete Draft"
+  onConfirm={() => handleDeleteDraft(invoice.id)}
+  variant="destructive"
+/>
+
+                         
                       </div>
                     </div>
                   ))}
@@ -660,62 +805,73 @@ useEffect(() => {
             <DialogTitle className="text-xl font-semibold flex justify-between items-center">
               Invoice {selectedInvoice?.invoiceNo}
               <div className="flex items-center space-x-2">
-                <AlertDialog>
-  <AlertDialogTrigger asChild>
+                <ConfirmationDialog
+  trigger={
     <Button 
-      variant="destructive" 
-      size="sm"
-      className="bg-red-500 hover:bg-red-600 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-    >
-      <Trash2 className="w-4 h-4" />
-      Remove
-    </Button>
-  </AlertDialogTrigger>
-  
-  <AlertDialogContent className="sm:max-w-md bg-white border-0 shadow-2xl rounded-xl">
-    <AlertDialogHeader className="text-center pb-4">
-      <div className="mx-auto mb-4 w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">
-        <AlertTriangle className="w-8 h-8 text-red-600" />
-      </div>
-      
-      <AlertDialogTitle className="text-xl font-semibold text-gray-900 mb-2">
-        Delete Invoice
-      </AlertDialogTitle>
-      
-      <AlertDialogDescription className="text-gray-600 text-sm leading-relaxed">
-        You are about to permanently delete invoice{' '}
-        <span className="font-medium text-gray-900">
-          #{selectedInvoice?.invoiceNo}
-        </span>
-        . This action cannot be undone and all associated data will be lost forever, make sure to take backup before deleting.
-      </AlertDialogDescription>
-    </AlertDialogHeader>
+        variant="destructive"
+        className="bg-red-500 hover:bg-red-600 text-white font-regular px-4 py-4 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+      >
+        <Trash2 className="w-4 h-4" />
+        Remove
+      </Button>
+  }
+  title="Delete Invoice"
+  description={
+    <>
+      You are about to permanently delete the invoice{' '}
+      <span className="font-medium text-gray-900">
+        "{selectedInvoice?.invoiceNo || "Untitled Invoice"}"
+      </span>
+      . This action cannot be undone.
+    </>
+  }
+  confirmText="Delete Invoice"
+  onConfirm={() => handleRemoveInvoice(selectedInvoice?.id || "")}
+  variant="destructive"
+/>
 
-    <AlertDialogFooter className="flex gap-3 pt-6">
-      <AlertDialogCancel asChild>
-        <Button 
-          variant="outline" 
-          className="flex-1 bg-gray-50 hover:bg-gray-100 border-gray-200 text-gray-700 font-medium py-2.5 rounded-lg transition-all duration-200"
-        >
-          Cancel
-        </Button>
-      </AlertDialogCancel>
-      
-      <AlertDialogAction asChild>
-        <Button 
-          onClick={() => handleRemoveInvoice(selectedInvoice?.id || "")}
-          className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-          <Trash2 className="w-4 h-4" />
-          Delete Invoice
-        </Button>
-      </AlertDialogAction>
-    </AlertDialogFooter>
-  </AlertDialogContent>
-</AlertDialog>
-                {/* <Button onClick={() => handleRemoveInvoice(selectedInvoice?.id || "")} className="py-2 px-3 border-rose-300 bg-rose-600 hover:bg-rose-400  hover:text-rose-50 hover:border-rose-400">
-                Remove
-              </Button> */}
+                
+                <Button 
+  onClick={() => handleGenerateFile(selectedInvoice?.id || "")} 
+  disabled={isGenerating}
+  className={`
+    py-2 px-3 border-green-300 bg-green-600 hover:bg-green-800 
+    hover:text-green-50 hover:border-green-400 
+    transition-all duration-300 ease-in-out
+    ${isGenerating 
+      ? 'opacity-50 cursor-not-allowed bg-gray-400 border-gray-400' 
+      : 'transform hover:scale-105 active:scale-95'
+    }
+  `}
+>
+  {isGenerating ? (
+    <div className="flex items-center gap-2">
+      <svg 
+        className="animate-spin h-4 w-4 text-white" 
+        xmlns="http://www.w3.org/2000/svg" 
+        fill="none" 
+        viewBox="0 0 24 24"
+      >
+        <circle 
+          className="opacity-25" 
+          cx="12" 
+          cy="12" 
+          r="10" 
+          stroke="currentColor" 
+          strokeWidth="4"
+        />
+        <path 
+          className="opacity-75" 
+          fill="currentColor" 
+          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+        />
+      </svg>
+      Generating...
+    </div>
+  ) : (
+    'Generate'
+  )}
+</Button>
               <Button onClick={() => handleEditInvoice(selectedInvoice?.id || "")} className="py-2 px-3">
                 Edit Invoice
               </Button>
@@ -725,7 +881,15 @@ useEffect(() => {
               </div>
             </DialogTitle>
           </DialogHeader>
-
+              {isProgressOpen?(<ProgressQueue
+  isOpen={isProgressOpen}
+  onClose={() => setIsProgressOpen(false)}
+  onDashboardNavigate={() => {
+    setIsProgressOpen(false);
+    navigate("/"); // or your custom action
+  }}
+  processes={processes}
+/>):<></>}
           {selectedInvoice ? (
             <div className="flex flex-col h-[calc(90vh-120px)] sm:h-[calc(90vh-100px)]">
               {/* Invoice Header Info */}
@@ -781,7 +945,7 @@ useEffect(() => {
                     </div>
 
                     <div className="flex-1 max-h-[50vh]">
-                      <ScrollArea className="h-96 max-h-[15rem] ">
+                      <ScrollArea className="h-96 max-h-[20rem] ">
                         <div className="space-y-2 p-2">
                           {invoiceDocuments.map((doc, index) => (
                             <Card

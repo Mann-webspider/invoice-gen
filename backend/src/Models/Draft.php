@@ -9,7 +9,7 @@ class Draft extends Model
 {
     use HasUuids;
     protected $fillable = [
-        
+        "invoice_number",
         "data",
         "last_page",
         "is_submitted",

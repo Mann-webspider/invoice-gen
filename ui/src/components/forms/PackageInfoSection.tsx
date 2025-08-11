@@ -59,22 +59,32 @@ const PackageInfoSection = ({
     handleSubmit,
     control,
     setValue,
+    
     watch,
     formState: { errors },
   } = useFormContext();
-  const packageForm = watch("package");
+  const packageForm = watch("invoice.package");
   // const productForm = watch("products");
 
   // Calculate tax values when integratedTaxOption is "WITH"
+ let currencyRateValue = watch("invoice.currency_rate") // Default to 1 if currencyRate is not provided
+ 
+ 
+  
   const taxableValue =
-    integratedTaxOption === "WITH" ? totalFOBEuro * currencyRate : 0;
+    integratedTaxOption === "WITH" ? totalFOBEuro * currencyRateValue : 0;
   const gstAmount = taxableValue * 0.18; // 18% GST
   useEffect(() => {
-    setValue("package.total_fob", totalFOBEuro.toFixed(2));
-    setValue("package.amount_in_words", amountInWords);
-    setValue("package.gst_amount", gstAmount.toFixed(2));
-    setValue("package.taxable_value", taxableValue.toFixed(2));
-    setValue("package.total_sqm", totalSQM.toFixed(2));
+    
+    setValue("invoice.package.total_fob", 
+  typeof totalFOBEuro === 'number' && !isNaN(totalFOBEuro)
+    ? totalFOBEuro.toFixed(2)
+    : "0.00"
+);
+    setValue("invoice.package.amount_in_words", amountInWords);
+    setValue("invoice.package.gst_amount", gstAmount.toFixed(2));
+    setValue("invoice.package.taxable_value", taxableValue.toFixed(2));
+    setValue("invoice.package.total_sqm", typeof totalSQM === 'number' ? totalSQM.toFixed(2) : totalSQM);
   }, [totalFOBEuro, amountInWords, setValue]);
   // useEffect(() => {
   //   setInvoiceData({
@@ -121,8 +131,8 @@ const PackageInfoSection = ({
     const firstItem = sections.find((s) => s.items.length > 0)?.items[0];
     const unitType = firstItem?.unitType || "BOX";
 
-    setValue("package.no_of_packages", `${totalQuantity} ${unitType}`);
-    setValue("package.no_of_sqm", totalSQM.toFixed(2));
+    setValue("invoice.package.no_of_packages", `${totalQuantity} ${unitType}`);
+    setValue("invoice.package.no_of_sqm", totalSQM.toFixed(2));
   }, [sections, setValue]);
 
   // fetch arn and set its value
@@ -132,10 +142,11 @@ const PackageInfoSection = ({
       if (response.status != 200) {
         throw new Error("Network response was not ok");
       }
-
+      console.log("ARN response:", response.data);
+      
       setExportUnderGstCircular(() => response.data.data.gst_circular);
-      setValue("package.gst_circular", response.data.data.gst_circular);
-      setValue("package.arn_no", response.data.data.arn);
+      setValue("invoice.package.gst_circular", response.data.data.gst_circular);
+      setValue("invoice.package.arn_no", response.data.data.arn);
       setLutNo(response.data.data.arn);
     } catch (error) {
       // Error fetching ARN - handled silently
@@ -157,7 +168,7 @@ const PackageInfoSection = ({
               <Label htmlFor="noOfPackages">No. of Packages</Label>
               <Input
                 id="noOfPackages"
-                {...register("package.no_of_packages", {
+                {...register("invoice.package.no_of_packages", {
                   required: "No. of packages is required",
                 })}
                 readOnly
@@ -170,7 +181,7 @@ const PackageInfoSection = ({
               <Label htmlFor="noOfSQm">No. of SQMs</Label>
               <Input
                 id="noOfSQMs"
-                {...register("package.no_of_sqm", {
+                {...register("invoice.package.no_of_sqm", {
                   required: "No. of SQMs is required",
                 })}
                 readOnly
@@ -210,7 +221,7 @@ const PackageInfoSection = ({
               <Input
                 id="exportUnderGstCircular"
                 readOnly={true}
-                {...register("package.gst_circular", {
+                {...register("invoice.package.gst_circular", {
                   required: "GST circular is required",
                 })}
                 value={packageForm?.gst_circular || exportUnderGstCircular}
@@ -228,7 +239,7 @@ const PackageInfoSection = ({
                       value={
                         packageForm?.taxable_value || taxableValue.toFixed(2)
                       }
-                      {...register("package.taxable_value", {
+                      {...register("invoice.package.taxable_value", {
                         required: "Taxable value is required",
                       })}
                       readOnly
@@ -244,7 +255,7 @@ const PackageInfoSection = ({
                     <Label>GST Amount @ 18% (INR)</Label>
                     <Input
                       value={packageForm?.gst_amount || gstAmount.toFixed(2)}
-                      {...register("package.gst_amount", {
+                      {...register("invoice.package.gst_amount", {
                         required: "GST amount is required",
                       })}
                       readOnly
@@ -260,7 +271,7 @@ const PackageInfoSection = ({
                   <Input
                     id="lutNo"
                     value={packageForm?.arn_no || lutNo}
-                    {...register("package.arn_no", {
+                    {...register("invoice.package.arn_no", {
                       required: "ARN is required",
                     })}
                     // onChange={(e) => setLutNo(e.target.value)}
@@ -274,8 +285,8 @@ const PackageInfoSection = ({
                   <Input
                     id="lutDate"
                     type="date"
-                    value={packageForm?.lut_date || lutDate}
-                    {...register("package.lut_date", {
+                    value={packageForm?.lut_date || new Date(lutDate).toISOString().split("T")[0]}
+                    {...register("invoice.package.lut_date", {
                       required: "LUT date is required",
                     })}
                     // onChange={(e) => setLutDate(e.target.value)}
@@ -294,7 +305,7 @@ const PackageInfoSection = ({
               <Input
                 id="totalFOBEuro"
                 value={packageForm?.total_fob || totalFOBEuro.toFixed(2)}
-                {...register("package.total_fob")}
+                {...register("invoice.package.total_fob")}
                 readOnly
                 className="bg-gray-50"
               />
@@ -305,7 +316,7 @@ const PackageInfoSection = ({
               <Input
                 id="amountInWords"
                 value={amountInWords}
-                {...register("package.amount_in_words")}
+                {...register("invoice.package.amount_in_words")}
                 readOnly
                 className="bg-gray-50"
               />

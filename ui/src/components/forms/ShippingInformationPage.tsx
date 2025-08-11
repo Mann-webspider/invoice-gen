@@ -57,8 +57,8 @@ const ShippingInformationPage = ({
     setValue,
     watch,
     formState: { errors },
-  } = useFormContext();
-  const shippingForm = watch("shipping");
+  } = useFormContext({shouldFocusError: false,});
+  const shippingForm = watch("invoice.shipping");
   const [paymentField, setPaymentField] = useState("");
   async function getShipping() {
     let res = await api.get("/all-dropdowns");
@@ -67,12 +67,12 @@ const ShippingInformationPage = ({
     }
     return res.data.data;
   }
-  useEffect(() => {
+  // useEffect(() => {
     
       
-      setValue("shipping.currency_rate", "88.45");
+  //     setValue("invoice.shipping.currency_rate", "88.45");
     
-  }, []);
+  // }, []);
 
   // useEffect(() => {
   //   const subscribe = watch((value) => {
@@ -112,13 +112,13 @@ const ShippingInformationPage = ({
             <Input
               id="preCarriageBy"
               value={shippingForm?.pre_carriage_by || preCarriageBy}
-              {...register("shipping.pre_carriage_by")}
+              {...register("invoice.shipping.pre_carriage_by")}
               onChange={(e) => setPreCarriageBy(e.target.value)}
               placeholder="Enter pre-carriage method"
             />
-            {/* {errors.shipping?.pre_carriage_by && (
+            {/* {errors?.shipping?.pre_carriage_by && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.pre_carriage_by.message}
+                {errors?.shipping.pre_carriage_by.message}
               </p>
             )} */}
           </div>
@@ -129,7 +129,7 @@ const ShippingInformationPage = ({
             </Label>
 
             <Controller
-              name="shipping.place_of_receipt" // this must match your form field name
+              name="invoice.shipping.place_of_receipt" // this must match your form field name
               control={control}
               rules={{ required: "place of receipt is required" }} // optional: validation rule
               render={({ field }) => (
@@ -147,9 +147,9 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
-            {errors.shipping?.place_of_receipt && (
+            {errors?.invoice?.shipping?.place_of_receipt && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.place_of_receipt.message}
+                {errors?.invoice?.shipping.place_of_receipt.message}
               </p>
             )}
           </div>
@@ -159,13 +159,13 @@ const ShippingInformationPage = ({
             <Input
               id="vesselFlightNo"
               value={shippingForm?.vessel_flight_no || vesselFlightNo}
-              {...register("shipping.vessel_flight_no",)}
+              {...register("invoice.shipping.vessel_flight_no")}
               onChange={(e) => setVesselFlightNo(e.target.value)}
               placeholder="Enter vessel/flight number"
             />
-            {/* {errors.shipping?.vessel_flight_no && (
+            {/* {errors?.shipping?.vessel_flight_no && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.vessel_flight_no.message}
+                {errors?.shipping.vessel_flight_no.message}
               </p>
             )} */}
           </div>
@@ -173,7 +173,7 @@ const ShippingInformationPage = ({
           <div className="space-y-2">
             <Label htmlFor="portOfLoading">Port of Loading</Label>
             <Controller
-              name="shipping.port_of_loading" // this must match your form field name
+              name="invoice.shipping.port_of_loading" // this must match your form field name
               control={control}
               rules={{ required: "port of loading required" }} // optional: validation rule
               render={({ field }) => (
@@ -185,7 +185,7 @@ const ShippingInformationPage = ({
 
                     // custom logic: update Terms of Delivery if needed
                     if (paymentTerms === "FOB") {
-                      setValue("shipping.terms_of_delivery",`FOB AT ${value}`);
+                      setValue("invoice.shipping.terms_of_delivery",`FOB AT ${value}`);
                     }
                   }}
                 >
@@ -202,9 +202,9 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
-            {errors.shipping?.port_of_loading && (
+            {errors?.invoice?.shipping?.port_of_loading && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.port_of_loading.message}
+                {errors?.invoice?.shipping.port_of_loading.message}
               </p>
             )}
           </div>
@@ -212,7 +212,7 @@ const ShippingInformationPage = ({
           <div className="space-y-2">
             <Label htmlFor="portOfDischarge">Port of Discharge</Label>
             <Controller
-              name="shipping.port_of_discharge" // this must match your form field name
+              name="invoice.shipping.port_of_discharge" // this must match your form field name
               control={control}
               rules={{ required: true }} // optional: validation rule
               render={({ field }) => (
@@ -224,9 +224,9 @@ const ShippingInformationPage = ({
 
                     // Update Terms of Delivery if payment terms are CIF or CNF
                     if (paymentTerms === "CIF") {
-                      setValue("shipping.terms_of_delivery",`CIF AT ${value}`);
+                      setValue("invoice.shipping.terms_of_delivery",`CIF AT ${value}`);
                     } else if (paymentTerms === "CNF") {
-                      setValue("shipping.terms_of_delivery",`CNF AT ${value}`);
+                      setValue("invoice.shipping.terms_of_delivery",`CNF AT ${value}`);
                     }
                   }}
                 >
@@ -243,9 +243,9 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
-            {errors.shipping?.port_of_discharge && (
+            {errors?.invoice?.shipping?.port_of_discharge && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.port_of_discharge.message}
+                {errors?.invoice?.shipping.port_of_discharge.message}
               </p>
             )}
             
@@ -254,7 +254,7 @@ const ShippingInformationPage = ({
           <div className="space-y-2">
             <Label htmlFor="finalDestination">Final Destination</Label>
             <Controller
-              name="shipping.final_destination" // this must match your form field name
+              name="invoice.shipping.final_destination" // this must match your form field name
               control={control}
               rules={{ required: true }} // optional: validation rule
               render={({ field }) => (
@@ -272,9 +272,9 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
-            {errors.shipping?.final_destination && (
+            {errors?.invoice?.shipping?.final_destination && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.final_destination.message}
+                {errors?.invoice?.shipping.final_destination.message}
               </p>
             )}
           </div>
@@ -286,18 +286,21 @@ const ShippingInformationPage = ({
           <div className="space-y-2">
             <Label htmlFor="countryOfOrigin">Country of Origin of Goods</Label>
             <Input
-              id="countryOfOrigin"
-              value={countryOfOrigin}
-              {...register("shipping.country_of_origin", {
-                required: "Country of Origin is required",
-              })}
-              onChange={(e) => setCountryOfOrigin(e.target.value)}
-              placeholder="Enter country of origin"
-              readOnly
-            />
-            {errors.shipping?.country_of_origin && (
+                id="countryOfOrigin"
+                value={countryOfOrigin}
+                defaultValue={countryOfOrigin}
+                {...register("invoice.shipping.country_of_origin", {
+                  required: true,
+                  value: countryOfOrigin // Set default value
+                })}
+                onChange={(e) => setCountryOfOrigin(e.target.value)}
+                placeholder="Enter country of origin"
+                readOnly
+              />
+
+            {errors?.invoice?.shipping?.country_of_origin && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.country_of_origin.message}
+                {errors?.invoice?.shipping.country_of_origin.message}
               </p>
             )}
           </div>
@@ -307,15 +310,16 @@ const ShippingInformationPage = ({
             <Input
               id="originDetails"
               value={originDetails}
-              {...register("shipping.origin_details", {
-                required: "Origin Details are required",
+              {...register("invoice.shipping.origin_details", {
+                required: true,
+                value: originDetails // Set default value
               })}
               onChange={(e) => setOriginDetails(e.target.value)}
               placeholder="Enter origin details"
             />
-            {errors.shipping?.origin_details && (
+            {errors?.invoice?.shipping?.origin_details && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.origin_details.message}
+                {errors?.invoice?.shipping.origin_details.message}
               </p>
             )}
           </div>
@@ -324,7 +328,7 @@ const ShippingInformationPage = ({
               Country of Final Destination
             </Label>
             <Controller
-              name="shipping.country_of_final_destination" // this must match your form field name
+              name="invoice.shipping.country_of_final_destination" // this must match your form field name
               control={control}
               rules={{ required: true }} // optional: validation rule
               render={({ field }) => (
@@ -342,9 +346,9 @@ const ShippingInformationPage = ({
                 </Select>
               )}
             />
-            {errors.shipping?.country_of_final_destination && (
+            {errors?.invoice?.shipping?.country_of_final_destination && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.country_of_final_destination.message}
+                {errors?.invoice?.shipping.country_of_final_destination.message}
               </p>
             )}
           </div>
@@ -356,7 +360,7 @@ const ShippingInformationPage = ({
             <Input
               id="termsOfDelivery"
               value={shippingForm?.terms_of_delivery || ""}
-              {...register("shipping.terms_of_delivery", {
+              {...register("invoice.shipping.terms_of_delivery", {
                 required: "Terms of Delivery are required",
               })}
               
@@ -364,9 +368,9 @@ const ShippingInformationPage = ({
               className="bg-gray-50"
               placeholder="Terms of Delivery"
             />
-            {errors.shipping?.terms_of_delivery && (
+            {errors?.invoice?.shipping?.terms_of_delivery && (
               <p className="text-red-500 text-sm">
-                {errors.shipping.terms_of_delivery.message}
+                {errors?.invoice?.shipping.terms_of_delivery.message}
               </p>
             )}
           </div>
@@ -381,14 +385,14 @@ const ShippingInformationPage = ({
                 className="mt-1 h-24"
                 placeholder="Enter Payment Details"
                 value={shippingForm?.payment || paymentField}
-                {...register("shipping.payment", {
+                {...register("invoice.shipping.payment", {
                   required: "Payment details are required",
                 })}
                 // onChange={(e) => setPaymentField(() => e.target.value)}
               />
-              {errors.shipping?.payment && (
+              {errors?.invoice?.shipping?.payment && (
                 <p className="text-red-500 text-sm">
-                  {errors.shipping.payment.message}
+                  {errors?.invoice?.shipping.payment.message}
                 </p>
               )}
             </div>
@@ -398,7 +402,7 @@ const ShippingInformationPage = ({
             <div className="space-y-2">
               <Label htmlFor="shippingMethod">Shipping Method</Label>
               <Controller
-                name="shipping.shipping_method" // this must match your form field name
+                name="invoice.shipping.shipping_method" // this must match your form field name
                 control={control}
                 rules={{ required: true }} // optional: validation rule
                 render={({ field }) => (
@@ -416,16 +420,16 @@ const ShippingInformationPage = ({
                   </Select>
                 )}
               />
-              {errors.shipping?.shipping_method && (
+              {errors?.invoice?.shipping?.shipping_method && (
                 <p className="text-red-500 text-sm">
-                  {errors.shipping.shipping_method.message}
+                  {errors?.invoice?.shipping.shipping_method.message}
                 </p>
               )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="selectedCurrency">Currancy</Label>
               <Controller
-                name="currency_type" // this must match your form field name
+                name="invoice.currency_type" // this must match your form field name
                 control={control}
                 rules={{ required: "currency required" }} // optional: validation rule
                 render={({ field }) => (
@@ -443,9 +447,9 @@ const ShippingInformationPage = ({
                   </Select>
                 )}
               />
-              {errors.currency_type && (
+              {errors?.invoice?.currency_type && (
                 <p className="text-red-500 text-sm">
-                  {errors.currency_type.message}
+                  {errors?.invoice?.currency_type.message}
                 </p>
               )}
             </div>
@@ -457,25 +461,53 @@ const ShippingInformationPage = ({
               <Input
                 id="currencyRate"
                 
-                {...register("currency_rate", {
+                {...register("invoice.currency_rate", {
                   required: "Currency rate is required",
                   valueAsNumber: true,
                   min: {
                     value: 0.01,
                     message: "Currency rate must be greater than 0",
                   },
+                  pattern: {
+                    value: /^\d*\.?\d{0,2}$/,
+                    message: "Please enter a valid number with up to 2 decimal places",
+                  },
                 })}
                 // onChange={(e) => setCurrencyRate(e.target.value)}
                 placeholder="Enter currency rate"
-                type="number"
+                type="text"
                 step="0.01"
                 // only non negative numbers with up to 2 decimal places
-                
+                onInput={(e) => {
+                    // Allow only numbers and one decimal point with up to 2 decimal places
+                    let value = e.target.value;
+                    
+                    // Remove any non-digit and non-decimal characters
+                    value = value.replace(/[^0-9.]/g, '');
+                    
+                    // Ensure only one decimal point
+                    const parts = value.split('.');
+                    if (parts.length > 2) {
+                      value = parts[0] + '.' + parts.slice(1).join('');
+                    }
+                    
+                    // Limit to 2 decimal places
+                    if (parts[1] && parts[1].length > 2) {
+                      value = parts[0] + '.' + parts[1].substring(0, 2);
+                    }
+                    
+                    // Prevent starting with decimal point (optional)
+                    if (value.startsWith('.')) {
+                      value = '0' + value;
+                    }
+                    
+                    e.target.value = value;
+                  }}
                 
               />
-              {errors.currency_rate && (
+              {errors?.invoice?.currency_rate && (
                 <p className="text-red-500 text-sm">
-                  {errors.currency_rate.message}
+                  {errors?.invoice?.currency_rate.message}
                 </p>
               )}
             </div>

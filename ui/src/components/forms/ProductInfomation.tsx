@@ -26,6 +26,10 @@ import api from "@/lib/axios";
 
 import { Controller, useForm as rhf, UseFormReturn,useFormContext } from "react-hook-form";
 import { useRef } from "react";
+import { nanoid } from "nanoid"; 
+import { useLayoutEffect } from "react";
+import { useState } from "react";
+import { useCallback } from "react";
 const ProductInformation = ({
   addNewSection,
 
@@ -48,6 +52,7 @@ const ProductInformation = ({
   freightAmount,
   setFreightAmount,
   totalFOBEuro,
+  setTotalFOBEuro,
   paymentTerms,
   marksAndNumbersValues,
   setMarksAndNumbersValues,
@@ -70,7 +75,7 @@ const ProductInformation = ({
     watch,
     formState: { errors },
   } = useFormContext();
-
+  const [overallPrice,setOverallPrice] = useState("");
   function getLastWordsCommaString(sections: Section[]): string {
     const lastWords = sections.map((section) => {
       const parts = section.title.trim().split(" ");
@@ -91,14 +96,14 @@ const ProductInformation = ({
 
     if (!sectionMap.has(sectionKey)) {
       sectionMap.set(sectionKey, {
-        id: Date.now().toString(), // or use uuidv4()
+        id: nanoid(), // or use uuidv4()
         title: item.category_name,
         items: [],
       });
     }
 
     sectionMap.get(sectionKey).items.push({
-      id: Date.now().toString(),
+      id: nanoid(),
       product: {
         hsnCode: item.hsn_code,
         description: item.product_name || "",
@@ -120,65 +125,128 @@ const ProductInformation = ({
 }
 
 
-  useEffect(() => {
-    const subscription = watch((allValues) => {
-      const newProductList = sections.flatMap((section) =>
-        section.items.map((item) => ({
-          category_id: section.id || "",
-          category_name: section.title || "",
-          hsn_code: item.product.hsnCode,
-          product_name: item.product.description || "",
-          size: item.product.size || "",
-          quantity: item.quantity || 0,
-          sqm: item.product.sqmPerBox || 0,
-          total_sqm: item.totalSQM || 0,
-          price: item.product.price || 0,
-          unit: item.unitType,
-          total: item.totalFOB,
-          net_weight: item.product.netWeight || 0,
-          gross_weight: item.product.grossWeight || 0,
-        }))
-      );
-
-      // Only update if the product list has changed
-      // const current = allValues?.products?.product_list || [];
-      const current = getValues("products.product_list") || [];
-
-      const isSame = JSON.stringify(current) === JSON.stringify(newProductList);
-      let titleLastWords = getLastWordsCommaString(sections);
-      if (!isSame) {
-        setValue("products.sections", sections);
-        setValue("products.product_list", newProductList);
-        setValue("products.total_price", totalFOBEuro);
-        setValue("products.insurance", insuranceAmount);
-        setValue("products.frieght", freightAmount);
-        setValue("products.goods", titleLastWords);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [sections, setValue,watch]);
-  useEffect(() => {
-  register("products.product_list");
-  register("products.total_price");
-  register("products.insurance");
-  register("products.frieght");
-  register("products.goods");
-}, [register]);
-
-  const prevList = useRef<string>("");
-
-  useEffect(() => {
-  if (!hydrated) return;
-
-  const productList = getValues("products.product_list") || [];
-  console.log("Product list from getValues:", productList);
-  const current = JSON.stringify(productList);
-  if (productList.length > 0 && current !== prevList.current) {
-    prevList.current = current;
-    setSections(convertToSection(productList));
+  const lastProductListRef = useRef([]);
+const currencyRate = watch("invoice.currency_rate");
+const calculateFreightInsurance = useCallback((totalFobFreight, exchangeRate) => {
+  // Input validation
+  if (!totalFobFreight || !exchangeRate || exchangeRate <= 0) {
+    return 0;
   }
-}, [hydrated, getValues]);
+
+  try {
+    const fob = parseFloat(totalFobFreight) || 0;
+    const rate = parseFloat(exchangeRate) || 1;
+    
+    // Convert to INR
+    const inrConvert = fob * rate;
+    
+    // Add 10% to total FOB in INR (for CIF calculation)
+    const cifAddition = inrConvert * 0.1; // 10% of total FOB in INR
+    const totalInr = inrConvert + cifAddition; // Total with 10% added
+    
+    // Calculate premium (0.04% of total in INR)
+    const premium = totalInr * 0.0004; // 0.04% premium rate
+    
+    // Convert back to original currency
+    const premiumInExchangeCurrency = premium / rate;
+    
+    return parseFloat(premiumInExchangeCurrency.toFixed(2));
+  } catch (error) {
+    console.error('Error calculating insurance:', error);
+    return 0;
+  }
+}, []); // No dependencies to avoid recreation
+useEffect(() => {
+ 
+  // ✅ Ensure all values are converted to numbers BEFORE calculation
+  const calculatedTotal = sections.reduce((sectionTotal, section) => {
+    return sectionTotal + section.items.reduce((itemTotal, item) => {
+      return itemTotal + (parseFloat(item.totalFOB) || 0);
+    }, 0);
+  }, 0);
+
+  // ✅ Convert to numbers explicitly
+  // let insurance = parseFloat(insuranceAmount) || 0;
+  const freight = parseFloat(freightAmount) || 0;
+  // console.log("Freight Amount:", freight);
+  
+  
+  let totalFobWithFreight = calculatedTotal + freight;
+  
+  // ✅ This will now be proper addition, not concatenation
+  let insurance = calculateFreightInsurance(totalFobWithFreight, currencyRate);
+  const calculatedTotalWithExtras = calculatedTotal + insurance + freight;
+  
+  // console.log(insurance);
+  
+  // console.log("Insurance Amount:", insurance);
+  // ✅ Ensure we set a number, not a string
+  setInsuranceAmount(()=>insurance);
+  setValue("invoice.products.insurance", insurance);
+  setValue("invoice.products.freight", freight);
+  setValue("invoice.products.total_price", calculatedTotalWithExtras);
+  setTotalFOBEuro(()=>Number(calculatedTotalWithExtras));
+  
+
+
+
+  const newProductList = sections.flatMap((section) =>
+    section.items.map((item) => ({
+      category_id: section.id || "",
+      category_name: section.title || "",
+      hsn_code: item.product.hsnCode,
+      product_name: item.product.description || "",
+      size: item.product.size || "",
+      quantity: item.quantity || 0,
+      sqm: item.product.sqmPerBox || 0,
+      total_sqm: item.totalSQM || 0,
+      price: item.product.price || "",
+      unit: item.unitType,
+      total: item.totalFOB,
+      net_weight: item.product.netWeight || 0,
+      gross_weight: item.product.grossWeight || 0,
+    }))
+  );
+
+  const prev = lastProductListRef.current;
+  const isSame = JSON.stringify(prev) === JSON.stringify(newProductList);
+
+  if (!isSame) {
+    lastProductListRef.current = newProductList;
+    
+    // ✅ Use calculated value instead of state
+    setValue("invoice.products.product_list", newProductList);
+    // setValue("invoice.products.total_price", calculatedTotalWithExtras);
+    // setValue("invoice.products.insurance", insurance);
+    // setValue("invoice.products.freight", freight);
+    setValue("invoice.products.goods", getLastWordsCommaString(sections));
+  }
+}, [sections, insuranceAmount, freightAmount, setValue]);
+
+useEffect(() => {
+  register("invoice.products.product_list");
+  register("invoice.products.total_price");
+  register("invoice.products.insurance");
+  register("invoice.products.freight");
+  register("invoice.products.goods");
+}, []);
+
+
+
+
+
+const prevList = useRef<string | null>(null);
+const hasRunOnce = useRef(false);
+
+useLayoutEffect(() => {
+  const list = watch("invoice.products.product_list");
+  if (hydrated && Array.isArray(list) && list.length > 0) {
+    setSections(convertToSection(list));
+  }
+}, [hydrated]);
+
+
+
 
   useEffect(() => {
     async function fetchCategory() {
@@ -243,6 +311,7 @@ const ProductInformation = ({
     
   }, []);
 
+
  
 
   return (
@@ -299,7 +368,7 @@ const ProductInformation = ({
         </div>
 
         <div className="overflow-x-auto">
-          {JSON.stringify(sections)}
+          {/* {JSON.stringify(sections)} */}
           {sections.map((section, sectionIndex) => (
             <div key={section.id} className="mb-6">
               <div className="flex items-center gap-4 mb-2">
@@ -379,7 +448,7 @@ const ProductInformation = ({
                     <div className="absolute top-full left-0 w-full bg-white border rounded-md shadow-lg z-10 mt-1 max-h-60 overflow-y-auto">
                       {sectionOptions.map((option, index) => (
                         <div
-                          key={index}
+                          key={option}
                           className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
                           onMouseDown={() => {
                             // Create a new copy of the sections array
@@ -447,14 +516,15 @@ const ProductInformation = ({
                       Description
                     </TableHead>
                     <TableHead className="border font-bold">HSN Code</TableHead>
-                    <TableHead className="border font-bold">Size</TableHead>
+                    {productType==="Sanitary"?<></>:<><TableHead className="border font-bold">Size</TableHead></>}
+                    
                     <TableHead className="w-[100px] border font-bold">
                       Quantity
                     </TableHead>
                     <TableHead className="border font-bold">
                       Unit Type
                     </TableHead>
-                    <TableHead className="border font-bold">
+                    {productType==="Sanitary"?<></>:<><TableHead className="border font-bold">
                       SQM/
                       {(() => {
                         // Find first item with unit type or use BOX as default
@@ -464,7 +534,8 @@ const ProductInformation = ({
                     </TableHead>
                     <TableHead className="border font-bold">
                       Total SQM
-                    </TableHead>
+                    </TableHead></>}
+                    
                     <TableHead className="border font-bold">Price</TableHead>
                     <TableHead className="border font-bold">
                       Total {paymentTerms}
@@ -552,41 +623,36 @@ const ProductInformation = ({
                             className="h-8 w-24"
                           />
                         </TableCell>
-                        <TableCell>
+                        {productType==="Sanitary"?<></>:<><TableCell>
                           <Select
-                            value={item.product.size}
+                            value={item.product.size?? ""}
                             onValueChange={(value) => {
-                              // Get the corresponding SQM/BOX value for this size
-                              const sqmPerBox =
-                                sizeToSqmMap[value] || item.product.sqmPerBox;
+                              const newSqmPerBox = sizeToSqmMap[value] || 0;
+                              const isMixAndDash = productType === "Mix" && value === "-";
 
-                              setSections((currentSections) =>
-                                currentSections.map((s) =>
-                                  s.id === section.id
-                                    ? {
-                                        ...s,
-                                        items: s.items.map((i) =>
-                                          i.id === item.id
-                                            ? {
-                                                ...i,
-                                                product: {
-                                                  ...i.product,
-                                                  size: value,
-                                                  sqmPerBox: sqmPerBox,
-                                                },
-                                                totalSQM:
-                                                  i.quantity * sqmPerBox,
-                                                totalFOB:
-                                                  i.quantity *
-                                                  sqmPerBox *
-                                                  i.product.price, // task7 no 7 updated
-                                              }
-                                            : i
-                                        ),
-                                      }
-                                    : s
-                                )
+                              const updatedSections = sections.map((s) =>
+                                s.id === section.id
+                                  ? {
+                                      ...s,
+                                      items: s.items.map((i) =>
+                                        i.id === item.id
+                                          ? {
+                                              ...i,
+                                              product: {
+                                                ...i.product,
+                                                size: value,
+                                                sqmPerBox: isMixAndDash ? "-" : newSqmPerBox,
+                                              },
+                                              totalSQM: isMixAndDash ? "-" : i.quantity * newSqmPerBox,
+                                              totalFOB: isMixAndDash ? i.quantity * i.product.price : i.quantity * i.product.price * (newSqmPerBox || 1),
+
+                                            }
+                                          : i
+                                      ),
+                                    }
+                                  : s
                               );
+                              setSections(updatedSections);
                             }}
                           >
                             <SelectTrigger className="h-8">
@@ -600,7 +666,8 @@ const ProductInformation = ({
                               ))}
                             </SelectContent>
                           </Select>
-                        </TableCell>
+                        </TableCell></>}
+                        
                         <TableCell>
                           <Input
                             type="text"
@@ -619,12 +686,13 @@ const ProductInformation = ({
                                                 ...i,
                                                 quantity,
                                                 totalSQM:
-                                                  quantity *
-                                                  i.product.sqmPerBox,
+                                                  i.product.size === "-"
+                                                    ? "-"
+                                                    : quantity * i.product.sqmPerBox,
                                                 totalFOB:
-                                                  quantity *
-                                                  i.product.sqmPerBox *
-                                                  i.product.price, // task7 no 7 updated
+                                                  i.product.size === "-"
+                                                    ? quantity * i.product.price
+                                                    : quantity * i.product.price * (i.product.sqmPerBox || 1),
                                               }
                                             : i
                                         ),
@@ -678,13 +746,16 @@ const ProductInformation = ({
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell>
+                       {productType==="Sanitary"?<></>:<><TableCell>
                           <Input
                             type="text"
                             value={item.product.sqmPerBox || ""}
                             onChange={(e) => {
                               const sqmPerBox = e.target.value;
-                              if (!/^\d*\.?\d*$/.test(sqmPerBox)) return;
+                               if (!/^-?\d+(\.\d+)?$|^-?\.\d+$/.test(sqmPerBox)) return;
+                              if(sqmPerBox == "-"){
+                                return;
+                              }
                               setSections(
                                 sections.map((s) =>
                                   s.id === section.id
@@ -702,13 +773,8 @@ const ProductInformation = ({
                                                   i.quantity *
                                                   (parseFloat(
                                                     sqmPerBox || "0"
-                                                  ) || 0),
-                                                totalFOB:
-                                                  i.quantity *
-                                                  (parseFloat(
-                                                    sqmPerBox || "0"
-                                                  ) || 0) *
-                                                  i.product.price, // `task7 no 7 updated
+                                                  ) || 0)
+                                                
                                               }
                                             : i
                                         ),
@@ -726,12 +792,13 @@ const ProductInformation = ({
                         </TableCell>
                         <TableCell>
                           <Input
-                            type="number"
-                            value={item.totalSQM?.toFixed(2) || ""}
+                            type="text"
+                            value={typeof item.totalSQM === 'number' ? item.totalSQM.toFixed(2) : item.totalSQM || ""}
                             readOnly
                             className="h-8 text-right w-24 bg-gray-50"
                           />
-                        </TableCell>
+                        </TableCell></>}
+                        
                         <TableCell>
                           <Input
                             type="text"
@@ -750,13 +817,22 @@ const ProductInformation = ({
                                         items: s.items.map((i) => {
                                           if (i.id !== item.id) return i;
 
-                                          const sqmPerBox = parseFloat(
-                                            i.product.sqmPerBox || "0"
-                                          );
                                           const quantity = i.quantity || 0;
-                                          const price = parseFloat(
-                                            priceInput || "0"
-                                          );
+                                          const price = parseFloat(priceInput || "0");
+
+                                          if (i.product.size === "-") {
+                                            return {
+                                              ...i,
+                                              product: {
+                                                ...i.product,
+                                                price: priceInput,
+                                              },
+                                              totalSQM: "-",
+                                              totalFOB: quantity * price,
+                                            };
+                                          }
+
+                                          const sqmPerBox = parseFloat(i?.product?.sqmPerBox || "1");
                                           const totalSQM = quantity * sqmPerBox;
 
                                           return {
@@ -766,7 +842,7 @@ const ProductInformation = ({
                                               price: priceInput, // store raw string in state
                                             },
                                             totalSQM,
-                                            totalFOB: totalSQM * price,
+                                            totalFOB: productType === "Sanitary" ? quantity * price : totalSQM * price,
                                           };
                                         }),
                                       }
@@ -780,7 +856,7 @@ const ProductInformation = ({
                         <TableCell>
                           <Input
                             type="text"
-                            value={item.totalFOB.toFixed(2) || ""}
+                            value={typeof item.totalFOB === 'number' ? item.totalFOB.toFixed(2) : item.totalFOB || ""}
                             readOnly
                             onChange={(e) => {
                               const totalFOB = parseFloat(e.target.value) || 0;
@@ -839,35 +915,40 @@ const ProductInformation = ({
               <>
                 <div className="flex justify-end border-b border-gray-200">
                   <div className="w-1/3 text-right p-3 font-medium">
-                    {paymentTerms === "CIF" && "Insurance"}
+                    {["CIF", "CIF -> FOB"].includes(paymentTerms)  && "Insurance"}
                   </div>
                   <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
-                    {paymentTerms === "CIF" && (
-                      <Input
-                        type="number"
-                        value={insuranceAmount}
-                        {...register("products.insurance", { required: true })}
-                        placeholder="Enter insurance amount"
-                        onChange={(e) =>
-                          setInsuranceAmount(parseInt(e.target.value))
-                        }
-                        className="text-right border-0 p-0 h-6"
-                      />
-                    )}
+                  
+                   {["CIF", "CIF -> FOB"].includes(paymentTerms) && (
+  <Input
+    type="text"
+    value={insuranceAmount}
+    {...register("invoice.products.insurance", { required: true })}
+    placeholder="Enter insurance amount"
+    onChange={(e) =>
+      setInsuranceAmount(parseInt(e.target.value))
+    }
+    className="text-right border-0 p-0 h-6"
+  />
+)}
+
                   </div>
                 </div>
                 <div className="flex justify-end border-b border-gray-200">
                   <div className="w-1/3 text-right p-3 font-medium">
-                    Frieght
+                    Freight
                   </div>
                   <div className="w-1/6 text-right p-3 font-medium border-l border-gray-200">
                     <Input
-                      type="number"
+                      type="text"
                       value={freightAmount}
-                      {...register("products.freight", { required: true })}
+                      {...register("invoice.products.freight", { required: true })}
                       placeholder="Enter freight amount"
-                      onChange={(e) =>
-                        setFreightAmount(parseInt(e.target.value))
+                      onChange={(e) =>{
+
+                        setFreightAmount(parseInt(e.target.value));
+                      
+                      }
                       }
                       className="text-right border-0 p-0 h-6"
                     />
@@ -882,7 +963,10 @@ const ProductInformation = ({
                 </div>
               </div>
               <div className="w-1/6 text-right p-4 font-semibold text-lg border-l border-red-800">
-                {totalFOBEuro.toFixed(2)}
+              
+
+                {totalFOBEuro.toFixed(2) }
+  
               </div>
             </div>
           </div>

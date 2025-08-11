@@ -80,8 +80,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     let invoiceNo = data.invoice_number || "-";
     let invoiceDate = data.invoice_date || "-";
     // invoiceDate = normalizeDateSeparator(invoiceDate, '.');
-    // let [year, month, day] = invoiceDate.split('/');
-    // invoiceDate = `${year}.${month}.${day}`;
+    let [year, month, day] = invoiceDate.split('/');
+    invoiceDate = `${year}.${month}.${day}`;
     let buyersOrderNo = data.buyer.order_number || "-";
     let buyersOrderDate = data.buyer.order_date || "-";
     let poNo = data.buyer.po_number || "-";
@@ -164,8 +164,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     let grossWeight = data.package.total_gross_weight || "-";
     let netWeight = data.package.total_net_weight || "-";
     let totalSQM = data.package.total_sqm || "-";
-    let insurance = data.product_details.insurance || "0";
-    let freight = data.product_details.freight || "0";
+    let insurance = data.product_details.insurance || "-";
+    let freight = data.product_details.freight || "-";
     let fOBEuro = data.package.total_amount - insurance - freight;
     let totalFOBEuro = data.package.total_amount;
     if (termsOfDeliveryMain === "CIF -> FOB") {
@@ -177,8 +177,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     // let customDate = data.invoice_date || "26-04-2025";
     let arn = data.package.app_ref_number || "-";
     let lutDate = data.package.lut_date || "-";
-    // [year, month, day] = lutDate.split('-');
-    // lutDate = `${day}/${month}/${year}`;
+    [year, month, day] = lutDate.split('-');
+    lutDate = `${day}/${month}/${year}`;
     let totalInINR = data.package.taxable_value || "-";
 
     let gstValue = data.package.gst_amount || "-";   // New value // mann patel

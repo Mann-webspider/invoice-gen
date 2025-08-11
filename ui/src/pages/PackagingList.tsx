@@ -42,164 +42,72 @@ format = (date, fmt) => new Date(date).toLocaleDateString();
 
 
 import api from "@/lib/axios";
-import {
-  getCurrentFormId,
-  loadFormSection,
-  getValueFromSection,
-  saveFormSection,
-} from "@/lib/formDataUtils";
-import { get } from "http";
-import { useDraftForm } from "@/hooks/useDraftForm";
 
-// Update the props interface to receive data from InvoiceGenerator
-interface PackagingListProps {
-  onBack: () => void;
-  importedSections?: ProductSection[];
-  markNumber?: string;
-  readOnly?: boolean;
-  form?:any;
-  invoiceHeader?: {
-    invoiceNo: string;
-    invoice_number?: string; // Add this property to match what's being passed
-    invoiceDate: Date;
-    email: string;
-    taxid: string;
-    ieCode: string;
-    panNo: string;
-    gstinNo: string;
-    stateCode: string;
-    selectedExporter: string;
-    companyAddress: string;
-  };
-  buyerInfo?: {
-    consignee: string;
-    notifyParty: string;
-    buyersOrderNo: string;
-    buyersOrderDate: Date;
-    poNo: string;
-  };
-  shippingInfo?: {
-    preCarriageBy: string;
-    placeOfReceipt: string;
-    vesselFlightNo: string;
-    portOfLoading: string;
-    portOfDischarge: string;
-    finalDestination: string;
-    countryOfOrigin: string;
-    originDetails: string;
-    countryOfFinalDestination: string;
-    termsOfDelivery: string;
-    paymentTerms: string;
-    shippingMethod: string;
-    selectedCurrency: string;
-    currencyRate: string;
-  };
-}
+import { useDraftForm } from "@/hooks/useDraftForm";
+import { nanoid } from "nanoid"; 
+
+
 
 const PackagingList = ({
   onBack,
   
-  markNumber: initialMarkNumber,
-  readOnly = false,
-  invoiceHeader,
-  form:fm
+
+  readOnly = true,
+
+  form:methods2
   
 }: PackagingListProps) => {
-  const { methods:form, isReady,hydrated } = useDraftForm({
-   formType: 'pakingList',
-   methods:fm
- });
-  const {
-    setInvoiceData,
-    setPackagingListData,
-    ensureFormDataFromLocalStorage,
-  } = useForm();
-  const { register, watch, handleSubmit ,getValues} = form;
-  // console.log(getValues());
   
-  let formData = JSON.parse(localStorage.getItem("invoiceData2") || "null");
-  // console.log("Form Data:", formData);
+  const methods = useFormContext()
+  const { methods:form, isReady,hydrated,saveDraft ,draftId,isDraftMode} = useDraftForm({
+    formType: 'packaging-list',
+    methods,
+    isDraftMode: location.pathname.includes("/drafts/"),
+  });
+  const { register, watch, handleSubmit ,getValues,setValue} = methods ;
 
-  // useEffect(() => {
-  //   const subscribe = watch((value) => {
-  //     console.log(value);
-  //   });
-  //   return () => subscribe.unsubscribe();
-  // }, [watch]);
+ 
+  // console.log(getValues());
 
-  // Add missing state variables
+ 
+  function onBack2(){
+    if(location.pathname.includes("/drafts/")){
+      navigate(`/invoice/drafts/${draftId}`)
+      return;
+    }
+    navigate("/invoice")
+  }
 
-  const [markNumber, setMarkNumber] = useState<string>(initialMarkNumber || "");
+  // Solution: Move to useEffect or useCallback
+const [formData, setFormData] = useState(null);
+
+
+
+
+
+ 
  
   const [containerType, setContainerType] = useState<string>("FCL");
  
   // Get current form ID for localStorage
   const currentFormId =
-    invoiceHeader?.invoiceNo ||
-    invoiceHeader?.invoice_number ||
-    getCurrentFormId();
+    formData?.invoice.invoice_number 
 
-  // Load all form data from localStorage on component mount
-  useEffect(() => {
-    if (currentFormId) {
-      ensureFormDataFromLocalStorage(currentFormId);
-    }
-  }, [currentFormId, ensureFormDataFromLocalStorage]);
 
-  // Function to save a field to localStorage
-  const saveFieldToLocalStorage = (field: string, value: any) => {
-    try {
-      // Load current packaging list data
-      const packagingListData =
-        loadFormSection(currentFormId, "packagingList") || {};
-
-      // Update the field
-      packagingListData[field] = value;
-
-      // Save back to localStorage
-      saveFormSection(currentFormId, "packagingList", packagingListData);
-
-      // Update form context
-      setPackagingListData(packagingListData);
-    } catch (error) {
-      console.error(`Error saving ${field} to localStorage:`, error);
-    }
-  };
 
  
-  const [savedInvoiceData, setSavedInvoiceData] = useState<any>(null);
-
-  
-
-  // Define data structure types
-  interface ExporterData {
-    company_name: string;
-    company_address: string;
-    email: string;
-    tax_id: string;
-    ie_code: string;
-    pan_number: string;
-    gstin_number: string;
-    state_code: string;
-  }
-
-  interface OrderData {
-    order_no: string;
-    order_date: string;
-    po_no: string;
-    consignee?: string;
-    notify_party?: string;
-  }
 
   // Get the exporter data directly from localStorage - this is the most reliable method
   const exporterDataStr = localStorage.getItem("directExporterData");
 
   // Get order data from localStorage
   const orderDataStr = localStorage.getItem("orderData");
-  let orderData: OrderData = {
+  let orderData = {
     order_no: "",
     order_date: "",
     po_no: "",
+    consignee:"",
+    notify_party:""
   };
 
   try {
@@ -218,7 +126,7 @@ const PackagingList = ({
   }
 
   // Initialize with empty values
-  let selectedExporterData: ExporterData = {
+  let selectedExporterData = {
     company_name: "",
     company_address: "",
     email: "",
@@ -232,7 +140,7 @@ const PackagingList = ({
   if (exporterDataStr) {
     try {
       // Parse and merge with default values to ensure all properties exist
-      const parsedData = JSON.parse(exporterDataStr) as Partial<ExporterData>;
+      const parsedData = JSON.parse(exporterDataStr);
       selectedExporterData = {
         ...selectedExporterData,
         ...parsedData,
@@ -244,63 +152,12 @@ const PackagingList = ({
 
   
 
-  const buyer = formData?.buyer || savedInvoiceData?.buyerInfo || {};
-  const shipping = formData?.shipping || savedInvoiceData?.shippingInfo || {};
+  const buyer = formData?.invoice.buyer || {};
+  const shipping = formData?.invoice.shipping || {};
+  const products = formData?.invoice.products
 
   // Get invoice number based on all possible sources with explicit type checking
   let invoiceNumber = "";
-
-  // Check invoiceHeader from props first
-  if (invoiceHeader && typeof invoiceHeader === "object") {
-    if ("invoiceNo" in invoiceHeader && invoiceHeader.invoiceNo) {
-      invoiceNumber = invoiceHeader.invoiceNo;
-    } else if ("invoice_number" in invoiceHeader) {
-      // TypeScript doesn't know about this property, but it might exist at runtime
-      const invNum = (invoiceHeader as any).invoice_number;
-      if (invNum && typeof invNum === "string") {
-        invoiceNumber = invNum;
-      }
-    }
-  }
-
-  // If not found, check formData
-  if (!invoiceNumber && formData?.invoice?.invoice_number) {
-    invoiceNumber = formData.invoice.invoice_number;
-  }
-
-  // Finally check localStorage
-  if (!invoiceNumber && savedInvoiceData?.invoiceHeader) {
-    if (savedInvoiceData.invoiceHeader.invoiceNo) {
-      invoiceNumber = savedInvoiceData.invoiceHeader.invoiceNo;
-    } else if ("invoice_number" in savedInvoiceData.invoiceHeader) {
-      const invNum = (savedInvoiceData.invoiceHeader as any).invoice_number;
-      if (invNum && typeof invNum === "string") {
-        invoiceNumber = invNum;
-      }
-    }
-  }
-
-  // Fallback to a default value if needed - uncomment for testing
-  if (!invoiceNumber) {
-    // invoiceNumber = 'INV-TEST-123'; // Uncomment for testing
-  }
-
-  // If we still don't have an invoice number, try to extract it from the URL or localStorage one more time
-  if (!invoiceNumber) {
-    // Check URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlInvoiceNo = urlParams.get("invoiceNo");
-    if (urlInvoiceNo) {
-      invoiceNumber = urlInvoiceNo;
-    } else {
-      // Last resort - try to find any invoice number in localStorage
-      const allLocalStorage = { ...localStorage };
-
-      // For testing only - uncomment to use a fallback value
-      // invoiceNumber = 'INV-TEST-123';
-    }
-  }
-
 
 
 
@@ -320,15 +177,7 @@ const PackagingList = ({
   // Parse imported mark number or use default
   const [markParts, setMarkParts] = useState<string[]>([]);
 
-  useEffect(() => {
-    if (markNumber) {
-      // Try to parse the mark number format (e.g., "10X20FCLLCL")
-      const match = markNumber.match(/^(\d+)X(\d*)([A-Za-z]+)$/);
-      if (match) {
-        setMarkParts([match[1], match[2], match[3]]);
-      }
-    }
-  }, [markNumber]);
+  
 
   // Section options
   const [sectionOptions, setSectionOptions] = useState<string[]>([
@@ -381,7 +230,7 @@ const PackagingList = ({
   const addNewSection = () => {
     if (readOnly) return; // Prevent adding if read-only
 
-    const newSectionId = Date.now().toString();
+    const newSectionId = nanoid();
     const updatedSections = [
       ...sections,
       {
@@ -392,7 +241,7 @@ const PackagingList = ({
     ];
 
     setSections(updatedSections);
-    saveFieldToLocalStorage("sections", updatedSections);
+    
   };
 
   // Add a new row to a section with the correct HSN code based on section title
@@ -408,17 +257,17 @@ const PackagingList = ({
             hsnCodes[section.title] || (isWallTile ? "69072300" : "69072100");
 
           const newItem: InvoiceItem = {
-            id: Date.now().toString(),
+            id: nanoid(),
             product: {
-              id: Date.now().toString(),
+              id: nanoid(),
               description: isWallTile ? "1621" : "LUCKY PANDA",
               hsnCode: hsnCode,
               size: isWallTile ? "300X600" : "600X1200",
               price: 0,
               sqmPerBox: 0,
               marksAndNos: `${markParts[0]}X${markParts[1]}${markParts[2]}`,
-              netWeight: "0.00", // Initialize with default value
-              grossWeight: "0.00", // Initialize with default value
+              netWeight: "", // Initialize with default value
+              grossWeight: "", // Initialize with default value
             },
             quantity: 1000,
             unitType: "BOX",
@@ -619,13 +468,7 @@ const PackagingList = ({
       );
 
       // Update invoice data with the new product list
-      setInvoiceData({
-        ...formData.invoice,
-        products: {
-          ...formData.invoice.products,
-          product_list: updatedProductList,
-        },
-      });
+    
     }
   };
 
@@ -676,13 +519,7 @@ const PackagingList = ({
       );
 
       // Update invoice data with the new product list
-      setInvoiceData({
-        ...formData.invoice,
-        products: {
-          ...formData.invoice.products,
-          product_list: updatedProductList,
-        },
-      });
+      
     }
   };
 
@@ -701,19 +538,39 @@ const PackagingList = ({
   // Add state for the total pallet number instead of the full text
   const [totalPalletCount, setTotalPalletCount] = useState<string>("");
   // dummy values
-  const [containerRows, setContainerRows] = useState<ContainerInfo[]>([
+  const [containerRows, setContainerRows] = useState([
     {
       id: "1",
       containerNo: "",
       lineSealNo: "",
       rfidSeal: "",
       designNo: "",
-      quantity: "",
+      quantity: 0,
       netWeight: "",
       grossWeight: "",
     },
   ]);
+  useEffect(() => {
+  
+  // if (!hydrated) return;
+  let formDraft = getValues()
+  console.log("Form Draft:", formDraft?.containerRows?.length != 0);
+  
+  setFormData(()=>formDraft);
+setContainerRows(prev => 
+  (formDraft?.containerRows?.length ?? 0) !== 0 
+    ? formDraft.containerRows 
+    : prev
+);
 
+
+
+  setTotalPalletCount(formDraft?.totalPallet || "");
+}, [hydrated]);
+ useEffect(()=>{
+    setValue("containerRows", containerRows);
+    setValue("totalPallet", totalPalletCount);
+  },[containerRows,totalPalletCount])
   // Add new container row
   const addContainerRow = () => {
     let newRow: ContainerInfo;
@@ -722,7 +579,7 @@ const PackagingList = ({
     if (containerRows.length > 0) {
       const lastRow = containerRows[containerRows.length - 1];
       newRow = {
-        id: Date.now().toString(),
+        id: nanoid(),
         containerNo: lastRow.containerNo,
         lineSealNo: lastRow.lineSealNo,
         rfidSeal: lastRow.rfidSeal,
@@ -734,7 +591,7 @@ const PackagingList = ({
     } else {
       // Default values for first row
       newRow = {
-        id: Date.now().toString(),
+        id: nanoid(),
         containerNo: "",
         lineSealNo: "",
         rfidSeal: "",
@@ -747,24 +604,16 @@ const PackagingList = ({
 
     const updatedRows = [...containerRows, newRow];
     setContainerRows(updatedRows);
-    saveFieldToLocalStorage("containerRows", updatedRows);
+    
   };
 
   // Remove container row
   const removeContainerRow = (id: string) => {
     const updatedRows = containerRows.filter((row) => row.id !== id);
     setContainerRows(updatedRows);
-    saveFieldToLocalStorage("containerRows", updatedRows);
+    
 
-    // Also update total weights
-    saveFieldToLocalStorage(
-      "net_weight",
-      calculateTotalWeight(updatedRows, "netWeight")
-    );
-    saveFieldToLocalStorage(
-      "gross_weight",
-      calculateTotalWeight(updatedRows, "grossWeight")
-    );
+    
   };
 
   // Calculate total weight from container rows
@@ -791,20 +640,10 @@ const PackagingList = ({
       );
 
       // Save container rows to localStorage
-      saveFieldToLocalStorage("containerRows", updatedRows);
+      
 
       // If updating weights, also save them separately
-      if (field === "netWeight") {
-        saveFieldToLocalStorage(
-          "net_weight",
-          calculateTotalWeight(updatedRows, "netWeight")
-        );
-      } else if (field === "grossWeight") {
-        saveFieldToLocalStorage(
-          "gross_weight",
-          calculateTotalWeight(updatedRows, "grossWeight")
-        );
-      }
+     
 
       return updatedRows;
     });
@@ -812,34 +651,21 @@ const PackagingList = ({
 
   // Container type is already declared above
 
-  // Extract container type from markNumber
-  useEffect(() => {
-    if (markNumber) {
-      if (markNumber.includes("LCL")) {
-        setContainerType("LCL");
-      } else if (markNumber.includes("FCL")) {
-        setContainerType("FCL");
-      }
-    }
-  }, [markNumber]);
+ 
 
   // Add a handler for when the marks and numbers change
   const handleMarksAndNumbersChange = (value: string) => {
     if (value === "LCL") {
       setContainerType("LCL");
       setMarkParts(["", "", "LCL"]);
-      saveFieldToLocalStorage("containerType", "LCL");
-      saveFieldToLocalStorage("markParts", ["", "", "LCL"]);
-      saveFieldToLocalStorage("markNumber", "LCL");
+      
     } else {
       // Parse the value in the format "10X20 FCL"
       const parts = value.match(/^(\d+)X(\d+)\s+(\w+)$/);
       if (parts) {
         setContainerType(parts[3]);
         setMarkParts([parts[1], parts[2], parts[3]]);
-        saveFieldToLocalStorage("containerType", parts[3]);
-        saveFieldToLocalStorage("markParts", [parts[1], parts[2], parts[3]]);
-        saveFieldToLocalStorage("markNumber", value);
+       
       }
     }
   };
@@ -859,55 +685,60 @@ const PackagingList = ({
     return format(parsed, outputFormat);
   }
 
-  function convertProductsToSections(productsData) {
-    if (!productsData?.product_list?.length) return [];
+  
+  function convertToSection(productArray) {
+  if (!Array.isArray(productArray)) productArray = [productArray];
 
-    // Group products by category_name
-    const groupedByCategory = productsData.product_list.reduce(
-      (acc, product) => {
-        const category = product.category_name || "Untitled Section";
-        if (!acc[category]) acc[category] = [];
-        acc[category].push(product);
-        return acc;
+  const sectionMap = new Map();
+
+  for (const item of productArray) {
+    const sectionKey = item.category_id + "::" + item.category_name;
+
+    if (!sectionMap.has(sectionKey)) {
+      sectionMap.set(sectionKey, {
+        id: nanoid(), // or use uuidv4()
+        title: item.category_name,
+        items: [],
+      });
+    }
+
+    sectionMap.get(sectionKey).items.push({
+      id: nanoid(),
+      product: {
+        hsnCode: item.hsn_code,
+        description: item.product_name || "",
+        size: item.size,
+        sqmPerBox: item.sqm,
+        price: item.price,
+        
+        marksAndNos: "1020 FCL",
       },
-      {}
-    );
-
-    // Convert each group to a section
-    const sections = Object.entries(groupedByCategory).map(
-      ([category, items], index) => ({
-        id: `section-${index + 1}`,
-        title: category,
-        items: items.map((product, idx) => ({
-          id: `item-${index + 1}-${idx + 1}`,
-          quantity: product.quantity,
-          product: {
-            hsnCode: product.hsn_code || "",
-            description: product.product_name,
-            size: product.size,
-            netWeight: product.net_weight == 0 ? "" : product.net_weight,
-            grossWeight: product.gross_weight == 0 ? "" : product.gross_weight,
-          },
-        })),
-      })
-    );
-
-    return sections;
+      quantity: item.quantity,
+      unitType: item.unit,
+      totalSQM: item.quantity * item.sqm,
+      totalFOB: item.quantity * item.price,
+    });
   }
 
+  return Array.from(sectionMap.values());
+}
+
   useEffect(() => {
-    const productData = JSON.parse(localStorage.getItem("invoiceData2"));
-    if (productData?.products) {
-      const transformedSections = convertProductsToSections(
-        productData.products
+    const productData = formData?.invoice.products.product_list
+    
+    if (productData) {
+      const transformedSections = convertToSection(
+        productData
       );
+      console.log(transformedSections);
       setSections(transformedSections);
     }
-  }, []);
+  }, [formData?.invoice.products.product_list]);
 
   function updateInvoiceProducts(formData, newObject) {
     const updatedForm = { ...formData };
-
+    console.log(newObject);
+    
     const newProductList = newObject.products?.product_list || [];
 
      // Flatten all net_weight/gross_weight entries
@@ -921,7 +752,7 @@ const PackagingList = ({
   let weightIndex = 0;
 
   // Sequentially assign weights to products
-  updatedForm.products.product_list = updatedForm.products.product_list.map(product => {
+  updatedForm.invoice.products.product_list = updatedForm.invoice.products.product_list.map(product => {
     const weightEntry = flatWeights[weightIndex] || { net_weight: 0, gross_weight: 0 };
     weightIndex += 1;
 
@@ -934,34 +765,35 @@ const PackagingList = ({
 
     // ✅ Copy containers
     if (Array.isArray(newObject.products?.containers)) {
-      updatedForm.products.containers = [...newObject.products.containers];
+      updatedForm.invoice.products.containers = [...newObject.products.containers];
     }
-    updatedForm.products["total_pallet_count"] =
+    updatedForm.invoice.products["total_pallet_count"] =
       newObject.products?.total_pallet_count || "";
 
     // ✅ Calculate total weights
     let totalNetWeight = 0;
     let totalGrossWeight = 0;
 
-    updatedForm.products.containers.forEach((product) => {
+    updatedForm.invoice.products.containers.forEach((product) => {
       totalNetWeight += parseFloat(product.net_weight || 0);
       totalGrossWeight += parseFloat(product.gross_weight || 0);
     });
 
     // ✅ Store totals in formData.package
-    if (!updatedForm.package) updatedForm.package = {};
-    updatedForm.package.net_weight = totalNetWeight.toFixed(2);
-    updatedForm.package.gross_weight = totalGrossWeight.toFixed(2);
+    if (!updatedForm.invoice.package) updatedForm.invoice.package = {};
+    updatedForm.invoice.package.net_weight = totalNetWeight.toFixed(2);
+    updatedForm.invoice.package.gross_weight = totalGrossWeight.toFixed(2);
 
     return updatedForm;
   }
 
-  function handleNext(data) {
-    let finalData = updateInvoiceProducts(formData, data);
+  async function handleNext(data) {
+    // let finalData = updateInvoiceProducts(formData, data);
     // console.log(finalData);
-    localStorage.setItem("invoiceData2", JSON.stringify(finalData));
-
-    navigate("/annexure");
+    // localStorage.setItem("invoiceData2", JSON.stringify(finalData));
+   let res = await saveDraft({ last_page: 'annexure' }); // Update to next page
+    navigate(`/annexure/drafts/${res.id}`)
+    // navigate("/annexure");
   }
 
   // Handle potential rendering errors
@@ -987,7 +819,7 @@ const PackagingList = ({
                   <div className="space-y-2">
                     <Label>Exporter</Label>
                     <Input
-                      value={formData.exporter.company_name}
+                      value={formData?.invoice?.exporter?.company_name}
                       readOnly
                       className="bg-gray-50"
                     />
@@ -996,7 +828,7 @@ const PackagingList = ({
                     <Label>Company Address</Label>
                     <textarea
                       className="w-full p-2 rounded-md border bg-gray-50"
-                      value={formData.exporter.company_address}
+                      value={formData.invoice.exporter.company_address}
                       readOnly
                       rows={3}
                     />
@@ -1004,7 +836,7 @@ const PackagingList = ({
                   <div className="space-y-2">
                     <Label>Email</Label>
                     <Input
-                      value={formData.exporter.email}
+                      value={formData.invoice.exporter.email}
                       readOnly
                       className="bg-gray-50"
                     />
@@ -1012,7 +844,7 @@ const PackagingList = ({
                   <div className="space-y-2">
                     <Label>Tax ID</Label>
                     <Input
-                      value={formData.exporter.tax_id}
+                      value={formData.invoice.exporter.tax_id}
                       readOnly
                       className="bg-gray-50"
                     />
@@ -1023,12 +855,12 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>Invoice Number</Label>
                       <Input
-                        value={formData.invoice_number || ""}
+                        value={formData.invoice.invoice_number || ""}
                         readOnly
                         className="bg-gray-50 font-medium"
                         placeholder="No invoice number available"
                       />
-                      {!formData.invoice_number && (
+                      {!formData.invoice.invoice_number && (
                         <p className="text-xs text-red-500 mt-1">
                           Invoice number not found
                         </p>
@@ -1038,8 +870,8 @@ const PackagingList = ({
                       <Label>Invoice Date</Label>
                       <Input
                         value={
-                          formData?.invoice_date
-                            ? formatCustomDate(formData?.invoice_date)
+                          formData?.invoice.invoice_date
+                            ? formatCustomDate(formData?.invoice.invoice_date)
                             : ""
                         }
                         readOnly
@@ -1054,7 +886,7 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>I.E. Code #</Label>
                       <Input
-                        value={formData?.exporter.ie_code}
+                        value={formData?.invoice.exporter.ie_code}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -1062,7 +894,7 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>PAN No. #</Label>
                       <Input
-                        value={formData?.exporter.pan_number}
+                        value={formData?.invoice.exporter.pan_number}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -1072,7 +904,7 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>GSTIN No. #</Label>
                       <Input
-                        value={formData?.exporter.gstin_number}
+                        value={formData?.invoice.exporter.gstin_number}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -1080,7 +912,7 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>State Code</Label>
                       <Input
-                        value={formData?.exporter.state_code}
+                        value={formData?.invoice.exporter.state_code}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -1108,22 +940,23 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>Order No.</Label>
                       <Input
-                        value={buyer.buyer_order_no}
+                        value={buyer?.buyer_order_no}
                         readOnly
                         className="bg-gray-50"
                       />
                     </div>
                     <div className="space-y-2">
                       <Label>Order Date</Label>
-                      <Input
-                        value={
-                          buyer.buyer_order_date
-                            ? formatCustomDate(buyer.buyer_order_date)
-                            : ""
-                        }
-                        readOnly
-                        className="bg-gray-50"
-                      />
+                     <Input
+  value={
+    buyer?.buyer_order_date
+      ? new Date(buyer?.buyer_order_date).toLocaleDateString('en-GB')
+      : ""
+  }
+  readOnly
+  className="bg-gray-50"
+/>
+
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -1139,7 +972,7 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>Consignee</Label>
                       <Input
-                        value={buyer.consignee}
+                        value={buyer?.consignee}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -1147,7 +980,7 @@ const PackagingList = ({
                     <div className="space-y-2">
                       <Label>Notify Party</Label>
                       <Input
-                        value={buyer.notify_party}
+                        value={buyer?.notify_party}
                         readOnly
                         className="bg-gray-50"
                       />
@@ -1294,21 +1127,17 @@ const PackagingList = ({
                     <div className="font-bold">
                       {containerType === "LCL"
                         ? "LCL"
-                        : `${markParts[0]} ${markParts[1]} ${markParts[2]}`}
+                        : `${products?.leftValue} X ${products?.rightValue} ${products?.nos}`}
                     </div>
                   </div>
                 ) : (
-                  <MarksAndNumbers
-                    initialContainerType={containerType}
-                    initialLeftValue={markParts[0]}
-                    initialRightValue={markParts[1]}
-                    onChange={handleMarksAndNumbersChange}
-                  />
+                  <></>
                 )}
               </div>
 
               {/* Product Sections */}
               {sections && sections.length > 0 ? (
+
                 sections.map((section, sectionIndex) => (
                   <div
                     key={section.id || `section-${sectionIndex}`}
@@ -1382,41 +1211,38 @@ const PackagingList = ({
                         )}
 
                         {/* Zero row for second section - Make title selectable */}
-                        {sectionIndex === 1 && (
+                        {sectionIndex && (
                           <TableRow className="bg-gray-100">
                             <TableCell
                               colSpan={7}
                               className="border font-bold text-center p-2"
                             >
-                              {readOnly ? (
+                              
                                 <div className="text-center w-full flex justify-center items-center">
                                   {section.title}
                                 </div>
-                              ) : (
-                                <Select
-                                  value={section.title}
-                                  onValueChange={(value) =>
-                                    handleSectionTitleChange(section.id, value)
-                                  }
-                                  disabled={readOnly}
-                                >
-                                  <SelectTrigger className="border-0 bg-transparent font-bold">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sectionOptions.map((option) => (
-                                      <SelectItem key={option} value={option}>
-                                        {option}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
+                              
                             </TableCell>
                           </TableRow>
                         )}
-
+                        {console.log("Section Items:", section)}
                         {section.items.map((item, itemIndex) => {
+                          const calculateCumulativeIndex = (sections, sectionIndex, itemIndex) => {
+                            let cumulativeIndex = 0;
+                            for (let i = 0; i < sectionIndex; i++) {
+                              cumulativeIndex += sections[i].items.length;
+                            }
+                            return cumulativeIndex + itemIndex;
+                          };
+                         // Calculate cumulative index for both SR NO and product registration
+                            let cumulativeIndex = 0;
+                            for (let i = 0; i < sectionIndex; i++) {
+                              cumulativeIndex += sections[i].items.length;
+                            }
+                            const actualProductIndex = calculateCumulativeIndex(sections, sectionIndex, itemIndex);
+                            const srNumber = actualProductIndex + 1; // SR NO is 1-based
+
+                            console.log(`Section ${sectionIndex} (${section.title}), Item ${itemIndex} -> SR NO: ${srNumber}, Product Index: ${actualProductIndex}`);
                           return (
                             <TableRow
                               key={item.id}
@@ -1424,9 +1250,7 @@ const PackagingList = ({
                             >
                               <TableCell className="border text-center p-0">
                                 <div className="p-2">
-                                  {sectionIndex === 0
-                                    ? itemIndex + 1
-                                    : itemIndex + sections[0].items.length + 1}
+                                  {srNumber}
                                 </div>
                               </TableCell>
                               <TableCell className="border p-0">
@@ -1523,9 +1347,10 @@ const PackagingList = ({
                               <TableCell className="border p-0">
                                 {/* NET.WT. IN KGS. column - Always editable */}
                                 <Input
-                                  value={item.product.netWeight ?? "0.00"}
+                                type={"text"}
+                                  value={item.product.netWeight}
                                   {...register(
-                                    `products.product_list.${sectionIndex}.items.${itemIndex}.net_weight`,
+                                    `invoice.products.product_list.${actualProductIndex}.net_weight`,
                                     {
                                       required: true,
                                     }
@@ -1547,9 +1372,10 @@ const PackagingList = ({
                               <TableCell className="border p-0">
                                 {/* GRS.WT. IN KGS. column - Always editable */}
                                 <Input
-                                  value={item.product.grossWeight ?? "0.00"}
+                                type={"text"}
+                                  value={item.product.grossWeight}
                                   {...register(
-                                    `products.product_list.${sectionIndex}.items.${itemIndex}.gross_weight`,
+                                    `invoice.products.product_list.${actualProductIndex}.gross_weight`,
                                     {
                                       required: true,
                                     }
@@ -1678,7 +1504,7 @@ const PackagingList = ({
                           <Input
                             value={row.containerNo}
                             {...register(
-                              `products.containers.${index}.container_no`,
+                              `invoice.products.containers.${index}.container_no`,
                               {
                                 required: true,
                               }
@@ -1698,7 +1524,7 @@ const PackagingList = ({
                           <Input
                             value={row.lineSealNo}
                             {...register(
-                              `products.containers.${index}.line_seal_no`,
+                              `invoice.products.containers.${index}.line_seal_no`,
                               {
                                 required: true,
                               }
@@ -1718,7 +1544,7 @@ const PackagingList = ({
                           <Input
                             value={row.rfidSeal}
                             {...register(
-                              `products.containers.${index}.rfid_seal`,
+                              `invoice.products.containers.${index}.rfid_seal`,
                               {
                                 required: true,
                               }
@@ -1738,7 +1564,7 @@ const PackagingList = ({
                           <Input
                             value={row.designNo}
                             {...register(
-                              `products.containers.${index}.design_no`,
+                              `invoice.products.containers.${index}.design_no`,
                               {
                                 required: true,
                               }
@@ -1759,7 +1585,7 @@ const PackagingList = ({
                             type="text"
                             value={row.quantity}
                             {...register(
-                              `products.containers.${index}.quantity`,
+                              `invoice.products.containers.${index}.quantity`,
                               {
                                 required: true,
                               }
@@ -1780,7 +1606,7 @@ const PackagingList = ({
                           type={"text"}
                             value={row.netWeight}
                             {...register(
-                              `products.containers.${index}.net_weight`,
+                              `invoice.products.containers.${index}.net_weight`,
                               {
                                 required: true,
                               }
@@ -1801,7 +1627,7 @@ const PackagingList = ({
                           type={"text"}
                             value={row.grossWeight}
                             {...register(
-                              `products.containers.${index}.gross_weight`,
+                              `invoice.products.containers.${index}.gross_weight`,
                               {
                                 required: true,
                               }
@@ -1848,15 +1674,12 @@ const PackagingList = ({
                           </span>
                           <Input
                             value={totalPalletCount}
-                            {...register("products.total_pallet_count", {
-                              required: true,
+                            {...register("invoice.products.total_pallet_count", {
+                              required: false,
                             })}
                             onChange={(e) => {
                               setTotalPalletCount(e.target.value);
-                              saveFieldToLocalStorage(
-                                "totalPalletCount",
-                                e.target.value
-                              );
+                             
                             }}
                             className="h-8 border-0 text-center bg-gray-300 font-bold w-14 p-0 mx-1"
                           />
@@ -1929,20 +1752,23 @@ const PackagingList = ({
             </div>
 
             <div className="flex justify-between mt-8">
-              <Button variant="outline" onClick={onBack}>
+              <Button variant="outline" onClick={onBack2}>
                 Back
               </Button>
-              {/* <Button onClick={ () => {
                
+              <div className="flex gap-2">
 
-                 handleSaveInvoice()
-              }}>
-                <Save className="mr-2 h-4 w-4" />
-                Save Invoice
-              </Button> */}
+              <Button onClick={saveDraft}>
+                
+                save
+              </Button>
+              <Button onClick={() => console.log(getValues())}>
+                Debug Form
+              </Button>
               <Button variant="default" onClick={handleSubmit(handleNext)}>
                 Next
               </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
