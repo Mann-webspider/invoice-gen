@@ -7,8 +7,8 @@ import { Input } from "@/components/ui/input";
 import React, { useEffect } from "react";
 import { useForm } from "@/context/FormContext";
 import api from "@/lib/axios";
-
-import { Controller, useForm as rhf, UseFormReturn,useFormContext } from "react-hook-form";
+import { format, parse } from 'date-fns';
+import { Controller, useForm as rhf, UseFormReturn, useFormContext } from "react-hook-form";
 interface Supplier {
   id: string;
   name: string;
@@ -59,7 +59,7 @@ const PackageInfoSection = ({
     handleSubmit,
     control,
     setValue,
-    
+
     watch,
     formState: { errors },
   } = useFormContext();
@@ -67,24 +67,33 @@ const PackageInfoSection = ({
   // const productForm = watch("products");
 
   // Calculate tax values when integratedTaxOption is "WITH"
- let currencyRateValue = watch("invoice.currency_rate") // Default to 1 if currencyRate is not provided
- 
- 
-  
+  let currencyRateValue = watch("invoice.currency_rate") // Default to 1 if currencyRate is not provided
+  const formatDateForInput = (date) => {
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+
   const taxableValue =
     integratedTaxOption === "WITH" ? totalFOBEuro * currencyRateValue : 0;
   const gstAmount = taxableValue * 0.18; // 18% GST
   useEffect(() => {
-    
-    setValue("invoice.package.total_fob", 
-  typeof totalFOBEuro === 'number' && !isNaN(totalFOBEuro)
-    ? totalFOBEuro.toFixed(2)
-    : "0.00"
-);
+
+    setValue("invoice.package.total_fob",
+      typeof totalFOBEuro === 'number' && !isNaN(totalFOBEuro)
+        ? totalFOBEuro.toFixed(2)
+        : "0.00"
+    );
+    // console.log(totalSQM);
     setValue("invoice.package.amount_in_words", amountInWords);
     setValue("invoice.package.gst_amount", gstAmount.toFixed(2));
     setValue("invoice.package.taxable_value", taxableValue.toFixed(2));
-    setValue("invoice.package.total_sqm", typeof totalSQM === 'number' ? totalSQM.toFixed(2) : totalSQM);
+    setValue("invoice.package.lut_date", format(new Date(lutDate), 'dd/MM/yyyy'))
+
+    setValue("invoice.package.total_sqm", typeof totalSQM === 'string' ? totalSQM : totalSQM.toFixed(2));
   }, [totalFOBEuro, amountInWords, setValue]);
   // useEffect(() => {
   //   setInvoiceData({
@@ -96,7 +105,7 @@ const PackageInfoSection = ({
   //       gst_circular: exportUnderGstCircular,
   //       integrated_tax_option: integratedTaxOption,
   //       arn_no: lutNo,
-  //       lut_date: format(lutDate, 'dd/MM/yyyy'),
+  // lut_date: format(lutDate, 'dd/MM/yyyy'),
   //       total_fob: totalFOBEuro,
   //       amount_in_words: amountInWords,
   //       payment_terms: paymentTerms,
@@ -142,8 +151,7 @@ const PackageInfoSection = ({
       if (response.status != 200) {
         throw new Error("Network response was not ok");
       }
-      console.log("ARN response:", response.data);
-      
+
       setExportUnderGstCircular(() => response.data.data.gst_circular);
       setValue("invoice.package.gst_circular", response.data.data.gst_circular);
       setValue("invoice.package.arn_no", response.data.data.arn);
@@ -285,11 +293,13 @@ const PackageInfoSection = ({
                   <Input
                     id="lutDate"
                     type="date"
-                    value={packageForm?.lut_date || new Date(lutDate).toISOString().split("T")[0]}
+                    value={
+                      (packageForm?.lut_date || lutDate)?.split('/').reverse().join('-') || undefined
+                    }
                     {...register("invoice.package.lut_date", {
-                      required: "LUT date is required",
+                      required: false,
+                      setValueAs: (value) => value?.split('-').reverse().join('/') || value
                     })}
-                    // onChange={(e) => setLutDate(e.target.value)}
                     placeholder="Enter LUT date"
                   />
                 </div>

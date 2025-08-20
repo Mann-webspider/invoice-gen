@@ -320,10 +320,15 @@ export const dashboardApi = {
     }
   },
   
-  getRecentInvoices: async (limit = 8) => {
+  getRecentInvoices: async (limit?:number) => {
     try {
-      const data = await api.get(buildUrl(`/invoice?limit=${limit}`));
-      return data.invoices || [];
+      if(limit){
+        const data = await api.get(buildUrl(`/invoice?limit=${limit}`));
+        return data.invoices || [];
+      }else{
+        const data = await api.get(buildUrl(`/invoice`));
+        return data.invoices || [];
+      }
     } catch (error) {
       // Error fetching recent invoices - handled silently
       return [];

@@ -119,8 +119,9 @@ const Annexure = ({
 }: AnnexureProps) => {
   const { formData, setAnnexureData } =
     useForm();
-     function onBack2(){
+     async function onBack2(){
     if(location.pathname.includes("/drafts/")){
+      let res = await saveDraft({ last_page: 'annexure' });
       navigate(`/packaging-list/drafts/${draftId}`)
       return;
     }
@@ -148,14 +149,12 @@ const Annexure = ({
   // Get current form ID for localStorage
   const currentFormId = invoice?.invoice_number || getCurrentFormId();
   useEffect(() => {
-      const subscribe = watch((data) => {
-        // Save the form data to localStorage whenever it changes
-        // console.log(data);
-      });
-      return () => {
-        subscribe.unsubscribe();
-      };
-    }, [watch]);
+      if(!hydrated) return 
+      if(isDraftMode){
+        let selectManufacture = getValues("annexure.selected_manufacturer")
+        setManufacturerData(selectManufacture)
+      }
+    }, [hydrated,isDraftMode]);
   // Load all form data from localStorage on component mount
   // useEffect(() => {
   //   if (currentFormId) {
@@ -197,8 +196,8 @@ const Annexure = ({
       "annexure",
       "examDate",
       invoice?.invoice_date
-        ? format(invoice?.invoice_date, "dd.MM.yyyy")
-        : format(new Date(), "dd.MM.yyyy")
+        ? invoice?.invoice_date
+        : format(new Date(), "dd/MM/yyyy")
     );
   });
   const [invoiceDate, setInvoiceDate] = useState(() => {
@@ -206,8 +205,8 @@ const Annexure = ({
       "annexure",
       "invoiceDate",
       invoice?.invoice_date
-        ? format(invoice?.invoice_date, "dd.MM.yyyy")
-        : format(new Date(), "dd.MM.yyyy")
+        ? format(invoice?.invoice_date, "dd/MM/yyyy")
+        : format(new Date(), "dd/MM/yyyy")
     );
   });
 
@@ -266,7 +265,7 @@ const Annexure = ({
   let containerData = invoice.products.containers 
   useEffect(() => {
     // Calculate total from container info if available
-    console.log(containerData);
+    // console.log(containerData);
     
     if (containerData) {
       const totalNet = containerData
@@ -324,7 +323,7 @@ const Annexure = ({
     };
     localStorage.setItem("vgmData", JSON.stringify(vgmData));
     localStorage.setItem("annexureData2", JSON.stringify(data));
-    console.log(data);
+    // console.log(data);
     
     // Navigate to the VGM form page
 
@@ -349,7 +348,7 @@ const Annexure = ({
     };
     setValue("annexure.selected_manufacturer",updatedManufacturerData)
     // Update state
-    console.log(updatedManufacturerData);
+    // console.log(updatedManufacturerData);
     
     setManufacturerData(updatedManufacturerData);
     setValue("annexure.exam_date", examDate);
@@ -364,42 +363,45 @@ const Annexure = ({
     setValue("annexure.commissionerate", commissionerate);
     setValue("annexure.question9b", question9b);
     setValue("annexure.question9c", sampleSealNo);
-    setValue("annexure.seal_type1", sealType1);
+    setValue("annexure.non_containerized", sealType1);
     setValue("annexure.division", division);
   
-    setValue("annexure.seal_type2", sealType2);
-    setValue("annexure.designation1", officeDesignation1);
+    setValue("annexure.containerized", sealType2);
+    setValue("annexure.officer_designation1", officeDesignation1);
     // saveFieldToLocalStorage("selected_manufacturer", updatedManufacturerData);
-    setValue("annexure.designation2", officeDesignation2);
+    setValue("annexure.officer_designation2", officeDesignation2);
+    setValue("annexure.net_weight", netWeight);
+    setValue("annexure.gross_weight", grossWeight);
+   
   };
 
 
-useEffect(() => {
-  // Set all form values immediately when component mounts
-  const initialValues = {
-    "annexure.exam_date": examDate || "",
-    "annexure.invoice_date": invoiceDate || "",
-    "annexure.net_weight": netWeight || "",
-    "annexure.gross_weight": grossWeight || "",
-    "annexure.total_packages": totalPackages || "",
-    "annexure.range": range || "",
-    "annexure.division": division || "",
-    "annexure.commissionerate": commissionerate || "",
-    "annexure.question9a": question9a || "",
-    "annexure.question9b": question9b || "",
-    "annexure.question9c": sampleSealNo || "",
- 
-    "annexure.seal_type1": sealType1 || "",
-    "annexure.seal_type2": sealType2 || "",
-    "annexure.designation1": officeDesignation1 || "",
-    "annexure.designation2": officeDesignation2 || "",
-  };
-
-  // Set all values at once on initial load
-  Object.entries(initialValues).forEach(([key, value]) => {
-    setValue(key, value);
-  });
-}, []); 
+  useEffect(() => {
+    // Set all form values immediately when component mounts
+    const initialValues = {
+      "annexure.exam_date": examDate || "",
+      "annexure.invoice_date": invoiceDate || "",
+      "annexure.net_weight": netWeight || "",
+      "annexure.gross_weight": grossWeight || "",
+      "annexure.total_packages": totalPackages || "",
+      "annexure.range": range || "",
+      "annexure.division": division || "",
+      "annexure.commissionerate": commissionerate || "",
+      "annexure.question9a": question9a || "",
+      "annexure.question9b": question9b || "",
+      "annexure.question9c": sampleSealNo || "",
+   
+      "annexure.non_containerized": sealType1 || "",
+      "annexure.containerized": sealType2 || "",
+      "annexure.officer_designation1": officeDesignation1 || "",
+      "annexure.officer_designation2": officeDesignation2 || "",
+    };
+  
+    // Set all values at once on initial load
+    Object.entries(initialValues).forEach(([key, value]) => {
+      setValue(key, value);
+    });
+  }, []);
   // add all the annexure data to the formData
   useEffect(() => {
     // Update formData with annexure data'
@@ -568,7 +570,7 @@ useEffect(() => {
                   <Controller
                     control={control}
                     name="annexure.selected_manufacturer.name" // Adjust based on your form schema
-                    defaultValue={manufacturerData.name || ""}
+                    defaultValue={manufacturerData?.name || ""}
                     render={({ field }) => (
                       <Select
                         value={field.value}
@@ -714,7 +716,7 @@ useEffect(() => {
                 <div className="mt-3 pt-3 border-t">
                   <Input
                     value={annexureForm?.location_code || locationCode}
-                    {...register("annexure.location_code", { required: false })}
+                    {...register("annexure.location_code", { required: true })}
                     onChange={(e) => {
                       setLocationCode(e.target.value);
                       saveFieldToLocalStorage("location_code", e.target.value);
@@ -1099,9 +1101,9 @@ useEffect(() => {
           Back
         </Button>
         <div className="flex gap-2">
-                    <Button onClick={() => console.log(getValues())}>
+                    {/* <Button onClick={() => console.log(getValues())}>
                                     Debug Form
-                                  </Button>
+                                  </Button> */}
         <Button onClick={saveDraft}>
                         
                         save

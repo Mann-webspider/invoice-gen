@@ -18,6 +18,8 @@ class CreateAnnexureSchema
             exam_date TEXT ,
             gross_weight TEXT ,
             net_weight TEXT ,
+            bin_no TEXT,
+            branch_no TEXT,
             lut_date TEXT ,
             officer_designation1 TEXT ,
             officer_designation2 TEXT ,

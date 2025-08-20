@@ -128,22 +128,7 @@ class CreateInvoiceSchema
             created_at DATETIME NOT NULL,
             updated_at DATETIME NOT NULL
         )");
-        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
-            id TEXT PRIMARY KEY,
-            name TEXT NOT NULL,
-            email TEXT NOT NULL UNIQUE,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )");
-        $pdo->exec("CREATE TABLE IF NOT EXISTS token_sessions (
-            id TEXT PRIMARY KEY,
-            user_id TEXT NOT NULL,
-            token TEXT NOT NULL,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NOT NULL
-        )");
+     
         $pdo->exec("CREATE TABLE IF NOT EXISTS invoice_numbers (
             id TEXT PRIMARY KEY,
             exporter_id TEXT NOT NULL,
@@ -166,8 +151,7 @@ class CreateInvoiceSchema
             "shipping_details",
             "buyer_information",
             "exporter_details",
-            "users",
-            "token_sessions",
+            "buyer_details",
             "invoice_numbers",
         ];
 

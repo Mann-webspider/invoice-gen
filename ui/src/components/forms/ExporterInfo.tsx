@@ -10,7 +10,7 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format,parse } from "date-fns";
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -63,6 +63,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
     formState: { errors },
   } =  useFormContext();
   const selectedExporter2 = watch("invoice.exporter");
+  const invoiceData = watch("invoice");
   // useEffect(() => {
   //   const subscribe = watch((value) => {
   //     console.log(value);
@@ -81,6 +82,45 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
       }
     })();
   }, []);
+
+  
+const safeParseToISO = (dateString) => {
+  if (!dateString || dateString === '') return undefined;
+  
+  try {
+    // If already in ISO format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+    
+    // Parse dd/MM/yyyy format
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) {
+      const parsedDate = parse(dateString, 'dd/MM/yyyy', new Date());
+      if (isNaN(parsedDate.getTime())) return undefined;
+      return format(parsedDate, 'yyyy-MM-dd');
+    }
+    
+    return undefined;
+  } catch (error) {
+    console.warn('Date parsing error:', error);
+    return undefined;
+  }
+};
+
+const safeFormatDate = (value) => {
+  if (!value || value === '') return value;
+  
+  try {
+    // If already in dd/MM/yyyy format, return as-is
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) return value;
+    
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+    
+    return format(date, 'dd/MM/yyyy');
+  } catch (error) {
+    console.warn('Date formatting error:', error);
+    return value;
+  }
+};
 
   const handleExporterSelect = (company_name: string) => {
     const exporterObj = exporters.find((e) => e.company_name === company_name);
@@ -178,7 +218,9 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                   <Label htmlFor="invoiceNo">INVOICE NUMBER</Label>
                   
                 </div>
-                <Input
+
+                {/*Original + Mann no old code*/}
+                {/* <Input
                   id="invoiceNo"
                   value={
                     invoiceNo || selectedExporter2?.next_invoice_number || ""
@@ -189,7 +231,16 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                   })}
                   placeholder="Enter invoice number"
                   // className={hasInvoiceNumberError ? "border-red-500" : ""}
+                /> */}
+
+                {/*Harshraj e Update karelo code Invoice Readonly mathi kadhva*/}
+                <Input
+                  id="invoiceNo"
+                  defaultValue={invoiceNo || selectedExporter2?.next_invoice_number || ""}
+                  {...register("invoice.invoice_number", { required: true })}
+                  placeholder="Enter invoice number"
                 />
+
               </div>
 
               <div className="space-y-2">
@@ -197,7 +248,7 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                   <Label>INVOICE DATE</Label>
                   
                 </div>
-                <Controller
+                {/* <Controller
                   name="invoice.invoice_date"
                   control={control}
                   rules={{ required: true }}
@@ -223,20 +274,9 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                             field.value ? new Date(field.value) : undefined
                           }
                           onSelect={(date) => {
-                            const handleDateChange = (date: Date | undefined) => {
-                                if (date) {
-                                  // ✅ Use local timezone instead of UTC to avoid date shifting
-                                  const year = date.getFullYear();
-                                  const month = String(date.getMonth() + 1).padStart(2, '0');
-                                  const day = String(date.getDate()).padStart(2, '0');
-                                  const formatted = `${day}/${month}/${year}`; // yyyy-mm-dd
-                                  
-                                  field.onChange(formatted);
-                                  
-                                }
-                              };
                             if (date) {
-                              handleDateChange(date);
+                              const localeDate = date.toLocaleDateString();
+                              field.onChange(localeDate);
                             }
                           }}
                           initialFocus
@@ -245,6 +285,17 @@ const ExporterInfo: React.FC<ExporterInfoProps> = ({
                     </Popover>
                   )}
                 />
+                 */}
+
+<Input
+  id="invoice_date"
+  type="date"
+  value={safeParseToISO(invoiceData?.invoice_date)}
+  {...register("invoice.invoice_date", {
+    required: false,
+    setValueAs: safeFormatDate
+  })}
+/>
 
                 {errors.invoice_date && (
                   <span className="text-red-500 text-sm">Required</span>

@@ -1,6 +1,6 @@
 // components/BuyerInformationCard.tsx
 
-import { format } from "date-fns";
+import { format,parse } from "date-fns";
 import { CalendarIcon } from "lucide-react";
 import { Calendar } from "@/components/ui/calendar";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -38,6 +38,46 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
     watch,
     formState: { errors },
   } = useFormContext();
+  // Safe parsing from dd/MM/yyyy to yyyy-MM-dd
+const safeParseToISO = (dateString) => {
+  if (!dateString) return undefined;
+  
+  try {
+    // If already in ISO format, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+    
+    // Parse dd/MM/yyyy format
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(dateString)) {
+      const parsedDate = parse(dateString, 'dd/MM/yyyy', new Date());
+      if (isNaN(parsedDate.getTime())) return undefined;
+      return format(parsedDate, 'yyyy-MM-dd');
+    }
+    
+    return undefined;
+  } catch (error) {
+    console.warn('Date parsing error:', error);
+    return undefined;
+  }
+};
+
+// Safe formatting from yyyy-MM-dd to dd/MM/yyyy
+const safeFormatDate = (value) => {
+  if (!value || value === '') return value;
+  
+  try {
+    // If already in dd/MM/yyyy format, return as-is
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(value)) return value;
+    
+    const date = new Date(value);
+    if (isNaN(date.getTime())) return value;
+    
+    return format(date, 'dd/MM/yyyy');
+  } catch (error) {
+    console.warn('Date formatting error:', error);
+    return value;
+  }
+};
+
   const buyerForm = watch("invoice.buyer");
   // useEffect(() => {
   //   const subscribe = watch((value) => {
@@ -89,7 +129,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
                 <Label>ORDER DATE</Label>
                 
 
-<Controller
+{/* <Controller
   name="invoice.buyer.buyer_order_date"
   control={control}
   rules={{ required: true }}
@@ -103,7 +143,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const day = String(date.getDate()).padStart(2, '0');
-        const formatted = `${day}/${month}/${year}`; // yyyy-mm-dd
+        const formatted = `${year}-${month}-${day}`; // yyyy-mm-dd
         
         field.onChange(formatted);
         setIsOpen(false);
@@ -163,7 +203,19 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
       </div>
     );
   }}
+/> */}
+
+<Input
+  id="buyer_order_date"
+  type="date"
+  value={safeParseToISO(buyerForm?.buyer_order_date)}
+  {...register("invoice.buyer.buyer_order_date", {
+    required: false,
+    setValueAs: safeFormatDate
+  })}
 />
+
+
 
 
 
@@ -178,7 +230,7 @@ const BuyerInformationCard: React.FC<BuyerInformationCardProps> = ({
               <Input
                 id="poNo"
                 value={buyerForm?.po_no || ""}
-                {...register("invoice.buyer.po_no", { required: true })}
+                {...register("invoice.buyer.po_no", { required: false })}
                 // onChange={(e) => setPoNo(e.target.value)}
                 placeholder="Enter PO number"
               />

@@ -45,6 +45,7 @@ import api from "@/lib/axios";
 
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { nanoid } from "nanoid"; 
+import { MathInput } from "@/components/ui/mathInput";
 
 
 
@@ -70,8 +71,9 @@ const PackagingList = ({
   // console.log(getValues());
 
  
-  function onBack2(){
+  async function onBack2(){
     if(location.pathname.includes("/drafts/")){
+      let res = await saveDraft({ last_page: 'packing-list' });
       navigate(`/invoice/drafts/${draftId}`)
       return;
     }
@@ -554,7 +556,7 @@ const [formData, setFormData] = useState(null);
   
   // if (!hydrated) return;
   let formDraft = getValues()
-  console.log("Form Draft:", formDraft?.containerRows?.length != 0);
+  // console.log("Form Draft:", formDraft?.containerRows?.length != 0);
   
   setFormData(()=>formDraft);
 setContainerRows(prev => 
@@ -711,7 +713,9 @@ setContainerRows(prev =>
         sqmPerBox: item.sqm,
         price: item.price,
         
+        netWeight: item.net_weight || "",
         marksAndNos: "1020 FCL",
+        grossWeight: item.gross_weight || "",
       },
       quantity: item.quantity,
       unitType: item.unit,
@@ -724,20 +728,20 @@ setContainerRows(prev =>
 }
 
   useEffect(() => {
-    const productData = formData?.invoice.products.product_list
+    const productData = formData?.invoice?.products?.product_list
     
     if (productData) {
       const transformedSections = convertToSection(
         productData
       );
-      console.log(transformedSections);
+      // console.log(transformedSections);
       setSections(transformedSections);
     }
   }, [formData?.invoice.products.product_list]);
 
   function updateInvoiceProducts(formData, newObject) {
     const updatedForm = { ...formData };
-    console.log(newObject);
+    // console.log(newObject);
     
     const newProductList = newObject.products?.product_list || [];
 
@@ -775,8 +779,8 @@ setContainerRows(prev =>
     let totalGrossWeight = 0;
 
     updatedForm.invoice.products.containers.forEach((product) => {
-      totalNetWeight += parseFloat(product.net_weight || 0);
-      totalGrossWeight += parseFloat(product.gross_weight || 0);
+      totalNetWeight += parseFloat(product.net_weight || "");
+      totalGrossWeight += parseFloat(product.gross_weight || "");
     });
 
     // ✅ Store totals in formData.package
@@ -950,7 +954,7 @@ setContainerRows(prev =>
                      <Input
   value={
     buyer?.buyer_order_date
-      ? new Date(buyer?.buyer_order_date).toLocaleDateString('en-GB')
+      ? buyer?.buyer_order_date
       : ""
   }
   readOnly
@@ -1125,7 +1129,7 @@ setContainerRows(prev =>
                   <div className="flex justify-between items-center mb-2">
                     <Label className="font-bold text-base">Marks & Nos.</Label>
                     <div className="font-bold">
-                      {containerType === "LCL"
+                      {products?.nos === "LCL"
                         ? "LCL"
                         : `${products?.leftValue} X ${products?.rightValue} ${products?.nos}`}
                     </div>
@@ -1182,30 +1186,11 @@ setContainerRows(prev =>
                               colSpan={7}
                               className="border font-bold text-center p-2"
                             >
-                              {readOnly ? (
+                              
                                 <div className="text-center w-full flex justify-center items-center">
                                   {section.title}
                                 </div>
-                              ) : (
-                                <Select
-                                  value={section.title}
-                                  onValueChange={(value) =>
-                                    handleSectionTitleChange(section.id, value)
-                                  }
-                                  disabled={readOnly}
-                                >
-                                  <SelectTrigger className="border-0 bg-transparent font-bold">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {sectionOptions.map((option) => (
-                                      <SelectItem key={option} value={option}>
-                                        {option}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
+                              
                             </TableCell>
                           </TableRow>
                         )}
@@ -1225,7 +1210,7 @@ setContainerRows(prev =>
                             </TableCell>
                           </TableRow>
                         )}
-                        {console.log("Section Items:", section)}
+                        
                         {section.items.map((item, itemIndex) => {
                           const calculateCumulativeIndex = (sections, sectionIndex, itemIndex) => {
                             let cumulativeIndex = 0;
@@ -1242,7 +1227,7 @@ setContainerRows(prev =>
                             const actualProductIndex = calculateCumulativeIndex(sections, sectionIndex, itemIndex);
                             const srNumber = actualProductIndex + 1; // SR NO is 1-based
 
-                            console.log(`Section ${sectionIndex} (${section.title}), Item ${itemIndex} -> SR NO: ${srNumber}, Product Index: ${actualProductIndex}`);
+                            // console.log(`Section ${sectionIndex} (${section.title}), Item ${itemIndex} -> SR NO: ${srNumber}, Product Index: ${actualProductIndex}`);
                           return (
                             <TableRow
                               key={item.id}
@@ -1346,7 +1331,7 @@ setContainerRows(prev =>
                               </TableCell>
                               <TableCell className="border p-0">
                                 {/* NET.WT. IN KGS. column - Always editable */}
-                                <Input
+                                <MathInput
                                 type={"text"}
                                   value={item.product.netWeight}
                                   {...register(
@@ -1371,7 +1356,7 @@ setContainerRows(prev =>
                               </TableCell>
                               <TableCell className="border p-0">
                                 {/* GRS.WT. IN KGS. column - Always editable */}
-                                <Input
+                                <MathInput
                                 type={"text"}
                                   value={item.product.grossWeight}
                                   {...register(
@@ -1435,7 +1420,7 @@ setContainerRows(prev =>
                           className="flex items-center"
                           disabled={readOnly}
                         >
-                          <Plus className="h-4 w-4 mr-1" /> Add Row
+                          <Plus className="h-4 w-4 mr-1" /> Add Container
                         </Button>
                       </div>
                     )}
@@ -1602,7 +1587,7 @@ setContainerRows(prev =>
                           />
                         </TableCell>
                         <TableCell className="border p-0">
-                          <Input
+                          <MathInput
                           type={"text"}
                             value={row.netWeight}
                             {...register(
@@ -1623,7 +1608,7 @@ setContainerRows(prev =>
                           />
                         </TableCell>
                         <TableCell className="border p-0">
-                          <Input
+                          <MathInput
                           type={"text"}
                             value={row.grossWeight}
                             {...register(
@@ -1742,7 +1727,7 @@ setContainerRows(prev =>
                           className="w-full h-12 flex items-center justify-center gap-2 hover:bg-gray-50"
                         >
                           <Plus className="h-5 w-5" />
-                          <span>Add Row</span>
+                          <span>Add Container</span>
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -1776,7 +1761,7 @@ setContainerRows(prev =>
     );
   } catch (error) {
     // Error rendering PackagingList
-    console.log(error);
+    // console.log(error);
 
     return (
       <div className="p-6 bg-white shadow rounded-lg">

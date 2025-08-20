@@ -17,6 +17,8 @@ class Annexure extends Model
         'division',
         'commissionerate',
         'exam_date',
+        'bin_no',
+        'branch_no',
         'net_weight',
         'gross_weight',
         'total_packages',

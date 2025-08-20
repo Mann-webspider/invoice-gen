@@ -60,7 +60,7 @@ class DraftController
         // Update draft
         $draft->data = json_encode($data['data']);
         $draft->last_page = $data['last_page'] ?? '';
-        $draft->is_submitted = 0;
+        $draft->is_submitted = $data['is_submitted']?? 0;
         $draft->save();
 
         $response->getBody()->write(json_encode($draft));

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom"; // Use react-router-dom for navigation
-import { PageHeader } from "@/components/layout/PageHeader";
+
 import {
   Card,
   CardContent,
@@ -8,10 +8,10 @@ import {
   CardTitle,
   CardFooter,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+
 import {
   Select,
   SelectContent,
@@ -19,51 +19,33 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
+
+import {  ArrowRight } from "lucide-react";
+
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Trash, Plus, FileText, Save, ArrowRight } from "lucide-react";
-import { saveInvoice } from "@/lib/dataService";
-import {
-  Client,
-  Product,
-  ShippingTerm,
+ 
   CompanyProfile,
-  InvoiceItem,
-  Invoice,
+  
   ProductSection,
 } from "@/lib/types";
-import { formatCurrency } from "@/lib/utils";
+
 import { toast } from "sonner";
 import { format } from "date-fns";
-import { Calendar } from "@/components/ui/calendar";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
-import InvoicePDFPreview from "@/components/InvoicePDFPreview";
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+  
 } from "@/components/ui/dialog";
 import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import MarksAndNumbers from "@/components/MarksAndNumbers";
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { CollapsibleSection } from "@/components/CollapsibleSection";
 import ExporterInfo from "@/components/forms/ExporterInfo";
 import { SupplierDetails } from "@/components/forms/SupplierDetails";
 import ShippingInformationPage from "@/components/forms/ShippingInformationPage";
@@ -71,10 +53,11 @@ import BuyerInformationCard from "@/components/forms/BuyerInformationCard";
 import PackageInfoSection from "@/components/forms/PackageInfoSection";
 import ProductInformation from "@/components/forms/ProductInfomation";
 import { useForm } from "@/context/FormContext";
-import api from "@/lib/axios";
+
 import { Controller, useForm as rhf,FormProvider,useFormContext  } from "react-hook-form";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { nanoid } from "nanoid"; 
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 // Check if invoice data exists in local storage
 const invoiceData = localStorage.getItem("invoiceData");
@@ -167,6 +150,8 @@ function numberToWords(num: number) {
   return result.join(" ") + " ONLY";
 }
 
+
+
 const InvoiceGenerator = () => {
   const navigate = useNavigate(); // Use useNavigate from react-router-dom
   const { formData, setInvoiceData } = useForm();
@@ -195,7 +180,7 @@ const {
     setValue,
     formState: { isDirty } 
   } = form;
-
+// Watch for changes to detect modifications after draft load
 
  useEffect(() => {
   if (!isDraftMode) {
@@ -217,7 +202,7 @@ useEffect(() => {
 
   const anyMissing = shouldShowTaxDialog || shouldShowPaymentTermsDialog || shouldShowProductTypeDialog;
 
-  console.log("Any field missing:", anyMissing);
+  // console.log("Any field missing:", anyMissing);
   if(anyMissing== false) {
     setIntegratedTaxOption(integratedTaxDialog);
     setPaymentTerms(paymentTermsDialog);
@@ -226,6 +211,10 @@ useEffect(() => {
   }
   setTaxOptionDialogOpen(anyMissing); // ⬅ open only if something is missing
 }, [hydrated, integratedTaxDialog, paymentTermsDialog, productTypeDialog]);
+
+
+  // Create a reusable CollapsibleSection component
+// Create a reusable CollapsibleSection component
 
 
   // Invoice Header
@@ -332,7 +321,7 @@ useEffect(() => {
 
   const [exportUnderGstCircular, setExportUnderGstCircular] = useState("");
   const [lutNo, setLutNo] = useState("");
-  const [lutDate, setLutDate] = useState<Date>(new Date());
+  const [lutDate, setLutDate] = useState<Date>(new Date("2025-07-23"));
   const [integratedTaxOption, setIntegratedTaxOption] = useState<
     "WITH" | "WITHOUT"
   >("WITHOUT");
@@ -408,14 +397,14 @@ useEffect(() => {
           const totalGrossWeight = annexureData.containerRows
             .reduce(
               (sum: number, row: any) =>
-                sum + parseFloat(row.grossWeight || "0"),
+                sum + parseFloat(row.grossWeight || ""),
               0
             )
             .toFixed(2);
 
           const totalNetWeight = annexureData.containerRows
             .reduce(
-              (sum: number, row: any) => sum + parseFloat(row.netWeight || "0"),
+              (sum: number, row: any) => sum + parseFloat(row.netWeight || ""),
               0
             )
             .toFixed(2);
@@ -436,7 +425,7 @@ useEffect(() => {
           const totalGrossWeight = vgmFormData.containers
             .reduce(
               (sum: number, container: any) =>
-                sum + parseFloat(container.grossWeight || "0"),
+                sum + parseFloat(container.grossWeight || ""),
               0
             )
             .toFixed(2);
@@ -599,7 +588,7 @@ useEffect(() => {
   // Update the handleNext function to pass data to PackagingList
   const handleNext = async (data) => {
     // Track if any validation errors occurred
-    console.log("i clieked in handleNext");
+    // console.log("i clieked in handleNext");
     
     // console.log(data);
     localStorage.setItem(`invoiceData2`, JSON.stringify(data));
@@ -762,7 +751,7 @@ useEffect(() => {
       JSON.stringify(directExporterData)
     );
     localStorage.setItem("orderData", JSON.stringify(orderData));
-    console.log(getValues());
+    // console.log(getValues());
     
     // // Navigate to the packaging list page
     const result = await saveDraft({ last_page: 'packaging-list' }); // Update to next page
@@ -866,104 +855,143 @@ useEffect(() => {
 
           
           {/* Exporter Information */}
-          <ExporterInfo
-            exporters={exporters}
-            invoiceNo={invoiceNo}
-            setExporters={setExporters}
-            form={form}
-          />
+         <Accordion
+  type="multiple" // Allows multiple to be open at once
+  defaultValue={[
+    "exporter",
+    "buyer",
+    "shipping",
+    "product",
+    "package",
+    "supplier",
+  ]}
+  className="w-full space-y-2"
+>
+  <AccordionItem value="exporter">
+    <AccordionTrigger>Exporter Information</AccordionTrigger>
+    <AccordionContent>
+      <ExporterInfo
+        exporters={exporters}
+        invoiceNo={invoiceNo}
+        setExporters={setExporters}
+        form={form}
+      />
+    </AccordionContent>
+  </AccordionItem>
 
-          {/* Buyer Information */}
-          <BuyerInformationCard form={form} />
+  <AccordionItem value="buyer">
+    <AccordionTrigger>Buyer Information</AccordionTrigger>
+    <AccordionContent>
+      <BuyerInformationCard form={form} />
+    </AccordionContent>
+  </AccordionItem>
 
-          {/* Shipping Information */}
-          <ShippingInformationPage
-            preCarriageBy={preCarriageBy}
-            setPreCarriageBy={setPreCarriageBy}
-            placesOfReceipt={placesOfReceipt}
-            setPlacesOfReceipt={setPlacesOfReceipt}
-            vesselFlightNo={vesselFlightNo}
-            setVesselFlightNo={setVesselFlightNo}
-            setPortOfLoading={setPortOfLoading}
-            portsOfLoading={portsOfLoading}
-            setPortsOfLoading={setPortsOfLoading}
-            setPortOfDischarge={setPortOfDischarge}
-            setPortsOfDischarge={setPortsOfDischarge}
-            portsOfDischarge={portsOfDischarge}
-            setFinalDestinations={setFinalDestinations}
-            finalDestinations={finalDestinations}
-            countryOfOrigin={countryOfOrigin}
-            setCountryOfOrigin={setCountryOfOrigin}
-            originDetails={originDetails}
-            setOriginDetails={setOriginDetails}
-            countriesOfFinalDestination={countriesOfFinalDestination}
-            setCountriesOfFinalDestination={setCountriesOfFinalDestination}
-            paymentTerms={paymentTerms}
-            shippingMethods={shippingMethods}
-            currencies={currencies}
-            form={form}
-          />
+  <AccordionItem value="shipping">
+    <AccordionTrigger>Shipping Information</AccordionTrigger>
+    <AccordionContent>
+      <ShippingInformationPage
+        preCarriageBy={preCarriageBy}
+        setPreCarriageBy={setPreCarriageBy}
+        placesOfReceipt={placesOfReceipt}
+        setPlacesOfReceipt={setPlacesOfReceipt}
+        vesselFlightNo={vesselFlightNo}
+        setVesselFlightNo={setVesselFlightNo}
+        setPortOfLoading={setPortOfLoading}
+        portsOfLoading={portsOfLoading}
+        setPortsOfLoading={setPortsOfLoading}
+        setPortOfDischarge={setPortOfDischarge}
+        setPortsOfDischarge={setPortsOfDischarge}
+        portsOfDischarge={portsOfDischarge}
+        setFinalDestinations={setFinalDestinations}
+        finalDestinations={finalDestinations}
+        countryOfOrigin={countryOfOrigin}
+        setCountryOfOrigin={setCountryOfOrigin}
+        originDetails={originDetails}
+        setOriginDetails={setOriginDetails}
+        countriesOfFinalDestination={countriesOfFinalDestination}
+        setCountriesOfFinalDestination={setCountriesOfFinalDestination}
+        paymentTerms={paymentTerms}
+        shippingMethods={shippingMethods}
+        currencies={currencies}
+        form={form}
+      />
+    </AccordionContent>
+  </AccordionItem>
 
-          {/* Product Information */}
-          <ProductInformation
-            addNewSection={addNewSection}
-            sections={sections}
-            setSections={setSections}
-            setSectionOptions={setSectionOptions}
-            setHsnCodes={setHsnCodes}
-            hsnCodes={hsnCodes}
-            sectionOptions={sectionOptions}
-            sizes={sizes}
-            setSizes={setSizes}
-            setSizeToSqmMap={setSizeToSqmMap}
-            units={units}
-            setUnits={setUnits}
-            removeRow={removeRow}
-            addNewRow={addNewRow}
-            showInsuranceFreight={showInsuranceFreight}
-            insuranceAmount={insuranceAmount}
-            setInsuranceAmount={setInsuranceAmount}
-            freightAmount={freightAmount}
-            setFreightAmount={setFreightAmount}
-            totalFOBEuro={totalFOBEuro}
-            setTotalFOBEuro={setTotalFOBEuro}
-            paymentTerms={paymentTerms}
-            marksAndNumbersValues={marksAndNumbersValues}
-            setMarksAndNumbersValues={setMarksAndNumbersValues}
-            customSectionHsnCodes={customSectionHsnCodes}
-            setCustomSectionHsnCodes={setCustomSectionHsnCodes}
-            openSectionDropdowns={openSectionDropdowns}
-            setOpenSectionDropdowns={setOpenSectionDropdowns}
-            productType={productType}
-            sizeToSqmMap={sizeToSqmMap}
-            form={form}
-            hydrated={hydrated}
-          />
+  <AccordionItem value="product">
+    <AccordionTrigger>Product Information</AccordionTrigger>
+    <AccordionContent>
+      <ProductInformation
+        addNewSection={addNewSection}
+        sections={sections}
+        setSections={setSections}
+        setSectionOptions={setSectionOptions}
+        setHsnCodes={setHsnCodes}
+        hsnCodes={hsnCodes}
+        sectionOptions={sectionOptions}
+        sizes={sizes}
+        setSizes={setSizes}
+        setSizeToSqmMap={setSizeToSqmMap}
+        units={units}
+        setUnits={setUnits}
+        removeRow={removeRow}
+        addNewRow={addNewRow}
+        showInsuranceFreight={showInsuranceFreight}
+        insuranceAmount={insuranceAmount}
+        setInsuranceAmount={setInsuranceAmount}
+        freightAmount={freightAmount}
+        setFreightAmount={setFreightAmount}
+        totalFOBEuro={totalFOBEuro}
+        setTotalFOBEuro={setTotalFOBEuro}
+        paymentTerms={paymentTerms}
+        marksAndNumbersValues={marksAndNumbersValues}
+        setMarksAndNumbersValues={setMarksAndNumbersValues}
+        customSectionHsnCodes={customSectionHsnCodes}
+        setCustomSectionHsnCodes={setCustomSectionHsnCodes}
+        openSectionDropdowns={openSectionDropdowns}
+        setOpenSectionDropdowns={setOpenSectionDropdowns}
+        productType={productType}
+        sizeToSqmMap={sizeToSqmMap}
+        form={form}
+        hydrated={hydrated}
+      />
+    </AccordionContent>
+  </AccordionItem>
 
-          {/* Package Information */}
-          <PackageInfoSection
-            paymentTerms={paymentTerms}
-            selectedCurrency={selectedCurrency}
-            exportUnderGstCircular={exportUnderGstCircular}
-            sections={sections}
-            totalSQM={totalSQM}
-            setExportUnderGstCircular={setExportUnderGstCircular}
-            integratedTaxOption={integratedTaxOption}
-            lutNo={lutNo}
-            setLutNo={setLutNo}
-            lutDate={formattedLutDate}
-            totalFOBEuro={totalFOBEuro}
-            amountInWords={amountInWords}
-            currencyRate={currencyRate}
-            form={form}
-          />
-          {/* Supplier Information */}
-          <SupplierDetails
-            suppliers={suppliers}
-            setSuppliers={setSuppliers}
-            integratedTaxOption={integratedTaxOption}
-            form={form}
-          />
+  <AccordionItem value="package">
+    <AccordionTrigger>Package Information</AccordionTrigger>
+    <AccordionContent>
+      <PackageInfoSection
+        paymentTerms={paymentTerms}
+        selectedCurrency={selectedCurrency}
+        exportUnderGstCircular={exportUnderGstCircular}
+        sections={sections}
+        totalSQM={totalSQM}
+        setExportUnderGstCircular={setExportUnderGstCircular}
+        integratedTaxOption={integratedTaxOption}
+        lutNo={lutNo}
+        setLutNo={setLutNo}
+        lutDate={formattedLutDate}
+        totalFOBEuro={totalFOBEuro}
+        amountInWords={amountInWords}
+        currencyRate={currencyRate}
+        form={form}
+      />
+    </AccordionContent>
+  </AccordionItem>
+
+  <AccordionItem value="supplier">
+    <AccordionTrigger>Supplier Details</AccordionTrigger>
+    <AccordionContent>
+      <SupplierDetails
+        suppliers={suppliers}
+        setSuppliers={setSuppliers}
+        integratedTaxOption={integratedTaxOption}
+        form={form}
+      />
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>
 
           {/* Footer Buttons */}
           <Card className="mt-6">
@@ -1126,7 +1154,7 @@ useEffect(() => {
                             </SelectTrigger>
                             <SelectContent>
                               <SelectItem value="Sanitary">Sanitary</SelectItem>
-                              <SelectItem value="Faucets">Faucets</SelectItem>
+                              {/* <SelectItem value="Faucets">Faucets</SelectItem> */}
                               <SelectItem value="Tiles">Tiles</SelectItem>
                               <SelectItem value="Mix">Mix</SelectItem>
                             </SelectContent>

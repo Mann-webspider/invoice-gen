@@ -18,7 +18,8 @@ const Login = () => {
   // add a logic for automatic login if uthToken is available in localstorage then s=check the session in backend if yes then redirect to home page if not then redirect to login page
   useEffect(() => {
     const checkSession = async () => {
-      const token = localStorage.getItem("authToken");
+      // const token = localStorage.getItem("authToken");
+      const token = sessionStorage.getItem("authToken");
       if (token) {
         const response = await api.get("/check-session");
         if (response.data) {

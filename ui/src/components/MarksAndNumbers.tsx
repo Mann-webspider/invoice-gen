@@ -97,6 +97,7 @@ useEffect(() => {
                 } else {
                   setValue("invoice.products.rightValue", "1");
                   setValue("invoice.products.leftValue", "");
+                  
                 }
               }}>
                 <SelectTrigger>

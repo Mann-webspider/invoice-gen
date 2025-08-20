@@ -190,7 +190,7 @@ export const SupplierDetails = ({
         <div className="space-y-2">
           <Label>TAX INVOICE NO :</Label>
           <Input
-            {...register(`invoice.suppliers.${index}.tax_invoice_number`)}
+            {...register(`invoice.suppliers.${index}.tax_invoice_number`, { required: true })}
             defaultValue={supplier.tax_invoice_number}
           />
         </div>
@@ -198,7 +198,7 @@ export const SupplierDetails = ({
           <Label>DATE :</Label>
           <Input
             type="date"
-            {...register(`invoice.suppliers.${index}.date`)}
+            {...register(`invoice.suppliers.${index}.date`, { required: true })}
             defaultValue={supplier.date}
           />
         </div>

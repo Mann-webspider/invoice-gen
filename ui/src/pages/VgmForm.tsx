@@ -164,9 +164,10 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader ,form:fm}: VgmFormProps)
   useForm() as FormContextType;
   const { toast } = useToast();
   const methods = useFormContext()
-  const { methods:form, isReady,hydrated,draftId } = useDraftForm({
+  const { methods:form, isReady,hydrated,draftId,isDraftMode,saveDraft } = useDraftForm({
     formType: 'vgm-form',
-    methods
+    methods,
+    isDraftMode: location.pathname.includes("/drafts/"),
   });
   const {
     register,
@@ -178,8 +179,9 @@ const VgmForm = ({ onBack, containerInfo, invoiceHeader ,form:fm}: VgmFormProps)
     getValues
   } = methods;
   
-  function onBack2(){
+  async function onBack2(){
    if(location.pathname.includes("/drafts/")){
+    let res = await saveDraft({ last_page: 'vgm-form' });
      navigate(`/annexure/drafts/${draftId}`)
      return;
    }
@@ -195,17 +197,18 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
 const [isSubmitting, setIsSubmitting] = useState(false);
   const [processes, setProcesses] = useState<ProcessItem[]>([]);
 
-  useEffect(() => {
-    const subscribe = watch((data) => {
-      // Save the form data to localStorage whenever it changes
-      console.log(data);
-      console.log(invoiceData?.invoice?.products?.nos === "FCL" ? invoiceData?.invoice?.products?.rightValue : "");
+  // useEffect(() => {
+  //   const subscribe = watch((data) => {
+  //     // Save the form data to localStorage whenever it changes
+  //     // console.log(data);
+     
+  //     // console.log(invoiceData?.invoice?.products?.nos === "FCL" ? invoiceData?.invoice?.products?.rightValue : "");
       
-    });
-    return () => {
-      subscribe.unsubscribe();
-    };
-  }, [watch]);
+  //   });
+  //   return () => {
+  //     subscribe.unsubscribe();
+  //   };
+  // }, [watch]);
   // Get current form ID for localStorage
   const currentFormId = invoiceData?.invoice.invoice_number || getCurrentFormId();
 
@@ -432,44 +435,19 @@ const [isSubmitting, setIsSubmitting] = useState(false);
     setValue("vgm.permissible_weight", "AS PER ANNEXURE");
     setValue("vgm.weighing_slip_no", "AS PER ANNEXURE");
     setValue("vgm.dt_weighing", weighingDate);
+    setValue("vgm.container_size", invoiceData?.invoice?.products?.nos === "FCL" ?invoiceData?.invoice?.products?.rightValue:invoiceData?.invoice?.products?.nos);
+    setValue("vgm.container_number", containerNumber);
+    setValue("vgm.shipper_name", selectedSupplier?.company_name || "");
+    setValue("vgm.weighbridge_registration", weighBridgeNo);
+    setValue("vgm.verified_gross_mass", verifiedGrossMass);
+    setValue("vgm.unit_of_measurement", unitOfMeasure);
+    setValue("vgm.type", containerType);
+    setValue("vgm.IMDG_class", hazardousClass);
     setSelectedShipper(selectedSupplier);
 
     // Check if the supplier has letterhead images
     applyLetterHeadImages(selectedSupplier);
-    // if (selectedSupplier) {
-    //   setImagesLoaded(false);
-
-    //   // Set letterhead top image
-    //   if (selectedSupplier.letterhead_top_image) {
-    //     getImageUrl(selectedSupplier.id, "header");
-    //     setLetterheadTopImage(() => getImageUrl(selectedSupplier.id, "header"));
-    //     setImagesLoaded(true);
-    //   } else {
-    //     setLetterheadTopImage("");
-    //   }
-
-    //   // Set letterhead bottom image
-    //   if (selectedSupplier.letterhead_bottom_image) {
-    //     setLetterheadBottomImage(() =>
-    //       getImageUrl(selectedSupplier.id, "footer")
-    //     );
-    //     setImagesLoaded(true);
-    //   } else {
-    //     setLetterheadBottomImage("");
-    //   }
-
-    //   // Set stamp image
-    //   if (selectedSupplier.stamp_image) {
-    //     setStampImage(() => getImageUrl(selectedSupplier.id, "signature"));
-    //   } else {
-    //     setStampImage("");
-    //   }
-    // } else {
-    //   setLetterheadTopImage("");
-    //   setLetterheadBottomImage("");
-    //   setStampImage("");
-    //   setImagesLoaded(false);
-    // }
+  
   };
   // Predefined shipper options
   const shippers: { [key: string]: any } = {
@@ -488,12 +466,15 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   let containerData = invoiceData.invoice.products.containers || [];
   useEffect(() => {
     // Initialize with containerInfo data if available
+    if (invoiceData?.invoice.exporter) {
+      // register("vgm.supplier_name",invoiceData.invoice.exporter.company_name)
+      // handleShipperSelect(invoiceData.invoice.exporter);
+      handleSupplierSelect(invoiceData.invoice.exporter.company_name);
+      // applyLetterHeadImages(invoiceData.invoice.exporter);
+    }
     if (containerData) {
       // Default shipper to the one from invoice header
-      if (invoiceData?.invoice.exporter) {
-        handleShipperSelect(invoiceData.invoice.exporter);
-        // applyLetterHeadImages(invoiceData.invoice.exporter);
-      }
+      // handleSupplierSelect(invoiceData?.vgm?.shipper_name);
 
       // Initialize booking numbers and tare weights arrays
       const newBookingNumbers = containerData.map(() => "");
@@ -502,7 +483,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       setBookingNumbers(newBookingNumbers);
       setTareWeights(newTareWeights);
     }
-  }, [containerData]);
+  }, [containerData,invoiceData]);
 
   const handleShipperSelect = (shipper: string) => {
     setSelectedShipper(shipper);
@@ -555,9 +536,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
     const docxFile = await generateInvoigenerateDocxceExcel(data);
 
     let resDoc = await filesApi.uploadDoc(docxFile, data.invoice_number);
-    if (resDoc) {
-      console.log("Document uploaded successfully:", resDoc);
-    }
+    // if (resDoc) {
+    //   console.log("Document uploaded successfully:", resDoc);
+    // }
     // Create process list for queue
     const newProcesses: ProcessItem[] = excelBlobs.map((file: any, index: number) => ({
       id: `${index + 1}`,
@@ -579,7 +560,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
        handleProcessUpdate(`${i+1}`, "running");
       
        try {
-        const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number,data.payment_term);
+        const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number,data.payment_term,excelFileName);
 
         // 👇 Mark as completed
         handleProcessUpdate(`${i+1}`, "completed");
@@ -596,7 +577,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
       description: "All files have been successfully uploaded.",
       variant: "success",
     });
-    console.log("Upload results:", results);
+    // console.log("Upload results:", results);
   } catch (error) {
     console.error("Error generating or uploading files:", error);
     
@@ -608,58 +589,75 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   }
 };
 
-  const handleSave = async (data) => {
-    setIsSubmitting(true); // Start loading
-    try {
-      localStorage.setItem("taxDialogBox", "false");
+useEffect(() => {
+  if(!hydrated) return 
+  if(isDraftMode){
+    let selectManufacture = getValues("vgm.shipper_name")
+    handleSupplierSelect(selectManufacture)
+    // handleShipperSelect(selectManufacture)
+    // console.log("hahah");
+    
+  }
+}, [hydrated,isDraftMode]);
+
+const handleSave = async (data) => {
+  setIsSubmitting(true); // Start loading
+  try {
+    localStorage.setItem("taxDialogBox", "false");
+    
+    // Send the data to the PHP backend API
+    
+    let hmmData = getValues()
+    console.log(hmmData);
+    const response = await invoiceApi.generate(hmmData);
+    // console.log(response.data);
+    const actualData = await invoiceApi.getSpecific(response.data.id);
+    // console.log(actualData.data);
+
+    if (
+      response.status === 200 ||
+      (response.status === 201 && actualData.status === 200)
+    ) {
+      let draftResponse = await api.put(`/draft/${draftId}`,{
+        data:JSON.stringify(hmmData),
+        is_submitted:1
+      })
+      // console.log(draftResponse.data);
       
-      // Send the data to the PHP backend API
+      await handleFiles(actualData.data);
+      // Clear localStorage on successful submission
+      clearLocalStorage();
+
+      // Show success message
       
-      let hmmData = getValues()
-      console.log(hmmData);
-      const response = await invoiceApi.generate(hmmData);
-      console.log(response.data);
-      const actualData = await invoiceApi.getSpecific(response.data.id);
-      console.log(actualData.data);
+      toast({
+        title: "Success",
+        description: "Form submitted successfully to backend",
+        variant: "success",
+      });
 
-      if (
-        response.status === 200 ||
-        (response.status === 201 && actualData.status === 200)
-      ) {
-        await handleFiles(actualData.data);
-        // Clear localStorage on successful submission
-        clearLocalStorage();
-
-        // Show success message
-        
-        toast({
-          title: "Success",
-          description: "Form submitted successfully to backend",
-          variant: "success",
-        });
-
-        // Navigate to the dashboard or success page
-        // navigate("/");
-      } else {
-       
-        toast({
-          title: "Error",
-          description: "Failed to submit form to backend",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Error submitting form:", error);
+      // Navigate to the dashboard or success page
+      // navigate("/");
+    } else {
+     
       toast({
         title: "Error",
-        description: "An error occurred while submitting the form",
+        description: "Failed to submit form to backend",
         variant: "destructive",
       });
-      
-    }finally{
-      setIsSubmitting(false); // Stop loading
     }
-  };
+  } catch (error) {
+    console.error("Error submitting form:", error);
+    toast({
+      title: "Error",
+      description: "An error occurred while submitting the form",
+      variant: "destructive",
+    });
+    
+  }finally{
+    setIsSubmitting(false); // Stop loading
+  }
+};
 
  
 
@@ -858,12 +856,16 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                 <Controller
                   name="vgm.shipper_name"
                   control={control}
+                  defaultValue={selectedShipper?.company_name}
                   render={({ field }) => (
                     <Select
-                      value={field.value}
+                      value={invoiceData?.vgm?.shipper_name||field.value}
                       onValueChange={(value) => {
                         field.onChange(value); // update RHF form state
-                        handleSupplierSelect(value); // your custom logic (e.g., update full supplier object)
+                        handleSupplierSelect(value);
+                        // console.log(value);
+                        
+                        // applyLetterHeadImages(value); // your custom logic (e.g., update full supplier object)
                       }}
                     >
                       <SelectTrigger>
@@ -967,34 +969,104 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                 <Label className="font-medium">
                   6. Container Size ( TEU/FEU/other)
                 </Label>
+
+                {/*AI + Mann no code*/}
                 <Controller
-  name="vgm.container_size"
-  control={control}
-  rules={{ required: true }}
-   defaultValue={invoiceData?.invoice?.products?.nos === "FCL" 
-      ? invoiceData?.invoice?.products?.rightValue || ""
-      : ""}
-  render={({ field, fieldState: { error } }) => (
-    <Select
-      value={field.value || invoiceData?.invoice?.products?.nos === "FCL" ? invoiceData?.invoice?.products?.rightValue : ""}
-      onValueChange={(value) => field.onChange(value)}
-    >
-      <SelectTrigger className={error ? "border-red-500" : ""}>
-        <SelectValue placeholder="Select container size" />
-      </SelectTrigger>
-      <SelectContent>
-        <SelectItem value="20'">20'</SelectItem>
-        <SelectItem value="40'">40'</SelectItem>
-        <SelectItem value="20' 40'">20' 40'</SelectItem>
-      </SelectContent>
-    </Select>
-  )}
-/>
+                  name="vgm.container_size"
+                  control={control}
+                  rules={{ required: true }}
+                  defaultValue={invoiceData?.invoice?.products?.nos === "FCL" 
+                      ? invoiceData?.invoice?.products?.rightValue || ""
+                      : ""}
+                  render={({ field, fieldState: { error } }) => (
+                    <Select
+                      value={field.value || invoiceData?.invoice?.products?.nos === "FCL" ? invoiceData?.invoice?.products?.rightValue : ""}
+                      onValueChange={(value) => field.onChange(value)}
+                    >
+                      <SelectTrigger className={error ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Select container size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="20'">20'</SelectItem>
+                        <SelectItem value="40'">40'</SelectItem>
+                        <SelectItem value="20' 40'">20' 40'</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+
+                {/*Harshraj no updated code jema error avi ti 
+                    etle a Uncomment no karta */}
+                {/* <Controller
+                  name="vgm.container_size"
+                  control={control}
+                  rules={{ required: true }}
+                  defaultValue={invoiceData?.invoice?.products?.nos === "FCL" 
+                      ? invoiceData?.invoice?.products?.rightValue || ""
+                      : ""}
+                  render={({ field, fieldState: { error } }) => (
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={(value) => field.onChange(value)}
+                    >
+                      <SelectTrigger className={error ? "border-red-500" : ""}>
+                        <SelectValue placeholder="Select container size" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="20'">20'</SelectItem>
+                        <SelectItem value="40'">40'</SelectItem>
+                        <SelectItem value="20' 40'">20' 40'</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
+                /> */}
+
+                {/*A have try karish jovanu che ke ama 
+                   Error ave che ke nay em*/}
+                  {/* <Controller
+                    name="vgm.container_size"
+                    control={control}
+                    rules={{ required: true }}
+                    defaultValue={
+                      invoiceData?.invoice?.products?.nos === "FCL"
+                        ? invoiceData?.invoice?.products?.rightValue || ""
+                        : ""
+                    }
+                    render={({ field, fieldState: { error } }) => {
+                      // Calculate the select value with business logic, but always supply a string.
+                      let selectValue = field.value;
+                      if (!selectValue) {
+                        if (invoiceData?.invoice?.products?.nos === "FCL" && invoiceData?.invoice?.products?.rightValue) {
+                          selectValue = invoiceData.invoice.products.rightValue;
+                        } else {
+                          selectValue = "";
+                        }
+                      }
+                      return (
+                        <Select
+                          value={selectValue}
+                          onValueChange={value => field.onChange(value)}
+                        >
+                          <SelectTrigger className={error ? "border-red-500" : ""}>
+                            <SelectValue placeholder="Select container size" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="20'">20'</SelectItem>
+                            <SelectItem value="40'">40'</SelectItem>
+                            <SelectItem value="20' 40'">20' 40'</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      );
+                    }}
+                  /> */}
+
 
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  {containerSize ? vgnForm?.vgm?.container_size : ""}
+                {invoiceData?.invoice?.products?.nos === "FCL" 
+                      ? invoiceData?.invoice?.products?.rightValue || ""
+                      : ""}
                 </div>
               </div>
             </div>
@@ -1065,7 +1137,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  {verifiedGrossMass ? vgnForm?.vgm.verified_gross_mass : ""}
+                  {verifiedGrossMass ? vgnForm?.vgm?.verified_gross_mass : ""}
                 </div>
               </div>
             </div>
@@ -1102,7 +1174,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  {unitOfMeasure ? vgnForm?.vgm.unit_of_measurement : ""}
+                  {unitOfMeasure ? vgnForm?.vgm?.unit_of_measurement : ""}
                 </div>
               </div>
             </div>
@@ -1122,7 +1194,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
               </div>
               <div className="space-y-2">
                 <div className="font-medium">
-                  Dt. {weighingDate ? vgnForm?.vgm.dt_weighing : ""}
+                  Dt. {weighingDate ? vgnForm?.vgm?.dt_weighing : ""}
                 </div>
               </div>
             </div>
@@ -1270,7 +1342,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                           <Input
                             value={row.container_no || ""}
                             {...register(`vgm.containers.${index}.container_no`, {
-                              required: true,
+                              required: false,
                               defaultValue: row?.container_no,
                             })}
                             readOnly
@@ -1287,7 +1359,7 @@ const [isSubmitting, setIsSubmitting] = useState(false);
                                 {...register(
                                   `vgm.containers.${index}.gross_weight`,
                                   {
-                                    required: true,
+                                    required: false,
                                     defaultValue: row.gross_weight || "0.00",
                                   }
                                 )}
@@ -1410,7 +1482,9 @@ const [isSubmitting, setIsSubmitting] = useState(false);
         <Button variant="outline" onClick={onBack2}>
           Back
         </Button>
-
+                {/* <Button onClick={() => console.log(getValues())}>
+                                Debug Form
+                              </Button> */}
         <Button 
   onClick={handleSubmit(handleSave)}
   disabled={isSubmitting}

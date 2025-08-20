@@ -90,7 +90,7 @@ const [isProgressOpen, setIsProgressOpen] = useState(false);
   const method = useFormContext()
   useEffect(()=>{
     // call the backend at /show/list?path=${invoiceId} to get the list of files
-    console.log("Resetting form data");
+    // console.log("Resetting form data");
     
     method.reset({})
   },[])
@@ -227,7 +227,7 @@ const fetchDocuments = async (id: string,type:null | string = null) => {
 
     try {
       const excelRes = await fetchDocuments(selectedInvoice?.invoiceNo,"xlsx");
-      const response = await api.get(`/show/file/${excelRes.find(path => path.includes("COMBINED_INVOICE.xlsx"))}`, {
+      const response = await api.get(`/show/file/${excelRes.find(path => path.includes("COMBINED"))}`, {
         responseType: "blob",
       });
 
@@ -235,7 +235,7 @@ const fetchDocuments = async (id: string,type:null | string = null) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "COMBINED_INVOICE.xlsx");
+      link.setAttribute("download", excelRes.find(path => path.includes("COMBINED")).split("/").pop().split("COMBINED")[0]);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -269,7 +269,7 @@ const fetchDocuments = async (id: string,type:null | string = null) => {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.setAttribute("download", "vgm_mail.docx");
+      link.setAttribute("download", docxRes.find(path => path.includes("docx")).split("/").pop());
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -289,7 +289,7 @@ const fetchDocuments = async (id: string,type:null | string = null) => {
       setBulkActionLoading(false);
     }
   };
-
+  
   // Load documents when invoice is selected
 useEffect(() => {
   if (!selectedInvoice) return;
@@ -301,10 +301,20 @@ useEffect(() => {
 
     const mockInvoiceDocuments = filePaths.map((path: string, index: number) => {
       const fileName = path.split("/").pop() || "";
-      const type = fileName
+      let type = "";
+      if(fileName.includes("COMBINED")){
+        type = fileName
         .replace(".pdf", "")
-        .replace(/(_)|(g)/, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
+        // .replace(/(_)|(g)/, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()).split("COMBINED")[0];
+        
+      }else{
+
+        type = fileName
+          .replace(".pdf", "")
+          // .replace(/(_)|(g)/, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase()).split(" ").pop();
+      }
 
       return {
         id: index + 1,
@@ -332,7 +342,7 @@ useEffect(() => {
           const [statsData, recentInvoicesData, allInvoices] =
             await Promise.all([
               dashboardApi.getStats(),
-              dashboardApi.getRecentInvoices(8),
+              dashboardApi.getRecentInvoices(),
               invoiceApi.getAll(),
             ]);
 
@@ -342,13 +352,13 @@ useEffect(() => {
 
           if (recentInvoicesData && recentInvoicesData.length > 0) {
             
-            console.log(recentInvoicesData);
+            // console.log(recentInvoicesData);
             setRecentInvoices(recentInvoicesData);
           }
           
           if (allInvoices ) {
             setInvoices(allInvoices.invoices);
-            console.log(allInvoices.drafts)
+            // console.log(allInvoices.drafts)
             setDraftInvoices(allInvoices.drafts || []);
           }
         } catch (apiError) {
@@ -418,9 +428,9 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
       const docxFile = await generateInvoigenerateDocxceExcel(data);
   
       let resDoc = await filesApi.uploadDoc(docxFile, data.invoice_number);
-      if (resDoc) {
-        console.log("Document uploaded successfully:", resDoc);
-      }
+      // if (resDoc) {
+      //   console.log("Document uploaded successfully:", resDoc);
+      // }
       // Create process list for queue
       const newProcesses = excelBlobs.map((file: any, index: number) => ({
         id: `${index + 1}`,
@@ -443,7 +453,7 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
          handleProcessUpdate(`${i+1}`, "running");
         
          try {
-          const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number,data.payment_term);
+          const response = await filesApi.uploadAndDownloadPdf({buffer, fileName}, data.invoice_number,data.payment_term,excelFileName);
   
           // 👇 Mark as completed
           handleProcessUpdate(`${i+1}`, "completed");
@@ -459,7 +469,7 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
         description: "Uplaod completed successfully",
         variant: "success",
       });
-      console.log("Upload results:", results);
+      // console.log("Upload results:", results);
     } catch (error) {
       console.error("Error generating or uploading files:", error);
       ;
@@ -487,59 +497,76 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
       await handleFiles(data);
       
     } catch (error) {
-      console.log("Error generating files:", error);
+      // console.log("Error generating files:", error);
       
     }finally{
       setIsGenerating(false);
     }}
   // handle delete invoice 
-  const handleRemoveInvoice = async(invoiceId:string)=>{
+  const handleRemoveInvoice = async (invoiceId: string) => {
     try {
-      
       const res = await api.delete(`/invoice/${invoiceId}`);
       
-      
-      if(res.status === 200) {
+      if (res.status === 200) {
         toast({
           title: "Success",
           description: "Invoice removed successfully",
         });
-        setRecentInvoices(invoices.filter(inv => inv.id !== invoiceId));
-        setSelectedInvoice(null);
+        
+        // Fix: Use consistent state variable names
+        setRecentInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+        
+        // Only clear selected invoice if it's the one being deleted
+        if (selectedInvoice?.id === invoiceId) {
+          setSelectedInvoice(null);
+        }
+        
         setViewDialogOpen(false);
+      } else {
+        // Handle non-200 responses
+        throw new Error(`Failed to delete invoice: ${res.status}`);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error removing invoice:", error);
+      
       toast({
         title: "Error",
-        description: "Failed to remove invoice",
+        description: error.response?.data?.message || "Failed to remove invoice",
         variant: "destructive",
       });
-      
     }
-  }
-  const handleDeleteDraft = async(invoiceId:string)=>{
+  };
+  
+  const handleDeleteDraft = async (invoiceId: string) => {
     try {
-      
       const res = await api.delete(`/draft/${invoiceId}`);
       
-      
-      if(res.status === 204) {
+      if (res.status === 204 || res.status === 200) {
         toast({
           title: "Success",
           description: "Draft removed successfully",
         });
-        setDraftInvoices(draftInvoices.filter(inv => inv.id !== invoiceId));
-        setSelectedInvoice(null);
+        
+        // Fix: Use functional state update for safety
+        setDraftInvoices(prev => prev.filter(inv => inv.id !== invoiceId));
+        
+        // Only clear selected invoice if it's the one being deleted
+        if (selectedInvoice?.id === invoiceId) {
+          setSelectedInvoice(null);
+        }
+      } else {
+        throw new Error(`Failed to delete draft: ${res.status}`);
       }
-    } catch (error) {
+    } catch (error: any) {
+      console.error("Error removing draft:", error);
+      
       toast({
         title: "Error",
-        description: "Failed to remove Draft",
+        description: error.response?.data?.message || "Failed to remove draft",
         variant: "destructive",
       });
-      
     }
-  }
+  };
   // Handle edit invoice
   const handleEditInvoice = (invoiceId: string) => {
     navigate(`/invoice/drafts/${invoiceId}`);
@@ -553,7 +580,7 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
   const statCards = [
     {
       title: "Total Invoices",
-      value: stats.invoiceCount,
+      value: recentInvoices.length,
       icon: FileText,
       link: "/invoice",
       color: "bg-gray-200",
@@ -580,7 +607,7 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
       
       <PageHeader
         title="Dashboard"
-        description="Welcome to Invoice Forge Admin Panel"
+        description="Your Invoice Summary Dashboard, Track, Manage, and Create Invoices From here."
         action={
           <Button asChild>
             {isAdmin ? <Link to="/admin">Admin Panel</Link> : <></>}
@@ -617,7 +644,7 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
                     asChild
                     className="px-0 text-xs text-muted-foreground hover:text-foreground"
                   >
-                    <Link to={card.link}>View Details →</Link>
+                    {/* <Link to={card.link}>View Details →</Link> */}
                   </Button>
                 </div>
               </CardContent>
@@ -630,7 +657,7 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="w-full relative shadow-sm border border-gray-100">
             <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
-              <CardTitle>Recent Invoices</CardTitle>
+              <CardTitle>Invoices</CardTitle>
               <Button size="sm" className="rounded-full w-8 h-8 p-0" asChild>
                 <Link to="/invoice">
                   <Plus className="h-4 w-4" />
@@ -654,9 +681,8 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
                       <div className="flex-1">
                         <div className="font-medium">{invoice.invoiceNo}</div>
                         <div className="text-xs text-muted-foreground">
-                          {new Date(
-                            parseIndianDate(invoice.date)
-                          ).toLocaleDateString()}
+                          {invoice.date}
+                          
                         </div>
                       </div>
                       <div className="flex-1 text-right">
@@ -742,20 +768,22 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
                       
                       <div className="ml-3 gap-2 flex">
                         <Button
-                          variant="outline"
-                          
-                          className="h-8 px-2  text-xs"
+                           variant="outline"
+                           size="sm"
+                           className="h-7 px-2 text-xs"
                           onClick={() => handleEditInvoice(invoice.id)}
                         >
-                          
+                          <Edit className="h-3 w-3 mr-1" />
                           Resume
                         </Button>
                         <ConfirmationDialog
   trigger={
     <Button
-      variant="solid"
-      className="h-8 px-2 text-xs bg-red-500 text-white hover:bg-red-600"
+    variant="outline"
+    size="sm"
+    className="h-7 px-2 text-xs border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300"
     >
+       <Trash2 className="h-3 w-3 mr-1" />
       Delete
     </Button>
   }
@@ -872,9 +900,9 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
     'Generate'
   )}
 </Button>
-              <Button onClick={() => handleEditInvoice(selectedInvoice?.id || "")} className="py-2 px-3">
+              {/* <Button onClick={() => handleEditInvoice(selectedInvoice?.id || "")} className="py-2 px-3">
                 Edit Invoice
-              </Button>
+              </Button> */}
               <Button variant="outline" onClick={() => setViewDialogOpen(false)} className="py-2 px-3">
                 Close
               </Button>
@@ -908,9 +936,9 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
                       Date
                     </h3>
                     <p className="font-semibold text-lg">
-                      {new Date(
-                        parseIndianDate(selectedInvoice.date)
-                      ).toLocaleDateString()}
+                      {
+                        selectedInvoice.date
+                      }
                     </p>
                   </div>
                   <div>

@@ -1495,7 +1495,7 @@ const AdminPanel = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>IE Code</TableHead>
                 <TableHead>GSTIN</TableHead>
-                <TableHead>Last Updated</TableHead>
+                {/* <TableHead>Last Updated</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1508,7 +1508,7 @@ const AdminPanel = () => {
                   <TableCell>{exporter.email}</TableCell>
                   <TableCell>{exporter.ie_code}</TableCell>
                   <TableCell>{exporter.gstin_number}</TableCell>
-                  <TableCell>{exporter.updatedAt}</TableCell>
+                  {/* <TableCell>{exporter.updatedAt}</TableCell> */}
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
                       <Button
@@ -2428,7 +2428,7 @@ const AdminPanel = () => {
     <div className="space-y-6">
       <div className="bg-[#fff9c4] rounded-lg shadow overflow-hidden p-4 border border-[#fff59d]">
         <h3 className="font-bold text-lg mb-6 uppercase text-amber-900">
-          ARN & DECLARATION
+          ARN & DECLARATION (Without GST)
         </h3>
 
         <div className="bg-white p-4 rounded-md shadow-sm space-y-6">

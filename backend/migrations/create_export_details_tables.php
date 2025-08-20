@@ -64,7 +64,22 @@ class CreateExportDetailsTables
         updated_at  DATETIME DEFAULT UPDATED_TIMESTAMP
     )");
 
-        
+        $pdo->exec("CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            role TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )");
+        $pdo->exec("CREATE TABLE IF NOT EXISTS token_sessions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            token TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+        )");
 
     }
 
@@ -76,6 +91,8 @@ class CreateExportDetailsTables
         $pdo->exec("DROP TABLE IF EXISTS suppliers_dropdown");
         $pdo->exec("DROP TABLE IF EXISTS arn_dropdown");
         $pdo->exec("DROP TABLE IF EXISTS dropdown_options");
+        $pdo->exec("DROP TABLE IF EXISTS users");
+        $pdo->exec("DROP TABLE IF EXISTS token_sessions");
     }
 }
 

@@ -55,7 +55,7 @@ export const Sidebar = () => {
         {!collapsed && (
           <div>
             <h1 className="text-xl font-bold text-primary">Invoice Gen</h1>
-            <p className="text-xs text-gray-500">Admin Panel</p>
+            <p className="text-xs text-gray-500">System Dashboard</p>
           </div>
         )}
         <Button 

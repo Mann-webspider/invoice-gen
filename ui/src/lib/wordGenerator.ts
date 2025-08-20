@@ -1,45 +1,45 @@
 import { Document, Packer, Paragraph, TextRun } from "docx";
 import { saveAs } from "file-saver";
 
-  export const generateInvoigenerateDocxceExcel = async (data): Promise<void> => {
+export const generateInvoigenerateDocxceExcel = async (data): Promise<void> => {
   let companyName = data.exporter.company_name || "COMPANY NAME";
-  let companyAddress = data.exporter.company_address ||`SECOND FLOOR, OFFICE NO 7,\nISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI,\nGujarat, 363642\nINDIA`;
-  let email = data.vgm.forwarder_email  ||"ABC@GMAIL.COM";
-  let consignee = data.buyer.consignee||"XYZ";
-  let notifyParty = data.buyer.notify_party ||["ABC", "DEF", "GHI"];
+  let companyAddress = data.exporter.company_address || `SECOND FLOOR, OFFICE NO 7,\nISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI,\nGujarat, 363642\nINDIA`;
+  let email = data.vgm.forwarder_email || "ABC@GMAIL.COM";
+  let consignee = data.buyer.consignee || "XYZ";
+  let notifyParty = data.buyer.notify_party || "";
   let finalDestination = data.shipping.final_destination || "USA";
-  let termsOfDelivery = data.payment_term||"FOB";
-  let cuntainerType = data.product_details.nos||"FCL";
-  let marksAndNos = data.product_details.marks||"10 x 20'";
+  let termsOfDelivery = data.payment_term || "FOB";
+  let cuntainerType = data.product_details.nos || "FCL";
+  let marksAndNos = data.product_details.marks || "10 x 20'";
 
   // product_name, size, quantity, unit, sqm_box, total_sqm, price, amount , net_weight, gross_weight
 
   const reverseTransformProducts = (data: any[]) => {
-            const result: any[] = [];
-          
-            data.forEach((category) => {
-              // Add the category as the first element
-              result.push([category.category_name, category.hsn_code]);
-          
-              // Add all products under the category
-              category.products.forEach((product: any) => {
-                result.push([
-                  product.product_name,
-                  product.size,
-                  product.quantity,
-                  product.unit,
-                  product.sqm,
-                  product.total_sqm,
-                  product.price,
-                  product.total_price,
-                  product.net_weight,
-                  product.gross_weight,
-                ]);
-              });
-            });
-          
-            return result;
-          };
+    const result: any[] = [];
+
+    data.forEach((category) => {
+      // Add the category as the first element
+      result.push([category.category_name, category.hsn_code]);
+
+      // Add all products under the category
+      category.products.forEach((product: any) => {
+        result.push([
+          product.product_name,
+          product.size,
+          product.quantity,
+          product.unit,
+          product.sqm,
+          product.total_sqm,
+          product.price,
+          product.total_price,
+          product.net_weight,
+          product.gross_weight,
+        ]);
+      });
+    });
+
+    return result;
+  };
 
   let products = reverseTransformProducts(data.product_details.product_section);
   // const products = [
@@ -60,10 +60,10 @@ import { saveAs } from "file-saver";
   //   ['Shadow Brown', '600X600', 1000, 'BOX', 1.44, 1440, 10.0, 14400.0, 32522.00, 65465.00],
   // ];
   let noOfPackages = data.package.number_of_package || 14000;
-  let grossWeight = data.package.total_gross_weight || 14000;
-  let netWeight = data.package.total_net_weight || 14000;
+  let grossWeight = data.annexure.gross_weight || "";
+  let netWeight = data.annexure.net_weight || "";
   let insurance = data.product_details.insurance || 1000.00;
-  let freight = data.product_details.frieght||1000.00;
+  let freight = data.product_details.frieght || 1000.00;
 
 
 
@@ -118,11 +118,18 @@ import { saveAs } from "file-saver";
               new TextRun({ text: "CONSIGNEE FOR THE S.B.\n", bold: true }),
             ],
           }),
-          new Paragraph({
-            children: [
-              new TextRun(`${consignee}`),
-            ],
-          }),
+          ...notifyParty.split("\n").map((party, index) => [
+            new Paragraph({
+              children: [
+                new TextRun(party),
+              ],
+            }),
+          ]).flat(),
+          // new Paragraph({
+          //   children: [
+          //     new TextRun(`${consignee}`),
+          //   ],
+          // }),
 
           new Paragraph({
             children: [
@@ -152,16 +159,21 @@ import { saveAs } from "file-saver";
             ],
           }),
 
-          new Paragraph({
-            children: [
-              new TextRun({ text: "NOTIFY FOR THE BL: 1", bold: true }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun(notifyParty[0]),
-            ],
-          }),
+          ...notifyParty.split("\n").map((party, index) => [
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `NOTIFY FOR THE BL: ${index + 1}`,
+                  bold: true,
+                }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun(party),
+              ],
+            }),
+          ]).flat(),
 
           new Paragraph({
             children: [
@@ -169,11 +181,11 @@ import { saveAs } from "file-saver";
             ],
           }),
 
-          new Paragraph({
-            children: [
-              new TextRun({ text: "NOTIFY FOR THE BL: 2", bold: true }),
-            ],
-          }),
+          // new Paragraph({
+          //   children: [
+          //     new TextRun({ text: "NOTIFY FOR THE BL: 2", bold: true }),
+          //   ],
+          // }),
 
           new Paragraph({
             children: [
@@ -193,7 +205,7 @@ import { saveAs } from "file-saver";
           }),
           new Paragraph({
             children: [
-              new TextRun(` TOTAL ${noOfPackages} BOXES`),
+              new TextRun(` TOTAL ${noOfPackages}`),
             ],
           }),
 
@@ -221,7 +233,7 @@ import { saveAs } from "file-saver";
                 }),
                 new Paragraph({
                   children: [
-                    new TextRun("TOTAL " + noOfPackages + " BOXES")
+                    new TextRun("TOTAL " + noOfPackages)
                   ],
                 }),
                 new Paragraph({
@@ -263,16 +275,16 @@ import { saveAs } from "file-saver";
             ],
           }),
 
-          new Paragraph({
-            children: [
-              new TextRun(`${netWeight}`),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun(`${grossWeight}`),
-            ],
-          }),
+          // new Paragraph({
+          //   children: [
+          //     new TextRun(`${netWeight}`),
+          //   ],
+          // }),
+          // new Paragraph({
+          //   children: [
+          //     new TextRun(`${grossWeight}`),
+          //   ],
+          // }),
 
           new Paragraph({
             children: [

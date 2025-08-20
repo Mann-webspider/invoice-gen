@@ -29,7 +29,7 @@ export const useDraftForm = ({ formType, methods, isDraftMode }: UseDraftFormOpt
       // ✅ Fix: Only parse once
       const parsed = JSON.parse(data);
       console.log('📄 Loaded draft data:', JSON.parse(parsed));
-      console.log('📄 Loaded draft page:', last_page);
+      // console.log('📄 Loaded draft page:', last_page);
       
       // Reset with parsed data (no double parsing)
       methods.reset(JSON.parse(parsed));
@@ -43,10 +43,9 @@ export const useDraftForm = ({ formType, methods, isDraftMode }: UseDraftFormOpt
      
      
       
-      if ( last_page && isDraftMode) {
-        
-        navigate(`/${last_page}/drafts/${id}`);
-      }
+      // if ( last_page && isDraftMode) {
+      //   navigate(`/invoice/drafts/${id}`);
+      // }
     } catch (error) {
       console.error('❌ Failed to load draft data:', error);
       // Set ready even if loading fails
@@ -94,21 +93,21 @@ export const useDraftForm = ({ formType, methods, isDraftMode }: UseDraftFormOpt
 
   // Fixed: Make saveDraft properly async
   const saveDraft = async (extraData: Record<string, any> = {}) => {
-  console.log("💾 saveDraft called with draftId:", draftId);
+  // console.log("💾 saveDraft called with draftId:", draftId);
   
   try {
     console.log(extraData);
     
     if (!draftId) {
-      console.log("📝 No draftId in saveDraft, creating new draft");
+      // console.log("📝 No draftId in saveDraft, creating new draft");
       let res = await handleSubmit(extraData);
       return res; // ✅ This already returns
     }
 
     const formData = getValues();
-    console.log("💾 Saving draft with data:", formData);
+    // console.log("💾 Saving draft with data:", formData);
     
-    console.log("📤 Sending PUT request to save draft...");
+    // console.log("📤 Sending PUT request to save draft...");
     
     const response = await api.put(`/draft/${draftId}`, {
       data: JSON.stringify({

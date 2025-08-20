@@ -185,6 +185,8 @@ class InvoiceController
                 'exam_date' => $annxure['exam_date']?? "-",
                 'invoice_date' => $annxure['invoice_date']?? "-",
                 'net_weight' => $annxure['net_weight']?? "-",
+                'bin_no' => $annxure['bin_number']?? "-",
+                'branch_no' => $annxure['branch_code']?? "-",
                 'gross_weight' => $annxure['gross_weight']?? "-",
                 'total_packages' => $annxure['total_packages']?? "-",
                 'officer_designation1' => $annxure['officer_designation1']?? "-",
@@ -419,6 +421,8 @@ class InvoiceController
            $drafts = Draft::select('id', "invoice_number",'data', 'last_page', 'updated_at')
     ->whereNotNull('data')
     ->whereRaw("TRIM(data) != ''")
+    ->orderBy('updated_at', 'desc')
+    ->where("is_submitted",0)
     ->get()
     ->each(function ($draft) {
         $draft->data = json_decode($draft->data, true);
@@ -710,127 +714,287 @@ class InvoiceController
         }
     }
     // delete all 
-    // DELETE all invoices and related data
     public function deleteAllInvoices(Request $request, Response $response)
-    {
-        try {
-            // Start transaction
-            DB::beginTransaction();
+{
+    try {
+        // Start transaction
+        DB::beginTransaction();
 
-            // Fetch all invoices
-            $invoices = Invoice::all();
-            if ($invoices->isEmpty()) {
-                DB::rollBack();
-                $response->getBody()->write(json_encode(['message' => 'No invoices found']));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
-            }
-
-            foreach ($invoices as $invoice) {
-                // Delete related records
-                ExporterDetails::destroy($invoice->exporter_id);
-                BuyerDetails::destroy($invoice->buyer_id);
-
-                $productDetails = ProductDetails::find($invoice->product_id);
-                if ($productDetails) {
-                    $productIds = json_decode($productDetails->product_ids, true);
-                    $containerIds = json_decode($productDetails->container_ids, true);
-
-                    ProductLists::destroy($productIds);
-                    ContainerInformation::destroy($containerIds);
-                    $productDetails->delete();
-                }
-
-                SupplierDetails::destroy($invoice->supplier_id);
-                ShippingDetail::destroy($invoice->shipping_id);
-                PackageInformation::destroy($invoice->package_id);
-                Vgm::destroy($invoice->vgm_id);
-                Annexure::destroy($invoice->annexure_id);
-                // VgmContainer::whereIn('id', json_decode($invoice->vgm->containers_id, true))->delete();
-                // Finally, delete the invoice
-                $invoice->delete();
-            }
-
-            // Commit transaction
-            DB::commit();
-
-            $response->getBody()->write(json_encode(['message' => 'All invoices and related data deleted successfully']));
-            return $response->withHeader('Content-Type', 'application/json');
-
-        } catch (\Exception $e) {
-            // Rollback transaction on error
+        // Fetch all invoices
+        $invoices = Invoice::all();
+        if ($invoices->isEmpty()) {
             DB::rollBack();
-
-            $response->getBody()->write(json_encode([
-                'error' => 'Failed to delete all invoices',
-                'message' => $e->getMessage()
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+            $response->getBody()->write(json_encode(['message' => 'No invoices found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
         }
-    }
-    // DELETE invoice and related data
-    public function deleteInvoice(Request $request, Response $response, $args)
-    {
-        try {
-            // Start transaction
-            DB::beginTransaction();
 
-            $invoice = Invoice::find($args['id']);
-            if (!$invoice) {
-                DB::rollBack();
-                $response->getBody()->write(json_encode(['message' => 'Invoice not found']));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
-            }
+        $deletedCount = 0;
 
-            // Delete related records
+        foreach ($invoices as $invoice) {
+            // Use the same deletion logic as deleteInvoice method
+            // [Include the same deletion code from above here]
+             // Delete Exporter Details
+        if ($invoice->exporter_id) {
             ExporterDetails::destroy($invoice->exporter_id);
-            BuyerDetails::destroy($invoice->buyer_id);
+        }
 
+        // Delete Buyer Details
+        if ($invoice->buyer_id) {
+            BuyerDetails::destroy($invoice->buyer_id);
+        }
+
+        // error_log($invoice->invoice_number);
+if ($invoice->invoice_number) {
+    $invoiceNumberArg = escapeshellarg($invoice->invoice_number);
+    
+    // Fix: Add proper directory separator
+    $scriptPath = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "scripts" . DIRECTORY_SEPARATOR . "delete_invoice_files.php";
+    // error_log("Script path: " . $scriptPath);
+    
+    // Verify the file exists before executing
+    if (!file_exists($scriptPath)) {
+        // error_log("❌ Script file not found: " . $scriptPath);
+        // You might want to handle this error case
+    } else {
+        $cmd = "php " . escapeshellarg($scriptPath) . " $invoiceNumberArg";
+        // error_log("Executing command: " . $cmd);
+        exec($cmd);
+    }
+}
+
+        // Delete Product Details and related products/containers
+        if ($invoice->product_id) {
             $productDetails = ProductDetails::find($invoice->product_id);
             if ($productDetails) {
-                $productIds = json_decode($productDetails->product_ids, true);
-                $containerIds = json_decode($productDetails->container_ids, true);
+                // Delete associated products
+                if ($productDetails->product_ids) {
+                    $productIds = json_decode($productDetails->product_ids, true);
+                    if (is_array($productIds) && !empty($productIds)) {
+                        ProductLists::destroy($productIds);
+                    }
+                }
 
-                ProductLists::destroy($productIds);
-                ContainerInformation::destroy($containerIds);
+                // Delete associated containers
+                if ($productDetails->container_ids) {
+                    $containerIds = json_decode($productDetails->container_ids, true);
+                    if (is_array($containerIds) && !empty($containerIds)) {
+                        ContainerInformation::destroy($containerIds);
+                    }
+                }
+
                 $productDetails->delete();
             }
-
-            SupplierDetails::destroy($invoice->supplier_id);
-            ShippingDetail::destroy($invoice->shipping_id);
-            PackageInformation::destroy($invoice->package_id);
-
-            // Finally, delete the invoice
-            $invoice->delete();
-
-            // Commit transaction
-            DB::commit();
-
-            $response->getBody()->write(json_encode(['message' => 'Invoice and related data deleted successfully']));
-            return $response->withHeader('Content-Type', 'application/json');
-
-        } catch (\Exception $e) {
-            // Rollback transaction on error
-            DB::rollBack();
-
-            $response->getBody()->write(json_encode([
-                'error' => 'Failed to delete invoice',
-                'message' => $e->getMessage()
-            ]));
-            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
+
+        // Delete Supplier Details (handle both single and multiple suppliers)
+        if ($invoice->supplier_id) {
+            // Old single supplier format
+            SupplierDetails::destroy($invoice->supplier_id);
+        }
+        
+        if ($invoice->supplier_ids) {
+            // New multiple suppliers format
+            $supplierIds = json_decode($invoice->supplier_ids, true);
+            if (is_array($supplierIds) && !empty($supplierIds)) {
+                SupplierDetails::destroy($supplierIds);
+            }
+        }
+
+        // Delete Shipping Details
+        if ($invoice->shipping_id) {
+            ShippingDetail::destroy($invoice->shipping_id);
+        }
+
+        // Delete Package Information
+        if ($invoice->package_id) {
+            PackageInformation::destroy($invoice->package_id);
+        }
+
+        // Delete Annexure
+        if ($invoice->annexure_id) {
+            Annexure::destroy($invoice->annexure_id);
+        }
+
+        // Delete VGM and associated VGM containers
+        if ($invoice->vgm_id) {
+            $vgm = Vgm::find($invoice->vgm_id);
+            if ($vgm) {
+                // Delete associated VGM containers
+                if ($vgm->containers_id) {
+                    $vgmContainerIds = json_decode($vgm->containers_id, true);
+                    if (is_array($vgmContainerIds) && !empty($vgmContainerIds)) {
+                        VgmContainer::destroy($vgmContainerIds);
+                    }
+                }
+                $vgm->delete();
+            }
+        }
+
+        // Finally, delete the invoice
+        $invoice->delete();
+
+            error_log("Deleting invoice ID: {$invoice->id}");
+            $deletedCount++;
+        }
+
+        // Commit transaction
+        DB::commit();
+
+        $response->getBody()->write(json_encode([
+            'message' => 'All invoices and related data deleted successfully',
+            'deleted_count' => $deletedCount
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
+
+    } catch (\Exception $e) {
+        // Rollback transaction on error
+        DB::rollBack();
+
+        $response->getBody()->write(json_encode([
+            'error' => 'Failed to delete all invoices',
+            'message' => $e->getMessage()
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
     }
+}
 
-    // public function createAnnexureVgm(Request $request, Response $response, array $args){
-    //     try {
-    //         //code...
-    //         // code to save data for annexure and vgm with transaction
+    // DELETE invoice and related data
+public function deleteInvoice(Request $request, Response $response, $args)
+{
+    try {
+        // Start transaction
+        DB::beginTransaction();
+
+        $invoice = Invoice::find($args['id']);
+        if (!$invoice) {
+            DB::rollBack();
+            $response->getBody()->write(json_encode(['message' => 'Invoice not found']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+        }
+
+        // Delete Exporter Details
+        if ($invoice->exporter_id) {
+            ExporterDetails::destroy($invoice->exporter_id);
+        }
+
+        // Delete Buyer Details
+        if ($invoice->buyer_id) {
+            BuyerDetails::destroy($invoice->buyer_id);
+        }
+        // delete pdf and excel file from ../../database/data/....
+          
+    // Delete all files from the invoice directory
+// error_log($invoice->invoice_number);
+if ($invoice->invoice_number) {
+    $invoiceNumberArg = escapeshellarg($invoice->invoice_number);
+    
+    // Fix: Add proper directory separator
+    $scriptPath = __DIR__ . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . ".." . DIRECTORY_SEPARATOR . "scripts" . DIRECTORY_SEPARATOR . "delete_invoice_files.php";
+    // error_log("Script path: " . $scriptPath);
+    
+    // Verify the file exists before executing
+    if (!file_exists($scriptPath)) {
+        error_log("❌ Script file not found: " . $scriptPath);
+        // You might want to handle this error case
+    } else {
+        $cmd = "php " . escapeshellarg($scriptPath) . " $invoiceNumberArg";
+        // error_log("Executing command: " . $cmd);
+        exec($cmd);
+    }
+}
+        // Delete Product Details and related products/containers
+        if ($invoice->product_id) {
+            $productDetails = ProductDetails::find($invoice->product_id);
+            if ($productDetails) {
+                // Delete associated products
+                if ($productDetails->product_ids) {
+                    $productIds = json_decode($productDetails->product_ids, true);
+                    if (is_array($productIds) && !empty($productIds)) {
+                        ProductLists::destroy($productIds);
+                    }
+                }
+
+                // Delete associated containers
+                if ($productDetails->container_ids) {
+                    $containerIds = json_decode($productDetails->container_ids, true);
+                    if (is_array($containerIds) && !empty($containerIds)) {
+                        ContainerInformation::destroy($containerIds);
+                    }
+                }
+
+                $productDetails->delete();
+            }
+        }
+
+        // Delete Supplier Details (handle both single and multiple suppliers)
+        if ($invoice->supplier_id) {
+            // Old single supplier format
+            SupplierDetails::destroy($invoice->supplier_id);
+        }
+        
+        if ($invoice->supplier_ids) {
+            // New multiple suppliers format
+            $supplierIds = json_decode($invoice->supplier_ids, true);
+            if (is_array($supplierIds) && !empty($supplierIds)) {
+                SupplierDetails::destroy($supplierIds);
+            }
+        }
+
+        // Delete Shipping Details
+        if ($invoice->shipping_id) {
+            ShippingDetail::destroy($invoice->shipping_id);
+        }
+
+        // Delete Package Information
+        if ($invoice->package_id) {
+            PackageInformation::destroy($invoice->package_id);
+        }
+
+        // Delete Annexure
+        if ($invoice->annexure_id) {
+            Annexure::destroy($invoice->annexure_id);
+        }
+
+        // Delete VGM and associated VGM containers
+        if ($invoice->vgm_id) {
+            $vgm = Vgm::find($invoice->vgm_id);
+            if ($vgm) {
+                // Delete associated VGM containers
+                if ($vgm->containers_id) {
+                    $vgmContainerIds = json_decode($vgm->containers_id, true);
+                    if (is_array($vgmContainerIds) && !empty($vgmContainerIds)) {
+                        VgmContainer::destroy($vgmContainerIds);
+                    }
+                }
+                $vgm->delete();
+            }
+        }
+
+        // Finally, delete the invoice
+        $invoice->delete();
+
+        // Commit transaction
+        DB::commit();
+
+        $response->getBody()->write(json_encode([
+            'message' => 'Invoice and related data deleted successfully',
+            'deleted_invoice_id' => $args['id']
+        ]));
+        return $response->withHeader('Content-Type', 'application/json');
+
+    } catch (\Exception $e) {
+        // Rollback transaction on error
+        DB::rollBack();
+
+        $response->getBody()->write(json_encode([
+            'error' => 'Failed to delete invoice',
+            'message' => $e->getMessage(),
+            'invoice_id' => $args['id'] ?? null
+        ]));
+        return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+    }
+}
 
 
-
-
-
-    //     } catch (\Throwable $th) {
-    //         //throw $th;
-    //     }
-    // }
+  
 }

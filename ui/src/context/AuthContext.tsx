@@ -68,6 +68,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (response.data && response.data.token) {
         const { token, user } = response.data;
         localStorage.setItem("authToken", token);
+        sessionStorage.setItem("authToken", token);
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
         setUser(user);
         return response;
@@ -90,6 +91,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Logout failed - handled silently
     } finally {
       localStorage.removeItem("authToken");
+      sessionStorage.removeItem("authToken");
       delete api.defaults.headers.common["Authorization"];
       setUser(null);
     }

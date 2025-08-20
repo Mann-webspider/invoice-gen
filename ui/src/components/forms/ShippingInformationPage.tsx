@@ -93,7 +93,7 @@ const ShippingInformationPage = ({
         setCountriesOfFinalDestination(shipping_res.final_destination);
       } catch (error) {
         // Failed to fetch shipping - handled silently
-        console.log(error);
+        // console.log(error);
       }
     })();
   }, []);
@@ -227,6 +227,8 @@ const ShippingInformationPage = ({
                       setValue("invoice.shipping.terms_of_delivery",`CIF AT ${value}`);
                     } else if (paymentTerms === "CNF") {
                       setValue("invoice.shipping.terms_of_delivery",`CNF AT ${value}`);
+                    }else if (paymentTerms === "CIF -> FOB") {
+                      setValue("invoice.shipping.terms_of_delivery",`CIF AT ${value}`);
                     }
                   }}
                 >
@@ -290,7 +292,7 @@ const ShippingInformationPage = ({
                 value={countryOfOrigin}
                 defaultValue={countryOfOrigin}
                 {...register("invoice.shipping.country_of_origin", {
-                  required: true,
+                  required: false,
                   value: countryOfOrigin // Set default value
                 })}
                 onChange={(e) => setCountryOfOrigin(e.target.value)}
@@ -311,7 +313,7 @@ const ShippingInformationPage = ({
               id="originDetails"
               value={originDetails}
               {...register("invoice.shipping.origin_details", {
-                required: true,
+                required: false,
                 value: originDetails // Set default value
               })}
               onChange={(e) => setOriginDetails(e.target.value)}
@@ -330,7 +332,7 @@ const ShippingInformationPage = ({
             <Controller
               name="invoice.shipping.country_of_final_destination" // this must match your form field name
               control={control}
-              rules={{ required: true }} // optional: validation rule
+              rules={{ required: false }} // optional: validation rule
               render={({ field }) => (
                 <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger>
