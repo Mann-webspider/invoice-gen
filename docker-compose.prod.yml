@@ -5,7 +5,7 @@ services:
     # build:
     #   context: ./ui
     #   dockerfile: Dockerfile
-    image: manndshelby/invoice-frontend:1.1
+    image: manndshelby/invoice-frontend:1.5
     container_name: frontend
     expose:
       - "3000"
@@ -15,7 +15,7 @@ services:
     # build:
     #   context: ./backend
     #   dockerfile: dockerfile
-    image: manndshelby/invoice-backend:1.0
+    image: manndshelby/invoice-backend:1.1
     container_name: php-prod
     ports:
       - "8000:8000"
