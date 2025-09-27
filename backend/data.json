@@ -1,0 +1,138 @@
+{
+    "invoice_number": "INV/2025/{{$randomInt}}",
+    "integrated_tax": "WITH PAYMENT OF INTEGRATED TAX",
+    "payment_term": "FOB",
+    "product_type": "Sanitary",
+    "currancy_type": "USD",
+    "currancy_rate": "{{$randomInt}}",
+    "exporter": {
+        "company_name": "{{$randomCompanyName}}",
+        "company_address": "{{$randomStreetAddress}}, {{$randomCity}}, {{$randomState}}",
+        "email": "{{$randomEmail}}",
+        "tax_id": "TAX{{$randomInt}}",
+        "ie_code": "IEC{{$randomInt}}",
+        "pan_number": "ABCDE{{$randomInt}}F",
+        "gstin_number": "24ABCDE{{$randomInt}}F1Z5",
+        "state_code": "24"
+    },
+    "buyer": {
+        "order_number": "ORD-{{$randomUUID}}",
+        "order_date": "{{$randomDate}}",
+        "po_number": "PO-{{$randomInt}}",
+        "consignee": "Consignee {{$randomFirstName}} {{$randomLastName}}",
+        "notify_party": "Notify {{$randomFirstName}} {{$randomLastName}}"
+    },
+    "product": {
+        "marks": "Mark {{$randomInt}}-{{$randomInt}}",
+        "nos": "{{$randomInt}}",
+        "frieght": "{{$randomInt}}.254",
+        "insurance": "{{$randomInt}}.148",
+        "total_price": "{{$randomInt}}",
+        "product_list": [
+            {
+                "category_id": 3,
+                "product_name": "Ceramic Floor Tile - Matte Finish",
+                "size": "600x600 mm",
+                "quantity": 1200,
+                "sqm": 0.36,
+                "total_sqm": 432,
+                "price": 24.50,
+                "net_weight": 22,
+                "gross_weight": 24
+            },
+            {
+                "category_id": 4,
+                "product_name": "Glossy Wall Tile - White",
+                "size": "300x600 mm",
+                "quantity": 1000,
+                "sqm": 0.18,
+                "total_sqm": 180,
+                "price": 18.00,
+                "net_weight": 12,
+                "gross_weight": 13.5
+            },
+            {
+                "category_id": 5,
+                "product_name": "Porcelain Vitrified Tile - Black",
+                "size": "800x800 mm",
+                "quantity": 800,
+                "sqm": 0.64,
+                "total_sqm": 512,
+                "price": 32.75,
+                "net_weight": 28 ,
+                "gross_weight": 30
+            },
+            {
+                "category_id": 3,
+                "product_name": "Wooden Texture Floor Tile",
+                "size": "600x1200 mm",
+                "quantity": 600,
+                "sqm": 0.72,
+                "total_sqm": 432,
+                "price": 27.00,
+                "net_weight": 24,
+                "gross_weight": 26
+            }
+        ],
+        "containers": [
+            {
+                "container_number": "MSCU1234567",
+                "line_seal_number": "SEAL998877",
+                "rfid_number": "RFID456789123",
+                "design_no": "Tiles",
+                "quantity_box": 120,
+                "net_weight": 2500.75,
+                "gross_weight": 2700.50
+            },
+            {
+                "container_number": "TGHU7654321",
+                "line_seal_number": "SEAL112233",
+                "rfid_number": "RFID321654987",
+                "design_no": "Sanitary",
+                "quantity_box": 98,
+                "net_weight": 2100.00,
+                "gross_weight": 2300.30
+            },
+            {
+                "container_number": "TEMU9081726",
+                "line_seal_number": "SEAL556677",
+                "rfid_number": "RFID789654123",
+                "design_no": "Mix",
+                "quantity_box": 135,
+                "net_weight": 2800.40,
+                "gross_weight": 3050.00
+            }
+        ]
+    },
+    "supplier": {
+        "supplier_name": "Supplier {{$randomCompanyName}}",
+        "supplier_address": "{{$randomStreetAddress}}",
+        "gstin_number": "{{$randomAlphaNumeric}}",
+        "tax_invoice_no": "INV-{{$randomInt}}",
+        "date": "23/03/2025"
+    },
+    "shipping": {
+        "place_of_receipt": "Ahmedabad",
+        "port_of_loading": "Mundra Port",
+        "port_of_discharge": "Hamburg Port",
+        "pre_carriage": "By Maersk Logistics",
+        "shipping_number": "SHIP-982347",
+        "country_of_origin": "India",
+        "origin_details": "Manufactured in India, inspected on 2025-04-20",
+        "country_of_final_destination": "Germany",
+        "terms_of_delivery": "FOB - Mundra Port",
+        "payment": "Advance Payment",
+        "shipping_method": "Sea",
+        "final_destination": "Berlin, Germany"
+    },
+    "package": {
+        "number_of_package": 25,
+        "total_gross_weight": "420 KG",
+        "total_net_weight": "395 KG",
+        "gst_circular": "GST Circular No. 132/2024",
+        "app_ref_number": "APP-REF-7593",
+        "lut_date": "2025-03-20",
+        "total_amount": 48250,
+        "amount_in_words": "Rupees Forty Eight Thousand Two Hundred Fifty Only"
+    }
+}

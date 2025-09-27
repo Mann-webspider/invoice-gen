@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Export Management System</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .section-container {
+            background-color: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="mb-4">Dropdown Options Management</h1>
+        
+        <div class="nav nav-tabs mb-4">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#exporter">Exporter Section</button>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#shipping">Shipping Details</button>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#supplier">Supplier Details</button>
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#arn">ARN & Declaration</button>
+        </div>
+
+        <div class="tab-content">
+            <!-- Exporter Section -->
+            <div class="tab-pane active" id="exporter">
+                <div class="section-container">
+                    <h3>Exporter Details</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Select Exporter</label>
+                                <select class="form-control" id="exporterSelect">
+                                    <option value="">Select an exporter</option>
+                                </select>
+                            </div>
+                            <div id="exporterDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Shipping Details -->
+            <div class="tab-pane" id="shipping">
+                <div class="section-container">
+                    <h3>Shipping Information</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Select Shipping Details</label>
+                                <select class="form-control" id="shippingSelect">
+                                    <option value="">Select shipping details</option>
+                                </select>
+                            </div>
+                            <div id="shippingDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supplier Details -->
+            <div class="tab-pane" id="supplier">
+                <div class="section-container">
+                    <h3>Supplier Information</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Select Supplier</label>
+                                <select class="form-control" id="supplierSelect">
+                                    <option value="">Select a supplier</option>
+                                </select>
+                            </div>
+                            <div id="supplierDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ARN & Declaration -->
+            <div class="tab-pane" id="arn">
+                <div class="section-container">
+                    <h3>ARN & Declaration Details</h3>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Select ARN</label>
+                                <select class="form-control" id="arnSelect">
+                                    <option value="">Select ARN</option>
+                                </select>
+                            </div>
+                            <div id="arnDetails"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fetch all dropdown options
+            fetch('/api/dropdown-options')
+                .then(response => response.json())
+                .then(data => {
+                    // Populate exporters dropdown
+                    const exporterSelect = document.getElementById('exporterSelect');
+                    data.exporters.forEach(exporter => {
+                        const option = document.createElement('option');
+                        option.value = exporter.id;
+                        option.textContent = exporter.company_name;
+                        exporterSelect.appendChild(option);
+                    });
+
+                    // Populate shipping dropdown
+                    const shippingSelect = document.getElementById('shippingSelect');
+                    data.shipping.forEach(ship => {
+                        const option = document.createElement('option');
+                        option.value = ship.id;
+                        option.textContent = ship.place_of_receipt;
+                        shippingSelect.appendChild(option);
+                    });
+
+                    // Populate suppliers dropdown
+                    const supplierSelect = document.getElementById('supplierSelect');
+                    data.suppliers.forEach(supplier => {
+                        const option = document.createElement('option');
+                        option.value = supplier.id;
+                        option.textContent = supplier.name;
+                        supplierSelect.appendChild(option);
+                    });
+                });
+
+            // Add event listeners for dropdowns
+            document.getElementById('exporterSelect').addEventListener('change', function(e) {
+                if (e.target.value) {
+                    fetch(`/api/exporter/${e.target.value}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const details = document.getElementById('exporterDetails');
+                            details.innerHTML = `
+                                <div class="mt-3">
+                                    <p><strong>Company Address:</strong> ${data.company_address}</p>
+                                    <p><strong>Email:</strong> ${data.email}</p>
+                                    <p><strong>Tax ID:</strong> ${data.tax_id}</p>
+                                    <p><strong>IE Code:</strong> ${data.ie_code}</p>
+                                    <p><strong>PAN Number:</strong> ${data.pan_number}</p>
+                                    <p><strong>GSTIN Number:</strong> ${data.gstin_number}</p>
+                                    <p><strong>State Code:</strong> ${data.state_code}</p>
+                                </div>
+                            `;
+                        });
+                }
+            });
+
+            document.getElementById('shippingSelect').addEventListener('change', function(e) {
+                if (e.target.value) {
+                    fetch(`/api/shipping/${e.target.value}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const details = document.getElementById('shippingDetails');
+                            details.innerHTML = `
+                                <div class="mt-3">
+                                    <p><strong>Port of Loading:</strong> ${data.port_of_loading}</p>
+                                    <p><strong>Port of Discharge:</strong> ${data.port_of_discharge}</p>
+                                    <p><strong>Final Destination:</strong> ${data.final_destination}</p>
+                                </div>
+                            `;
+                        });
+                }
+            });
+
+            document.getElementById('supplierSelect').addEventListener('change', function(e) {
+                if (e.target.value) {
+                    fetch(`/api/supplier/${e.target.value}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            const details = document.getElementById('supplierDetails');
+                            details.innerHTML = `
+                                <div class="mt-3">
+                                    <p><strong>GSTIN No:</strong> ${data.gstin_no}</p>
+                                    <p><strong>Tax Invoice No:</strong> ${data.tax_invoice_no}</p>
+                                </div>
+                            `;
+                        });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
