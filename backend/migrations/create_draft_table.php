@@ -18,6 +18,14 @@ class CreateDraftSchema
 )
 ");
 
+$pdo->exec("CREATE TABLE IF NOT EXISTS token_sessions (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            token TEXT NOT NULL,
+            created_at DATETIME NOT NULL,
+            updated_at DATETIME NOT NULL
+        )");
+
         
     }
 
@@ -25,6 +33,7 @@ class CreateDraftSchema
     {
         $tables = [
             "form_drafts",
+            "token_sessions"
            
         ];
 

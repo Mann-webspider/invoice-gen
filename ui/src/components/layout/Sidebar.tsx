@@ -41,7 +41,7 @@ export const Sidebar = () => {
     // { name: "Products", icon: Package, path: "/products" },
     // { name: "Shipping Terms", icon: Ship, path: "/shipping" },
     // { name: "Settings", icon: Settings, path: "/settings" },
-    {name:"Backup", icon: DatabaseBackup, path: "/backup" }
+    // {name:"Backup", icon: DatabaseBackup, path: "/backup" }
   ];
 
   return (

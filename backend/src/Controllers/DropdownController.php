@@ -604,7 +604,8 @@ class DropdownController
                 'place_of_receipt' => DropdownOption::where("category","place_of_receipt")->orderBy('value')->pluck('value')->toArray(),
                 'port_of_loading' => DropdownOption::where("category","port_of_loading")->orderBy('value')->pluck('value')->toArray(),
                 'port_of_discharge' => DropdownOption::where("category","port_of_discharge")->orderBy('value')->pluck('value')->toArray(),
-                'final_destination' => DropdownOption::where("category","final_destination")->orderBy('value')->pluck('value')->toArray()
+                'final_destination' => DropdownOption::where("category","final_destination")->orderBy('value')->pluck('value')->toArray(),
+                'country_of_final_destination' => DropdownOption::where("category","country_of_final_destination")->orderBy('value')->pluck('value')->toArray(),
             ];
 
            

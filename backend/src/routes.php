@@ -2,6 +2,7 @@
 
 
 // use App\InvoiceController;
+use Shelby\OpenSwoole\Controllers\CountryCategoryController;
 use Shelby\OpenSwoole\Controllers\DraftController;
 use Slim\App;
 use Shelby\OpenSwoole\Controllers\DropdownController;
@@ -26,6 +27,7 @@ return function (App $app) {
     $dropdownController = new DropdownController($container->get('db'));
     $invoiceController = new InvoiceController($container->get('db'));
     $productCategoryController = new ProductCategoryController($container->get('db'));
+    $countryCategoryController = new CountryCategoryController($container->get('db'));
     $productSizeController = new ProductSizeController($container->get('db'));
     $databaseController = new DatabaseController($container->get('db'));
     $userController = new UserController($container->get('db'));
@@ -87,6 +89,12 @@ return function (App $app) {
     $app->post('/api/product-category', [$productCategoryController, 'createProductCategory']);
     $app->put('/api/product-category/{id}', [$productCategoryController, 'updateProductCategory']);
     $app->delete('/api/product-category/{id}', [$productCategoryController, 'deleteProductCategory']);
+    // country-category Routes
+    $app->get('/api/country-category/{id}', [$countryCategoryController, 'getCountryCategoryById']);
+    $app->get('/api/country-category', [$countryCategoryController, 'getCountriesCategory']);
+    $app->post('/api/country-category', [$countryCategoryController, 'createCountryCategory']);
+    $app->put('/api/country-category/{id}', [$countryCategoryController, 'updateCountryCategory']);
+    $app->delete('/api/country-category/{id}', [$countryCategoryController, 'deleteCountryCategory']);
 
     // product-size Routes
     $app->get('/api/product-size/{id}', [$productSizeController, 'getProductSizeById']);

@@ -8,11 +8,9 @@ interface MathInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
 const MathInput = React.forwardRef<HTMLInputElement, MathInputProps>(
   ({ className, value: propValue, onChange, onBlur, onEvaluate, placeholder, ...props }, ref) => {
     const [isMathMode, setIsMathMode] = React.useState(false)
-    const [localValue, setLocalValue] = React.useState(propValue ?? "")
-
-    React.useEffect(() => {
-      setLocalValue(propValue ?? "")
-    }, [propValue])
+    
+    // Don't maintain local state, just use propValue directly
+    const currentValue = propValue ?? ""
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (e.key === "`") {
@@ -24,18 +22,17 @@ const MathInput = React.forwardRef<HTMLInputElement, MathInputProps>(
       if (isMathMode && e.key === "Enter") {
         e.preventDefault()
         try {
-          const result = eval(localValue.toString())
+          const result = eval(currentValue.toString())
           const resultStr = String(result)
-          setLocalValue(resultStr)
 
-          // Trigger form update
+          // Create synthetic event with evaluated result
           const syntheticEvent = {
-            ...e,
             target: { value: resultStr },
-          } as unknown as React.ChangeEvent<HTMLInputElement>
+          } as React.ChangeEvent<HTMLInputElement>
 
           onChange?.(syntheticEvent)
           onEvaluate?.(result)
+          setIsMathMode(false)
         } catch {
           onEvaluate?.("Invalid Expression")
         }
@@ -45,7 +42,6 @@ const MathInput = React.forwardRef<HTMLInputElement, MathInputProps>(
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-      setLocalValue(e.target.value)
       onChange?.(e)
     }
 
@@ -55,7 +51,7 @@ const MathInput = React.forwardRef<HTMLInputElement, MathInputProps>(
           {...props}
           ref={ref}
           type="text"
-          value={localValue}
+          value={currentValue}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
           onBlur={onBlur}

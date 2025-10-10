@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ProductSection } from "@/lib/types";
-import { useForm as rhf, Controller,useFormContext } from "react-hook-form";
+import { useForm as rhf, Controller,useFormContext,useWatch } from "react-hook-form";
 
 // Handle date-fns import with try-catch to avoid TypeScript errors
 let format: (date: Date | number, format: string) => string;
@@ -156,11 +156,7 @@ const Annexure = ({
       }
     }, [hydrated,isDraftMode]);
   // Load all form data from localStorage on component mount
-  // useEffect(() => {
-  //   if (currentFormId) {
-  //     ensureFormDataFromLocalStorage(currentFormId);
-  //   }
-  // }, [currentFormId, ensureFormDataFromLocalStorage]);
+ 
 
   // Function to save a field to localStorage
   const saveFieldToLocalStorage = (field: string, value: any) => {
@@ -262,12 +258,16 @@ const Annexure = ({
     }
     return res.data.data;
   }
-  let containerData = invoice.products.containers 
+ const containerData = useWatch({
+  control,
+  name: "invoice.products.containers",
+  defaultValue: []
+});
   useEffect(() => {
     // Calculate total from container info if available
     // console.log(containerData);
     
-    if (containerData) {
+    if (containerData && containerData.length > 0) {
       const totalNet = containerData
         .reduce((sum, row) => sum + parseFloat(row.net_weight || "0"), 0)
         .toFixed(0);
@@ -294,6 +294,9 @@ const Annexure = ({
       setNetWeight(totalNet);
       setGrossWeight(totalGross);
       setTotalPackages(totalQty.toString());
+      setValue('annexure.net_weight', totalNet);
+    setValue('annexure.gross_weight', totalGross);
+    setValue('annexure.total_packages', totalQty.toString());
 
       // Initialize container sizes based on packaging list data
       setContainerSizes(
@@ -303,14 +306,8 @@ const Annexure = ({
       // Initialize manufacturer selection
       setSelectedManufacturer("DEMO VITRIFIED PVT LTD");
     }
-  }, []);
+  }, [containerData,setValue]);
 
-  // useEffect(() => {
-  //   // Update manufacturer data when selection changes
-  //   if (selectedManufacturer && manufacturers[selectedManufacturer]) {
-  //     setManufacturerData(manufacturers[selectedManufacturer]);
-  //   }
-  // }, [selectedManufacturer]);
 
   // Handle form submission - navigate to VGM form
   const handleSave = async (data) => {
@@ -337,7 +334,7 @@ const Annexure = ({
     newSizes[index] = size;
     setContainerSizes(newSizes);
   };
-
+  
   const handleSupplierSelect = (value: string) => {
     const selectedSupplier = availableSuppliers.find((s) => s.name === value);
     const updatedManufacturerData = {
@@ -352,10 +349,10 @@ const Annexure = ({
     
     setManufacturerData(updatedManufacturerData);
     setValue("annexure.exam_date", examDate);
-    setValue("annexure.net_weight", netWeight);
+   
     setValue("annexure.invoice_date", invoiceDate);
     setValue("annexure.total_packages", totalPackages);
-    setValue("annexure.gross_weight", grossWeight);
+    
     setValue("annexure.lut_date", lutDate);
     // Save to localStorage
     setValue("annexure.range", range);
@@ -427,6 +424,8 @@ const Annexure = ({
       non_containerized: sealType1,
       containerized: sealType2,
     });
+    setValue("annexure.net_weight", netWeight);
+    setValue("annexure.gross_weight", grossWeight);
   }, [
     range,
     division,

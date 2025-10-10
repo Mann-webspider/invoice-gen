@@ -32,6 +32,7 @@ import { parse, isValid, format } from "date-fns";
 import MarksAndNumbers from "@/components/MarksAndNumbers";
 import { useForm } from "@/context/FormContext";
 import { Navigate, useNavigate } from "react-router-dom";
+import { useFieldArray,useWatch } from 'react-hook-form';
 // Handle date-fns import with proper TypeScript handling
 let format: (date: Date | number, format: string) => string;
 
@@ -46,6 +47,7 @@ import api from "@/lib/axios";
 import { useDraftForm } from "@/hooks/useDraftForm";
 import { nanoid } from "nanoid"; 
 import { MathInput } from "@/components/ui/mathInput";
+import { useMemo } from "react";
 
 
 
@@ -65,12 +67,39 @@ const PackagingList = ({
     methods,
     isDraftMode: location.pathname.includes("/drafts/"),
   });
-  const { register, watch, handleSubmit ,getValues,setValue} = methods ;
-
+  const { register, watch, handleSubmit ,getValues,setValue,control} = methods ;
+const { fields, append, remove,replace } = useFieldArray({
+  control, // from useForm()
+  name: "invoice.products.containers"
+});
  
+const watchedContainers = useWatch({
+  control,
+  name: "invoice.products.containers",
+  defaultValue: []
+});
   // console.log(getValues());
 
- 
+ // Calculate totals using useMemo for performance
+const containerTotals = useMemo(() => {
+   if (!watchedContainers) return {
+    totalQuantity: 0,
+    totalNetWeight: '0.00',
+    totalGrossWeight: '0.00'
+  };
+  
+  return {
+    totalQuantity: watchedContainers.reduce((sum, c) => 
+      sum + (parseInt(c?.quantity) || 0), 0
+    ),
+    totalNetWeight: watchedContainers.reduce((sum, c) => 
+      sum + (parseFloat(c?.net_weight) || 0), 0
+    ).toFixed(2),
+    totalGrossWeight: watchedContainers.reduce((sum, c) => 
+      sum + (parseFloat(c?.gross_weight) || 0), 0
+    ).toFixed(2),
+  };
+}, [watchedContainers]);
   async function onBack2(){
     if(location.pathname.includes("/drafts/")){
       let res = await saveDraft({ last_page: 'packing-list' });
@@ -92,9 +121,6 @@ const [formData, setFormData] = useState(null);
   const [containerType, setContainerType] = useState<string>("FCL");
  
   // Get current form ID for localStorage
-  const currentFormId =
-    formData?.invoice.invoice_number 
-
 
 
  
@@ -539,19 +565,7 @@ const [formData, setFormData] = useState(null);
 
   // Add state for the total pallet number instead of the full text
   const [totalPalletCount, setTotalPalletCount] = useState<string>("");
-  // dummy values
-  const [containerRows, setContainerRows] = useState([
-    {
-      id: "1",
-      containerNo: "",
-      lineSealNo: "",
-      rfidSeal: "",
-      designNo: "",
-      quantity: 0,
-      netWeight: "",
-      grossWeight: "",
-    },
-  ]);
+
   useEffect(() => {
   
   // if (!hydrated) return;
@@ -559,27 +573,23 @@ const [formData, setFormData] = useState(null);
   // console.log("Form Draft:", formDraft?.containerRows?.length != 0);
   
   setFormData(()=>formDraft);
-setContainerRows(prev => 
-  (formDraft?.containerRows?.length ?? 0) !== 0 
-    ? formDraft.containerRows 
-    : prev
-);
 
 
+     if (formDraft.invoice?.products?.containers) {
+        replace(formDraft.invoice.products.containers);
+      }
 
   setTotalPalletCount(formDraft?.totalPallet || "");
 }, [hydrated]);
- useEffect(()=>{
-    setValue("containerRows", containerRows);
-    setValue("totalPallet", totalPalletCount);
-  },[containerRows,totalPalletCount])
+
   // Add new container row
   const addContainerRow = () => {
     let newRow: ContainerInfo;
-
+  
+    
     // If there are existing rows, copy values from the last row
-    if (containerRows.length > 0) {
-      const lastRow = containerRows[containerRows.length - 1];
+    if (fields.length > 0) {
+      const lastRow =watchedContainers[fields.length - 1];
       newRow = {
         id: nanoid(),
         containerNo: lastRow.containerNo,
@@ -603,74 +613,20 @@ setContainerRows(prev =>
         grossWeight: "",
       };
     }
-
-    const updatedRows = [...containerRows, newRow];
-    setContainerRows(updatedRows);
+  
+    append(newRow)
     
   };
 
   // Remove container row
   const removeContainerRow = (id: string) => {
-    const updatedRows = containerRows.filter((row) => row.id !== id);
-    setContainerRows(updatedRows);
+    const index = fields.findIndex(field => field.id === id);
+  if (index !== -1) {
+    remove(index);
+  }
     
-
-    
   };
 
-  // Calculate total weight from container rows
-  const calculateTotalWeight = (
-    rows: ContainerInfo[],
-    weightField: "netWeight" | "grossWeight"
-  ): string => {
-    const total = rows.reduce((sum, row) => {
-      const weight = parseFloat(row[weightField] || "0");
-      return isNaN(weight) ? sum : sum + weight;
-    }, 0);
-    return total.toString();
-  };
-
-  // Update container field
-  const updateContainerField = (
-    id: string,
-    field: keyof ContainerInfo,
-    value: any
-  ) => {
-    setContainerRows((currentRows) => {
-      const updatedRows = currentRows.map((row) =>
-        row.id === id ? { ...row, [field]: value } : row
-      );
-
-      // Save container rows to localStorage
-      
-
-      // If updating weights, also save them separately
-     
-
-      return updatedRows;
-    });
-  };
-
-  // Container type is already declared above
-
- 
-
-  // Add a handler for when the marks and numbers change
-  const handleMarksAndNumbersChange = (value: string) => {
-    if (value === "LCL") {
-      setContainerType("LCL");
-      setMarkParts(["", "", "LCL"]);
-      
-    } else {
-      // Parse the value in the format "10X20 FCL"
-      const parts = value.match(/^(\d+)X(\d+)\s+(\w+)$/);
-      if (parts) {
-        setContainerType(parts[3]);
-        setMarkParts([parts[1], parts[2], parts[3]]);
-       
-      }
-    }
-  };
 
 
 
@@ -1483,84 +1439,60 @@ setContainerRows(prev =>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {containerRows.map((row, index) => (
+                    {fields.map((row, index) => (
                       <TableRow key={row.id}>
                         <TableCell className="border p-0">
                           <Input
-                            value={row.containerNo}
+                            defaultValue={row.containerNo}
                             {...register(
                               `invoice.products.containers.${index}.container_no`,
                               {
                                 required: true,
                               }
                             )}
-                            onChange={(e) =>
-                              updateContainerField(
-                                row.id,
-                                "containerNo",
-                                e.target.value
-                              )
-                            }
+                           
                             className="h-10 border-0 text-center bg-white w-full"
                             placeholder="Enter container no."
                           />
                         </TableCell>
                         <TableCell className="border p-0">
                           <Input
-                            value={row.lineSealNo}
+                            defaultValue={row.lineSealNo}
                             {...register(
                               `invoice.products.containers.${index}.line_seal_no`,
                               {
                                 required: true,
                               }
                             )}
-                            onChange={(e) =>
-                              updateContainerField(
-                                row.id,
-                                "lineSealNo",
-                                e.target.value
-                              )
-                            }
+                            
                             className="h-10 border-0 text-center bg-white w-full"
                             placeholder="Enter line seal no."
                           />
                         </TableCell>
                         <TableCell className="border p-0">
                           <Input
-                            value={row.rfidSeal}
+                            defaultValue={row.rfidSeal}
                             {...register(
                               `invoice.products.containers.${index}.rfid_seal`,
                               {
                                 required: true,
                               }
                             )}
-                            onChange={(e) =>
-                              updateContainerField(
-                                row.id,
-                                "rfidSeal",
-                                e.target.value
-                              )
-                            }
+                          
                             className="h-10 border-0 text-center bg-white w-full"
                             placeholder="Enter RFID seal"
                           />
                         </TableCell>
                         <TableCell className="border p-0">
                           <Input
-                            value={row.designNo}
+                            defaultValue={row.designNo}
                             {...register(
                               `invoice.products.containers.${index}.design_no`,
                               {
                                 required: true,
                               }
                             )}
-                            onChange={(e) =>
-                              updateContainerField(
-                                row.id,
-                                "designNo",
-                                e.target.value
-                              )
-                            }
+                            
                             className="h-10 border-0 text-center bg-white w-full"
                             placeholder="Enter design no."
                           />
@@ -1568,71 +1500,68 @@ setContainerRows(prev =>
                         <TableCell className="border p-0">
                           <Input
                             type="text"
-                            value={row.quantity}
+                            defaultValue={row.quantity}
                             {...register(
                               `invoice.products.containers.${index}.quantity`,
                               {
                                 required: true,
                               }
                             )}
-                            onChange={(e) =>
-                              updateContainerField(
-                                row.id,
-                                "quantity",
-                                parseInt(e.target.value) || ""
-                              )
-                            }
+                          
                             className="h-10 border-0 text-center bg-white w-full"
                             placeholder="Enter quantity"
                           />
                         </TableCell>
                         <TableCell className="border p-0">
-                          <MathInput
-                          type={"text"}
-                            value={row.netWeight}
-                            {...register(
-                              `invoice.products.containers.${index}.net_weight`,
-                              {
-                                required: true,
-                              }
-                            )}
-                            onChange={(e) =>
-                              updateContainerField(
-                                row.id,
-                                "netWeight",
-                                e.target.value
-                              )
-                            }
-                            className="h-10 border-0 text-center bg-white w-full"
-                            placeholder="Enter net weight"
-                          />
+                          <TableCell className="border p-0">
+  <Controller
+    control={control}
+    name={`invoice.products.containers.${index}.net_weight`}
+    defaultValue={fields.net_weight || ''}
+    render={({ field: inputField }) => {
+     
+      
+      return (
+        <MathInput
+          type="text"
+          value={inputField.value || ''}
+          onChange={inputField.onChange}
+          onBlur={inputField.onBlur}
+          className="h-10 border-0 text-center bg-white w-full"
+          placeholder="Enter net weight"
+        />
+      );
+    }}
+  />
+</TableCell>
+
                         </TableCell>
                         <TableCell className="border p-0">
-                          <MathInput
-                          type={"text"}
-                            value={row.grossWeight}
-                            {...register(
-                              `invoice.products.containers.${index}.gross_weight`,
-                              {
-                                required: true,
-                              }
-                            )}
-                            onChange={(e) =>
-                              updateContainerField(
-                                row.id,
-                                "grossWeight",
-                                e.target.value
-                              )
-                            }
-                            className="h-10 border-0 text-center bg-white w-full"
-                            placeholder="Enter gross weight"
-                          />
+                            <Controller
+    control={control}
+    name={`invoice.products.containers.${index}.gross_weight`}
+    defaultValue={fields.gross_weight || ''}
+    render={({ field: inputField }) => {
+      
+      
+      return (
+        <MathInput
+          type="text"
+          value={inputField.value || ''}
+          onChange={inputField.onChange}
+          onBlur={inputField.onBlur}
+          className="h-10 border-0 text-center bg-white w-full"
+          placeholder="Enter gross weight"
+        />
+      );
+    }}
+  />
                         </TableCell>
                         <TableCell className="border p-0 text-center">
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => removeContainerRow(row.id)}
+                            onClick={() => {removeContainerRow(row.id)}}
                           >
                             <Trash className="h-4 w-4" />
                           </Button>
@@ -1658,14 +1587,11 @@ setContainerRows(prev =>
                             TOTAL PALLET -
                           </span>
                           <Input
-                            value={totalPalletCount}
+                            defaultValue={totalPalletCount}
                             {...register("invoice.products.total_pallet_count", {
                               required: false,
                             })}
-                            onChange={(e) => {
-                              setTotalPalletCount(e.target.value);
-                             
-                            }}
+                            
                             className="h-8 border-0 text-center bg-gray-300 font-bold w-14 p-0 mx-1"
                           />
                           <span className="text-[16px] text-center font-bold">
@@ -1674,28 +1600,13 @@ setContainerRows(prev =>
                         </div>
                       </TableCell>
                       <TableCell className="text-[16px] text-center font-bold">
-                        {containerRows.reduce(
-                          (sum, row) => sum + row.quantity,
-                          0
-                        )}
+                        {containerTotals.totalQuantity}
                       </TableCell>
                       <TableCell className="text-[16px] text-center font-bold">
-                        {containerRows
-                          .reduce(
-                            (sum, row) =>
-                              sum + parseFloat(row.netWeight || "0"),
-                            0
-                          )
-                          .toFixed(2)}
+                         {containerTotals.totalNetWeight}
                       </TableCell>
                       <TableCell className="text-[16px] text-center font-bold">
-                        {containerRows
-                          .reduce(
-                            (sum, row) =>
-                              sum + parseFloat(row.grossWeight || "0"),
-                            0
-                          )
-                          .toFixed(2)}
+                       {containerTotals.totalGrossWeight}
                       </TableCell>
                       <TableCell className="border bg-gray-50"></TableCell>
                     </TableRow>
@@ -1747,9 +1658,9 @@ setContainerRows(prev =>
                 
                 save
               </Button>
-              <Button onClick={() => console.log(getValues())}>
+              {/* <Button onClick={() => console.log(getValues())}>
                 Debug Form
-              </Button>
+              </Button> */}
               <Button variant="default" onClick={handleSubmit(handleNext)}>
                 Next
               </Button>
