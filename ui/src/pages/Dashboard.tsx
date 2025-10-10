@@ -656,7 +656,9 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
       <div className="grid grid-cols-1 gap-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="w-full relative shadow-sm border border-gray-100">
-            <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
+
+          <CardHeader className="border-b pb-3 flex justify-center">
+            <div className="flex items-center gap-x-2">
               <CardTitle>Invoices</CardTitle>
               <Button size="sm" className="rounded-full w-8 h-8 p-0" asChild>
                 <Link to="/invoice">
@@ -664,7 +666,21 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
                   <span className="sr-only">Add Invoice</span>
                 </Link>
               </Button>
-            </CardHeader>
+            </div>
+          </CardHeader>
+
+
+
+            {/* PLUS BUTTON SARU LAGTU TU E CODE */}
+            {/* <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
+              <CardTitle>Invoices</CardTitle>
+              <Button size="sm" className="rounded-full w-8 h-8 p-0" asChild>
+                <Link to="/invoice">
+                  <Plus className="h-4 w-4" />
+                  <span className="sr-only">Add Invoice</span>
+                </Link>
+              </Button>
+            </CardHeader> */}
             <CardContent className="pt-4">
               {loading ? (
                 <div className="flex justify-center items-center h-40">

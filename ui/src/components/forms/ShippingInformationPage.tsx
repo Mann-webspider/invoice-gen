@@ -60,37 +60,62 @@ const ShippingInformationPage = ({
   } = useFormContext({shouldFocusError: false,});
   const shippingForm = watch("invoice.shipping");
   const [paymentField, setPaymentField] = useState("");
+    const [countryData, setCountryData] = useState([]); // Store full country data
+  const [availableFinalDestinations, setAvailableFinalDestinations] = useState([]); // Dynamic final destinations
+
+
   async function getShipping() {
     let res = await api.get("/all-dropdowns");
     if (res.status !== 200) {
       return "error";
     }
+   
+   
     return res.data.data;
   }
-  // useEffect(() => {
-    
-      
-  //     setValue("invoice.shipping.currency_rate", "88.45");
-    
-  // }, []);
+  async function getCountryCategory() {
+     let res = await api.get("/country-category");
+    if (res.status !== 200) {
+      return "error";
+    }
+   
+   console.log(res.data.data);
+   
+    return res.data.data;
+  }
 
-  // useEffect(() => {
-  //   const subscribe = watch((value) => {
-  //     console.log(value);
-  //   });
-  //   return () => subscribe.unsubscribe();
-  // }, [watch]);
+   // Function to find paired final destination for a port of discharge
+  const findPairedDestination = (selectedPort) => {
+    const pairedData = countryData.find(item => item.port_of_discharge === selectedPort);
+    return pairedData ? pairedData.final_destination : null;
+  };
+
+  // Function to get all unique final destinations for dropdown
+  const getAllFinalDestinations = () => {
+    const allDestinations = countryData.map(item => item.final_destination);
+    return [...new Set(allDestinations)];
+  };
+
 
   useEffect(() => {
     (async () => {
       try {
         const shipping_res = await getShipping();
+        const countryCategory = await getCountryCategory();
+        console.log(shipping_res);
+        // console.log(countryCategory);
 
+        const finalDestinations = countryCategory.map(item => item.final_destination);
+        const portsOfDischarge = countryCategory.map(item => item.port_of_discharge);
+        // console.log(portsOfDischarge);
+        
+        setCountryData(countryCategory); // Store full country data for later use
         setPlacesOfReceipt(shipping_res.place_of_receipt);
         setPortsOfLoading(shipping_res.port_of_loading);
-        setPortsOfDischarge(shipping_res.port_of_discharge);
-        setFinalDestinations(shipping_res.final_destination);
-        setCountriesOfFinalDestination(shipping_res.final_destination);
+        setPortsOfDischarge([...new Set(portsOfDischarge)]); // Remove duplicates
+        setFinalDestinations([...new Set(finalDestinations)]); // Remove duplicates
+        setAvailableFinalDestinations([...new Set(finalDestinations)]);
+        setCountriesOfFinalDestination(shipping_res.country_of_final_destination);
       } catch (error) {
         // Failed to fetch shipping - handled silently
         // console.log(error);
@@ -222,6 +247,15 @@ const ShippingInformationPage = ({
                     field.onChange(value); // update RHF value
                     setPortOfDischarge(value); // optional: local state
 
+
+                     // Find paired final destination
+                    const pairedDestination = findPairedDestination(value);
+                    if (pairedDestination) {
+                      // Auto-select the paired final destination
+                      setValue("invoice.shipping.final_destination", pairedDestination);
+                      // Also set country of final destination to the same value
+                      setValue("invoice.shipping.country_of_final_destination", pairedDestination);
+                    }
                     // Update Terms of Delivery if payment terms are CIF or CNF
                     if (paymentTerms === "CIF") {
                       setValue("invoice.shipping.terms_of_delivery",`CIF AT ${value}`);
@@ -265,7 +299,7 @@ const ShippingInformationPage = ({
                     <SelectValue placeholder="Select place of final Destination" />
                   </SelectTrigger>
                   <SelectContent>
-                    {finalDestinations.map((place) => (
+                    {availableFinalDestinations.map((place) => (
                       <SelectItem key={place} value={place}>
                         {place}
                       </SelectItem>
@@ -339,7 +373,8 @@ const ShippingInformationPage = ({
                     <SelectValue placeholder="Select place of country final Destination" />
                   </SelectTrigger>
                   <SelectContent>
-                    {countriesOfFinalDestination.map((place) => (
+                    {/* Show both the paired destinations and the original countries list */}
+                    {[...new Set([...availableFinalDestinations, ...countriesOfFinalDestination])].map((place) => (
                       <SelectItem key={place} value={place}>
                         {place}
                       </SelectItem>

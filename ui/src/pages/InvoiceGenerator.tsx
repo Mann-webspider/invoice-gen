@@ -855,40 +855,19 @@ useEffect(() => {
 
           
           {/* Exporter Information */}
-         <Accordion
-  type="multiple" // Allows multiple to be open at once
-  defaultValue={[
-    "exporter",
-    "buyer",
-    "shipping",
-    "product",
-    "package",
-    "supplier",
-  ]}
-  className="w-full space-y-2"
->
-  <AccordionItem value="exporter">
-    <AccordionTrigger>Exporter Information</AccordionTrigger>
-    <AccordionContent>
+        
       <ExporterInfo
         exporters={exporters}
         invoiceNo={invoiceNo}
         setExporters={setExporters}
         form={form}
       />
-    </AccordionContent>
-  </AccordionItem>
-
-  <AccordionItem value="buyer">
-    <AccordionTrigger>Buyer Information</AccordionTrigger>
-    <AccordionContent>
+   
+ 
       <BuyerInformationCard form={form} />
-    </AccordionContent>
-  </AccordionItem>
+   
 
-  <AccordionItem value="shipping">
-    <AccordionTrigger>Shipping Information</AccordionTrigger>
-    <AccordionContent>
+ 
       <ShippingInformationPage
         preCarriageBy={preCarriageBy}
         setPreCarriageBy={setPreCarriageBy}
@@ -915,12 +894,8 @@ useEffect(() => {
         currencies={currencies}
         form={form}
       />
-    </AccordionContent>
-  </AccordionItem>
 
-  <AccordionItem value="product">
-    <AccordionTrigger>Product Information</AccordionTrigger>
-    <AccordionContent>
+ 
       <ProductInformation
         addNewSection={addNewSection}
         sections={sections}
@@ -955,12 +930,8 @@ useEffect(() => {
         form={form}
         hydrated={hydrated}
       />
-    </AccordionContent>
-  </AccordionItem>
+   
 
-  <AccordionItem value="package">
-    <AccordionTrigger>Package Information</AccordionTrigger>
-    <AccordionContent>
       <PackageInfoSection
         paymentTerms={paymentTerms}
         selectedCurrency={selectedCurrency}
@@ -977,29 +948,24 @@ useEffect(() => {
         currencyRate={currencyRate}
         form={form}
       />
-    </AccordionContent>
-  </AccordionItem>
+  
 
-  <AccordionItem value="supplier">
-    <AccordionTrigger>Supplier Details</AccordionTrigger>
-    <AccordionContent>
+
       <SupplierDetails
         suppliers={suppliers}
         setSuppliers={setSuppliers}
         integratedTaxOption={integratedTaxOption}
         form={form}
       />
-    </AccordionContent>
-  </AccordionItem>
-</Accordion>
+  
 
           {/* Footer Buttons */}
           <Card className="mt-6">
             <CardFooter className="flex justify-end gap-4">
               {/* debug  */}
-              <Button onClick={() => console.log(getValues())}>
+              {/* <Button onClick={() => console.log(getValues())}>
                 Debug Form
-              </Button>
+              </Button> */}
               <Button onClick={saveDraft}>
                 <ArrowRight className="mr-2 h-4 w-4" />
                 save

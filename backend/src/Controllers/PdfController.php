@@ -88,7 +88,9 @@ class PdfController
             'WORKSHEET_COPY.xlsx', 
             'PACKING_LIST.xlsx',
             'ANNEXURE.xlsx',
-            'VGM.xlsx'
+            'VGM.xlsx',
+            'CI.xlsx',
+            'PL.xlsx'
         ];
        
     }else{
@@ -96,7 +98,9 @@ class PdfController
             'CUSTOM_INVOICE.xlsx',
             'PACKING_LIST.xlsx',
             'ANNEXURE.xlsx',
-            'VGM.xlsx'
+            'VGM.xlsx',
+            'CI.xlsx',
+            'PL.xlsx'
         ];
     
     }

@@ -47,6 +47,62 @@ function round3(num: number): number {
     return Math.round(num * 10000) / 10000;
 }
 
+
+
+// Convert full names and address to initials except for numbers
+function convertNamesToInitials(input: string): string {
+    // Split into lines
+    const lines = input.split("\n");
+
+    return lines
+        .map(line => {
+            // If the line is a number → ignore
+            if (/^\d+$/.test(line.trim())) {
+                return line;
+            }
+
+            // If the line contains spaces (likely a name)
+            if (/^[A-Za-z\s]+$/.test(line.trim())) {
+                return line
+                    .trim()
+                    .split(/\s+/) // split by spaces
+                    .map(word => word[0].toUpperCase() + ".") // take first letter + .
+                    .join(" "); // join with space
+            }
+
+            // Otherwise, keep as-is (address or other text)
+            return line;
+        })
+        .join("\n"); // join back all parts
+}
+
+
+
+// Format names to initials for names, keep numbers and addresses intact
+function formatNames(input: string): string {
+    const parts = input.split("\n");
+    const result: string[] = [];
+
+    for (let i = 0; i < parts.length; i += 3) {
+        const name = parts[i]?.trim();
+        const number = parts[i + 1]?.trim();
+        const address = parts[i + 2]?.trim();
+
+        // Convert only the name into initials (T. S. / S. R. V.)
+        const initials = name
+            ? name
+                .split(/\s+/)
+                .map((word) => word[0].toUpperCase() + ".")
+                .join(" ")
+            : "";
+
+        result.push(initials, number, address);
+    }
+
+    return result.join("\n");
+}
+
+
 // /**
 //  * Replace any date separator with the desired one.
 //  * @param dateStr - The input date string in any format like "25/04/2004" or "25-04-2004"
@@ -88,6 +144,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     let poNo = data.buyer.po_number === "-" ? "" : data.buyer.po_number;
     let consignee = data.buyer.consignee || "";
     let notifyParty = data.buyer.notify_party || "";
+    let formattedNotifyParty = convertNamesToInitials(notifyParty);
+
     let preCarriage = data.shipping.pre_carriage === "-" ? "" : data.shipping.pre_carriage;
     let vassalFlightNo = data.shipping.vessel_flight_no === "-" ? "" : data.shipping.vessel_flight_no;
     let placeOfReceipt = data.shipping.place_of_receipt || "";
@@ -582,7 +640,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     worksheet.getCell('A13').font = { bold: true, underline: true };
 
     worksheet.mergeCells('A14:N19');
-    worksheet.getCell('A14').value = `${consignee}`;
+    worksheet.getCell('A14').value = `TO THE ORDER`;
     worksheet.getCell('A14').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('A13:N19', worksheet);
 
@@ -592,7 +650,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     worksheet.getCell('O13').font = { bold: true };
 
     worksheet.mergeCells('O14:AA19');
-    worksheet.getCell('O14').value = `${notifyParty}`;
+    worksheet.getCell('O14').value = `${formattedNotifyParty}`;
     worksheet.getCell('O14').font = { bold: true };
     worksheet.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('O13:AA19', worksheet, 'medium'); // Removalble
@@ -1451,7 +1509,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
         worksheet.mergeCells('AA' + row + ':AA' + (row + 1));
         if (termsOfDeliveryMain === "CIF -> FOB") {
-            worksheet.getCell('AA' + row).value = { formula: `ROUND(AA${row + 4} - ${insurance} - ${freight}, 2)`, result: 0 };
+            worksheet.getCell('AA' + row).value = { formula: `ROUND(SUM(AA${row + 2}:AA${row + 4}), 2)`, result: 0 };
         } else {
             worksheet.getCell('AA' + row).value = { formula: `ROUND(SUM(AA28:AA${row - 1}), 2)`, result: 0 };
         }        // worksheet.getCell('AA' + row).value = {
@@ -1496,7 +1554,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
         worksheet.mergeCells('Y' + row + ':AA' + (row + 1));
         if (termsOfDeliveryMain === "CIF -> FOB") {
-            worksheet.getCell('Y' + row).value = { formula: `ROUND(Y${row + 4} - ${insurance} - ${freight}, 2)`, result: 0 };
+            worksheet.getCell('Y' + row).value = { formula: `ROUND(SUM(Y${row + 2}:Y${row + 4}), 2)`, result: 0 };
         } else {
             worksheet.getCell('Y' + row).value = { formula: `ROUND(SUM(Y30:Y${row - 1}), 2)`, result: 0 };
         }
@@ -2331,7 +2389,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         worksheetCopy.getCell('A13').font = { bold: true, underline: true };
 
         worksheetCopy.mergeCells('A14:N19');
-        worksheetCopy.getCell('A14').value = `${consignee}`;
+        worksheetCopy.getCell('A14').value = `TO THE ORDER`;
         worksheetCopy.getCell('A14').alignment = { wrapText: true, vertical: 'top' };
         setOuterBorder('A13:N19', worksheetCopy);
 
@@ -2341,7 +2399,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         worksheetCopy.getCell('O13').font = { bold: true };
 
         worksheetCopy.mergeCells('O14:AA19');
-        worksheetCopy.getCell('O14').value = `${notifyParty}`;
+        worksheetCopy.getCell('O14').value = `${formattedNotifyParty}`;
         worksheetCopy.getCell('O14').font = { bold: true };
         worksheetCopy.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
         setOuterBorder('O13:AA19', worksheetCopy, 'medium'); // Removalble
@@ -4139,7 +4197,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     packingList.getCell('A12').font = { bold: true };
 
     packingList.mergeCells('A13:M18');
-    packingList.getCell('A13').value = `${consignee}`;
+    packingList.getCell('A13').value = `TO THE ORDER`;
     packingList.getCell('A13').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('A12:M18', packingList);
 
@@ -4149,7 +4207,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     packingList.getCell('N12').font = { bold: true };
 
     packingList.mergeCells('N13:AA18');
-    packingList.getCell('N13').value = `${notifyParty}`;
+    packingList.getCell('N13').value = `${formattedNotifyParty}`;
     packingList.getCell('N13').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('N12:AA18', packingList);
 
@@ -4399,7 +4457,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
             packingList.mergeCells('Q' + row + ':U' + row);
             packingList.getCell('Q' + row).value = products[i][2];
-            packingList.getCell('Q' + row).font = { bold: true, underline: true };
+            packingList.getCell('Q' + row).font = { bold: true };
             packingList.getCell('Q' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
             setOuterBorder('Q' + row + ':U' + row, packingList);
 
@@ -5953,6 +6011,2202 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const customerInvoiceWorkbook = new ExcelJS.Workbook();
+    const customerInvoice = customerInvoiceWorkbook.addWorksheet('CI');
+
+    if (signatureUrl) {
+
+        const { buffer, extension, width, height } = await loadImageBuffer(signatureUrl);
+        signature = customerInvoiceWorkbook.addImage({
+            buffer: buffer,
+            extension: extension,
+        });
+        vgnSignatureW = width;
+        vgnSignatureH = height;
+
+    }
+    
+
+    customerInvoiceWorkbook.calcProperties.fullCalcOnLoad = true;
+    customerInvoice.getColumn(1).width = 5;
+    customerInvoice.getCell('A1').value = worksheet.getCell('A1').value || ' ';
+    configurePrintSheet(customerInvoice);
+    customerInvoice.getColumn(17).hidden = true;
+
+
+    customerInvoice.mergeCells('A1:AA1');
+    customerInvoice.getCell('A1').value = 'COMMERCIAL INVOICE';
+    customerInvoice.getCell('A1').font = { bold: true };
+    customerInvoice.getCell('A1').alignment = { horizontal: 'center' };
+    setOuterBorder('A1:AA1', customerInvoice);
+
+    // ✅ Red note below title
+    customerInvoice.mergeCells('A2:AA2');
+    // if (taxStatus === "without") {
+    //   customerInvoice.getCell('A2').value = '“SUPPLY MEANT FOR EXPORT UNDER BOND & LUT- LETTER OF UNDERTAKING WITHOUT PAYMENT OF INTEGRATED TAX”';
+    // } else if (taxStatus === "with") {
+    //   customerInvoice.getCell('A2').value = '“SUPPLY MEANT FOR EXPORT WITH PAYMENT OF INTEGRATED TAX (IGST)”';
+    // }
+    // // customerInvoice.getCell('A2').font = { bold: true, color: { argb: 'FFFF0000' } };
+    // customerInvoice.getCell('A2').font = { bold: true, italic: true };
+    // customerInvoice.getCell('A2').alignment = { horizontal: 'center' };
+    setOuterBorder('A2:AA2', customerInvoice);
+    customerInvoice.getRow(2).hidden = true;
+
+    // ✅ Exporter Info
+    customerInvoice.mergeCells('A3:N3');
+    customerInvoice.getCell('A3').value = `EXPORTER:`;
+    customerInvoice.getCell('A3').alignment = { wrapText: true, vertical: 'top' };
+    customerInvoice.getCell('A3').font = { bold: true, underline: true };
+
+    customerInvoice.mergeCells('A4:N10');
+    customerInvoice.getCell('A4').value = `${companyName}\n${companyAddress}`;
+    customerInvoice.getCell('A4').alignment = { wrapText: true, vertical: 'top' };
+    customerInvoice.getCell('A4').font = { bold: true };
+    setOuterBorder('A4:N10', customerInvoice);
+
+    // ✅ Email & Tax No
+
+    customerInvoice.mergeCells('A11:B11');
+    customerInvoice.getCell('A11').value = `EMAIL:`;
+    customerInvoice.getCell('A11').font = { bold: true };
+    customerInvoice.getCell('A11').alignment = { wrapText: true };
+
+    customerInvoice.mergeCells('A12:B12');
+    customerInvoice.getCell('A12').value = `TAX ID:`;
+    customerInvoice.getCell('A12').font = { bold: true };
+    customerInvoice.getCell('A12').alignment = { wrapText: true };
+
+    customerInvoice.mergeCells('C11:N11');
+    customerInvoice.getCell('C11').value = email;
+    customerInvoice.getCell('C11').alignment = { wrapText: true };
+
+    customerInvoice.mergeCells('C12:N12');
+    customerInvoice.getCell('C12').value = taxid;
+    customerInvoice.getCell('C12').alignment = { wrapText: true };
+    setOuterBorder('A11:N12', customerInvoice);
+
+    // ✅ Invoice No. & Date
+    customerInvoice.mergeCells('O3:T3');
+    customerInvoice.getCell('O3').value = "Invoice No. & Date:";
+    customerInvoice.getCell('O3').font = { bold: true };
+    customerInvoice.getCell('O3').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('O4:T4');
+    customerInvoice.getCell('O4').value = `${invoiceNo}`;
+
+    customerInvoice.mergeCells('O5:T5');
+    customerInvoice.getCell('O5').value = `Dt. ${invoiceDate}`;
+
+    setOuterBorder('O3:T5', customerInvoice);
+
+    // ✅ Exporter's Ref
+    customerInvoice.mergeCells('U3:AA3');
+    customerInvoice.getCell('U3').value = "Exporter’s Ref.:";
+    customerInvoice.getCell('U3').font = { bold: true };
+
+    customerInvoice.mergeCells('U4:AA12');
+    customerInvoice.getCell('U4').value = `I. E. Code #: ${ieCode}\nPAN No #: ${panNo}\nGSTIN No #: ${gstinNo}\nSTATE CODE : ${stateCode}`;
+    customerInvoice.getCell('U4').alignment = { wrapText: true, vertical: 'top' };
+    setOuterBorder('U3:AA12', customerInvoice);
+
+    // ✅ Buyer's Order No
+    customerInvoice.mergeCells('O6:T6');
+    customerInvoice.getCell('O6').value = "Buyer's Order no. & Date";
+    customerInvoice.getCell('O6').font = { bold: true };
+
+    customerInvoice.mergeCells('O7:T8');
+    customerInvoice.getCell('O7').value = `${buyersOrderNo}    ${buyersOrderDate}`;
+    customerInvoice.getCell('O7').alignment = { wrapText: true, vertical: 'top' };
+
+    customerInvoice.mergeCells('O12:T12');
+    customerInvoice.getCell('O12').value = `PO No: ${poNo}`;
+    setOuterBorder('O6:T12', customerInvoice);
+
+    // ✅ Consignee
+    customerInvoice.mergeCells('A13:N13');
+    customerInvoice.getCell('A13').value = "Consignee:";
+    customerInvoice.getCell('A13').font = { bold: true, underline: true };
+
+    customerInvoice.mergeCells('A14:N19');
+    customerInvoice.getCell('A14').value = `${consignee}`;
+    customerInvoice.getCell('A14').alignment = { wrapText: true, vertical: 'top' };
+    setOuterBorder('A13:N19', customerInvoice);
+
+    // ✅ Notify Party
+    customerInvoice.mergeCells('O13:AA13');
+    customerInvoice.getCell('O13').value = "Notify Party # :";
+    customerInvoice.getCell('O13').font = { bold: true };
+
+    customerInvoice.mergeCells('O14:AA19');
+    customerInvoice.getCell('O14').value = `${notifyParty}`;
+    customerInvoice.getCell('O14').font = { bold: true };
+    customerInvoice.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
+    setOuterBorder('O13:AA19', customerInvoice, 'medium'); // Removalble
+
+    customerInvoice.mergeCells('A20:G20');
+    customerInvoice.getCell('A20').value = 'Pre-Carriage By';
+    // customerInvoice.getCell('A20').font = { bold: true };
+    customerInvoice.getCell('A20').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('A21:G21');
+    customerInvoice.getCell('A21').value = `${preCarriage}`;
+    customerInvoice.getCell('A21').font = { color: { argb: 'FFFF0000' }, bold: true };
+    customerInvoice.getCell('A21').alignment = { horizontal: 'center' };
+    setOuterBorder('A20:G21', customerInvoice);
+
+    customerInvoice.mergeCells('H20:N20');
+    customerInvoice.getCell('H20').value = "Place of Receipt by Pre-Carrier";
+    // customerInvoice.getCell('H20').font = { bold: true };
+    customerInvoice.getCell('H20').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('H21:N21');
+    customerInvoice.getCell('H21').value = `${placeOfReceipt}`;
+    customerInvoice.getCell('H21').font = { color: { argb: 'FFFF0000' }, bold: true };
+    customerInvoice.getCell('H21').alignment = { horizontal: 'center' };
+    setOuterBorder('H20:N21', customerInvoice);
+
+    customerInvoice.mergeCells('O20:V20');
+    // customerInvoice.getCell('O20').value = `Country of Origin of Goods : ${countryOfOrigin}`;
+    customerInvoice.getCell('O20').value = {
+        richText: [
+            { text: 'Country of Origin of Goods : ', font: { bold: false } },
+            // { text: countryOfOrigin, font: { bold: true } }
+            { text: "INDIA", font: { bold: true } }
+        ]
+    };
+    customerInvoice.getCell('O20').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('O21:V21');
+    // customerInvoice.getCell('O21').value = `ORIGIN : ${origin}`;
+    customerInvoice.getCell('O21').value = `ORIGIN : DISTRICT MORBI, STATE GUJARAT`;
+    customerInvoice.getCell('O21').font = { bold: true };
+    customerInvoice.getCell('O21').alignment = { horizontal: 'center' };
+    setOuterBorder('O20:V21', customerInvoice);
+
+    customerInvoice.mergeCells('W20:AA20');
+    customerInvoice.getCell('W20').value = "Country of Final Destination";
+    customerInvoice.getCell('W20').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('W21:AA21');
+    customerInvoice.getCell('W21').value = `${finalDestination}`;
+    customerInvoice.getCell('W21').font = { bold: true };
+    customerInvoice.getCell('W21').alignment = { horizontal: 'center' };
+    setOuterBorder('W20:AA21', customerInvoice);
+
+    customerInvoice.mergeCells('A22:G22');
+    customerInvoice.getCell('A22').value = 'Vessel Flight No.';
+    // customerInvoice.getCell('A22').font = { bold: true };
+    customerInvoice.getCell('A22').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('A23:G23');
+    customerInvoice.getCell('A23').value = `${vassalFlightNo}`;
+    customerInvoice.getCell('A23').font = { color: { argb: 'FFFF0000' }, bold: true };
+    customerInvoice.getCell('A23').alignment = { horizontal: 'center' };
+    setOuterBorder('A22:G23', customerInvoice);
+
+    customerInvoice.mergeCells('H22:N22');
+    customerInvoice.getCell('H22').value = "Port of Loading";
+    // customerInvoice.getCell('H22').font = { bold: true };
+    customerInvoice.getCell('H22').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('H23:N23');
+    customerInvoice.getCell('H23').value = `${portOfLoading}`;
+    customerInvoice.getCell('H23').font = { color: { argb: 'FFFF0000' }, bold: true };
+    customerInvoice.getCell('H23').alignment = { horizontal: 'center' };
+    setOuterBorder('H22:N23', customerInvoice);
+
+    customerInvoice.mergeCells('A24:G24');
+    customerInvoice.getCell('A24').value = 'Port of Discharge';
+    // customerInvoice.getCell('A24').font = { bold: true };
+    customerInvoice.getCell('A24').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('A25:G26');
+    customerInvoice.getCell('A25').value = `${portOfDischarge}`;
+    customerInvoice.getCell('A25').font = { color: { argb: 'FFFF0000' }, bold: true };
+    customerInvoice.getCell('A25').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('A24:G26', customerInvoice);
+
+    customerInvoice.mergeCells('H24:N24');
+    customerInvoice.getCell('H24').value = "Final Destination";
+    // customerInvoice.getCell('H24').font = { bold: true };
+    customerInvoice.getCell('H24').alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('H25:N26');
+    customerInvoice.getCell('H25').value = `${finalDestination}`;
+    customerInvoice.getCell('H25').font = { color: { argb: 'FFFF0000' }, bold: true };
+    customerInvoice.getCell('H25').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('H24:N26', customerInvoice);
+
+    customerInvoice.mergeCells('O22:AA22');
+    customerInvoice.getCell('O22').value = "Terms of Delivery & Payment :-";
+    customerInvoice.getCell('O22').font = { bold: true };
+
+    customerInvoice.mergeCells('O23:AA23');
+    if (termsOfDelivery === "FOB") {
+        customerInvoice.getCell('O23').value = termsOfDeliveryMainAt;
+    } else {
+        customerInvoice.getCell('O23').value = termsOfDeliveryMainAt;
+    }
+    customerInvoice.getCell('O23').font = { color: { argb: 'FFFF0000' } };
+
+    customerInvoice.mergeCells('O24:AA25');
+    customerInvoice.getCell('O24').value = `PAYMENT : ${paymentTerms}`;
+    customerInvoice.getCell('O24').font = { name: 'Arial', color: { argb: 'FFFF0000' } };
+    customerInvoice.getCell('O24').alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
+
+    customerInvoice.mergeCells('O26:U26');
+    customerInvoice.getCell('O26').value = shippingMethod;
+    setOuterBorder('O22:AA26', customerInvoice);
+
+    // if (type !== "tiles") {
+    //   customerInvoice.mergeCells('W26:Y26');
+    //   customerInvoice.getCell('W26').value = `${currency} RATE:`;
+    //   customerInvoice.getCell('W26').alignment = { horizontal: 'center' };
+    //   customerInvoice.getCell('W26').font = { bold: true };
+
+    //   customerInvoice.mergeCells('Z26:AA26');
+    //   customerInvoice.getCell('Z26').value = currencyRate;
+    //   // customerInvoice.getCell('Z26').fill = {
+    //   //     type: 'pattern',
+    //   //     pattern: 'solid',
+    //   //     fgColor: { argb: 'FFFFFF00' }, // Yellow fill
+    //   // };
+    //   customerInvoice.getCell('Z26').alignment = { horizontal: 'center' };
+    //   customerInvoice.getCell('Z26').font = { bold: true };
+    //   setOuterBorder('W26:AA26', customerInvoice, 'medium');
+    // } else {
+    //   customerInvoice.mergeCells('V26:X26');
+    //   customerInvoice.getCell('V26').value = `${currency} RATE:`;
+    //   customerInvoice.getCell('V26').alignment = { horizontal: 'center' };
+    //   customerInvoice.getCell('V26').font = { bold: true };
+
+    //   customerInvoice.mergeCells('Y26:AA26');
+    //   customerInvoice.getCell('Y26').value = currencyRate;
+    //   customerInvoice.getCell('Y26').alignment = { horizontal: 'center' };
+    //   // customerInvoice.getCell('Y26').fill = {
+    //   //     type: 'pattern',
+    //   //     pattern: 'solid',
+    //   //     fgColor: { argb: 'FFFFFF00' }, // Yellow fill
+    //   // };
+    //   customerInvoice.getCell('Y26').font = { bold: true };
+    //   setOuterBorder('V26:AA26', customerInvoice, 'medium');
+    // }
+
+    customerInvoice.mergeCells('A27:D27');
+    customerInvoice.getCell('A27').value = "Marks & Nos.";
+    customerInvoice.getCell('A27').font = { bold: true };
+    customerInvoice.getCell('A27').alignment = { horizontal: 'center' };
+
+    if (containerType === 'FCL') {
+        customerInvoice.mergeCells('A28:D28');
+        customerInvoice.getCell('A28').value = `${marksAndNos} ${containerType}`;
+        customerInvoice.getCell('A28').font = { bold: true };
+        customerInvoice.getCell('A28').alignment = { horizontal: 'center' };
+        setOuterBorder('A27:D28', customerInvoice, 'medium');
+    } else {
+        customerInvoice.mergeCells('A28:D28');
+        customerInvoice.getCell('A28').value = `${containerType}`;
+        customerInvoice.getCell('A28').font = { bold: true };
+        customerInvoice.getCell('A28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('A27:D28', customerInvoice, 'medium');
+    }
+    customerInvoice.getRow(28).height = 24;
+
+    customerInvoice.mergeCells('E27:Q28');
+    customerInvoice.getCell('E27').value = "Description of Goods";
+    customerInvoice.getCell('E27').font = { bold: true };
+    customerInvoice.getCell('E27').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('E27:Q28', customerInvoice, 'medium');
+
+    if (type !== "tiles") {
+        customerInvoice.getCell('R27').value = "SIZE";
+        customerInvoice.getCell('R27').font = { bold: true };
+        customerInvoice.getCell('R27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.getCell('R28').value = "MM";
+        customerInvoice.getCell('R28').font = { bold: true };
+        customerInvoice.getCell('R28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('R27:R28', customerInvoice, 'medium');
+
+        customerInvoice.mergeCells('S27:T27')
+        customerInvoice.getCell('S27').value = "QUANTITY";
+        customerInvoice.getCell('S27').font = { bold: true };
+        customerInvoice.getCell('S27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.mergeCells('S28:T28')
+        customerInvoice.getCell('S28').value = packegingType;
+        customerInvoice.getCell('S28').font = { bold: true };
+        customerInvoice.getCell('S28').alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('S27:T28', customerInvoice, 'medium');
+        if (packegingType.length > 8) {
+            customerInvoice.getCell('S28').font = { size: 8, bold: true };
+        }
+
+        customerInvoice.mergeCells('U27:V27')
+        customerInvoice.getCell('U27').value = "UNIT TYPE";
+        customerInvoice.getCell('U27').font = { bold: true };
+        customerInvoice.getCell('U27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.mergeCells('U28:V28')
+        customerInvoice.getCell('U28').value = packegingType;
+        customerInvoice.getCell('U28').font = { bold: true };
+        customerInvoice.getCell('U28').alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('U27:V28', customerInvoice, 'medium');
+
+        customerInvoice.mergeCells('W27:X27')
+        customerInvoice.getCell('W27').value = "SQM/";
+        customerInvoice.getCell('W27').font = { bold: true };
+        customerInvoice.getCell('W27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.mergeCells('W28:X28')
+        customerInvoice.getCell('W28').value = unitOfIt;
+        customerInvoice.getCell('W28').font = { bold: true };
+        customerInvoice.getCell('W28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('W27:X28', customerInvoice, 'medium');
+
+        customerInvoice.getCell('Y27').value = "TOTAL";
+        customerInvoice.getCell('Y27').font = { bold: true };
+        customerInvoice.getCell('Y27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.getCell('Y28').value = "SQM";
+        customerInvoice.getCell('Y28').font = { bold: true };
+        customerInvoice.getCell('Y28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Y27:Y28', customerInvoice, 'medium');
+
+        customerInvoice.getCell('Z27').value = "PRICE/";
+        customerInvoice.getCell('Z27').font = { bold: true };
+        customerInvoice.getCell('Z27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.getCell('Z28').value = "SQM";
+        customerInvoice.getCell('Z28').font = { bold: true };
+        customerInvoice.getCell('Z28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Z27:Z28', customerInvoice, 'medium');
+
+        customerInvoice.getCell('AA27').value = "AMOUNT";
+        customerInvoice.getCell('AA27').font = { bold: true };
+        customerInvoice.getCell('AA27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.getCell('AA28').value = `IN (${currency})`;
+        customerInvoice.getCell('AA28').font = { bold: true };
+        customerInvoice.getCell('AA28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('AA27:AA28', customerInvoice, 'medium');
+    }
+    else {
+        customerInvoice.mergeCells('R27:S27')
+        customerInvoice.getCell('R27').value = "QUANTITY";
+        customerInvoice.getCell('R27').font = { bold: true };
+        customerInvoice.getCell('R27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.mergeCells('R28:S28')
+        customerInvoice.getCell('R28').value = "PKGS";
+        customerInvoice.getCell('R28').font = { bold: true };
+        customerInvoice.getCell('R28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('R27:S28', customerInvoice);
+
+        customerInvoice.mergeCells('T27:U27')
+        customerInvoice.getCell('T27').value = "UNIT TYPE";
+        customerInvoice.getCell('T27').font = { bold: true };
+        customerInvoice.getCell('T27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.mergeCells('T28:U28')
+        customerInvoice.getCell('T28').value = packegingType;
+        customerInvoice.getCell('T28').font = { bold: true };
+        customerInvoice.getCell('T28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('T27:U28', customerInvoice);
+        if (packegingType.length > 8) {
+            customerInvoice.getCell('T28').font = { size: 8, bold: true };
+        }
+
+        customerInvoice.mergeCells('V27:X27')
+        customerInvoice.getCell('V27').value = "RATE PER";
+        customerInvoice.getCell('V27').font = { bold: true };
+        customerInvoice.getCell('V27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.mergeCells('V28:X28')
+        customerInvoice.getCell('V28').value = `UNIT (${currency})`;
+        customerInvoice.getCell('V28').font = { bold: true };
+        customerInvoice.getCell('V28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('V27:X28', customerInvoice);
+
+        customerInvoice.mergeCells('Y27:AA27')
+        customerInvoice.getCell('Y27').value = "AMOUNT/";
+        customerInvoice.getCell('Y27').font = { bold: true };
+        customerInvoice.getCell('Y27').alignment = { horizontal: 'center', vertical: 'middle' };
+
+        customerInvoice.mergeCells('Y28:AA28')
+        customerInvoice.getCell('Y28').value = `IN (${currency})`;
+        customerInvoice.getCell('Y28').font = { bold: true };
+        customerInvoice.getCell('Y28').alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Y27:AA28', customerInvoice);
+    }
+    if (packegingType.length > 6) {
+        customerInvoice.getRow(28).height = 36;
+    }
+
+    customerInvoice.getCell('A29').value = "SR NO.";
+    customerInvoice.getCell('A29').font = { bold: true };
+    customerInvoice.getCell('A29').alignment = { horizontal: 'center', vertical: 'middle' };
+    customerInvoice.getCell('A29').border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } },
+    };
+
+    customerInvoice.mergeCells('B29:D29');
+    customerInvoice.getCell('B29').value = "HSN CODE";
+    customerInvoice.getCell('B29').font = { bold: true };
+    customerInvoice.getCell('B29').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('B29:D29', customerInvoice);
+
+    // Table saction
+
+    srNo = 1;
+    row = 28;
+    // hsnCode: number;
+    // allProductsType: string;
+    for (let i = 0; i < products.length; i++) {
+        if (type !== "tiles") {
+            row++;
+            if (products[i].length === 2) {
+                customerInvoice.mergeCells('E' + row + ':Q' + row);
+                customerInvoice.getCell('E' + row).value = products[i][0];
+                // customerInvoice.getCell('E' + row).fill = {
+                //     type: 'pattern',
+                //     pattern: 'solid',
+                //     fgColor: { argb: 'FFFFCC99' }, // Light orange / peach
+                // };
+                customerInvoice.getCell('E' + row).font = { bold: true, size: 12 };
+                customerInvoice.getCell('E' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getRow(row).height = 46;
+                setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+                hsnCode = Number(products[i][1]);
+                if (i == 0) {
+                    allProductsType = String(products[i][0]);
+                }
+                else {
+                    allProductsType += '/' + String(products[i][0]);
+                }
+
+                if (i !== 0) {
+                    customerInvoice.getCell('A' + row).border = {
+                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                        left: { style: 'thin', color: { argb: 'FF000000' } },
+                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        right: { style: 'thin', color: { argb: 'FF000000' } },
+                    };
+
+                    setOuterBorder('B' + row + ':D' + row, customerInvoice);
+                }
+                setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+
+                customerInvoice.getCell('R' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+                setOuterBorder('S' + row + ':T' + row, customerInvoice);
+                setOuterBorder('U' + row + ':V' + row, customerInvoice);
+                setOuterBorder('W' + row + ':X' + row, customerInvoice);
+
+                customerInvoice.getCell('Y' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+                customerInvoice.getCell('Z' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+                customerInvoice.getCell('AA' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+            } else {
+
+                customerInvoice.getCell('A' + row).value = srNo;
+                customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getCell('A' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+                srNo++;
+
+                customerInvoice.mergeCells('B' + row + ':D' + row);
+                customerInvoice.getCell('B' + row).value = hsnCode;
+                customerInvoice.getCell('B' + row).font = { bold: true };
+                customerInvoice.getCell('B' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('B' + row + ':D' + row, customerInvoice);
+
+                customerInvoice.mergeCells('E' + row + ':Q' + row);
+                customerInvoice.getCell('E' + row).value = products[i][0];
+                customerInvoice.getCell('E' + row).font = { size: 12 };
+                customerInvoice.getCell('E' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+                if (String(products[i][0]).length > 56) {
+                    customerInvoice.getRow(row).height = 36;
+                }
+
+                if (products[i][1] === "-") {
+                    customerInvoice.getCell('R' + row).value = "-";
+                } else {
+                    customerInvoice.getCell('R' + row).value = products[i][1];
+                }
+                customerInvoice.getCell('R' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getCell('R' + row).font = { size: 12 };
+                customerInvoice.getCell('R' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+                customerInvoice.mergeCells('S' + row + ':T' + row);
+                customerInvoice.getCell('S' + row).value = products[i][2];
+                customerInvoice.getCell('S' + row).font = { size: 12 };
+                customerInvoice.getCell('S' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('S' + row + ':T' + row, customerInvoice);
+
+                customerInvoice.mergeCells('U' + row + ':V' + row);
+                customerInvoice.getCell('U' + row).value = products[i][3];
+                customerInvoice.getCell('U' + row).font = { size: 12 };
+                customerInvoice.getCell('U' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('U' + row + ':V' + row, customerInvoice);
+
+                customerInvoice.mergeCells('W' + row + ':X' + row);
+                if (products[i][4] === "-") {
+                    customerInvoice.getCell('W' + row).value = "-";
+                } else {
+                    customerInvoice.getCell('W' + row).value = products[i][4];
+                }
+                customerInvoice.getCell('W' + row).font = { size: 12 };
+                customerInvoice.getCell('W' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('W' + row + ':X' + row, customerInvoice);
+
+                if (products[i][5] === "-") {
+                    customerInvoice.getCell('Y' + row).value = "-";
+                } else {
+                    if (products[i][4] === "-") {
+                        if (products[i][5] === "" || products[i][5] === 0) {
+                            customerInvoice.getCell('Y' + row).value = "-";
+                        } else {
+                            customerInvoice.getCell('Y' + row).value = products[i][5];
+                        }
+                    } else {
+                        customerInvoice.getCell('Y' + row).value = { formula: `S${row}*W${row}`, result: 0 };
+                    }
+                }
+                customerInvoice.getCell('Y' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getCell('Y' + row).font = { size: 12 };
+                customerInvoice.getCell('Y' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+                customerInvoice.getCell('Z' + row).value = products[i][6];
+                customerInvoice.getCell('Z' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getCell('Z' + row).font = { size: 12 };
+                customerInvoice.getCell('Z' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+                customerInvoice.getCell('Z' + row).numFmt = '0.00';
+
+                // customerInvoice.getCell('AA' + row).value = products[i][7];
+                if (products[i][1] === "-") {
+                    if (products[i][5] === "" || products[i][5] === 0) {
+                        customerInvoice.getCell('AA' + row).value = { formula: `ROUND(S${row}*Z${row}, 2)`, result: 0 };
+                    } else {
+                        customerInvoice.getCell('AA' + row).value = { formula: `ROUND(Y${row}*Z${row}, 2)`, result: 0 };
+                    }
+                } else {
+                    customerInvoice.getCell('AA' + row).value = { formula: `ROUND(Y${row}*Z${row}, 2)`, result: 0 };
+                }
+                customerInvoice.getCell('AA' + row).numFmt = '0.00';
+                customerInvoice.getCell('AA' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getCell('AA' + row).font = { size: 12 };
+                customerInvoice.getCell('AA' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+            }
+        }
+        else {
+            row++;
+            if (products[i].length === 2) {
+                customerInvoice.mergeCells('E' + row + ':Q' + row);
+                customerInvoice.getCell('E' + row).value = products[i][0];
+                // customerInvoice.getCell('E' + row).fill = {
+                //     type: 'pattern',
+                //     pattern: 'solid',
+                //     fgColor: { argb: 'FFFFCC99' }, // Light orange / peach
+                // };
+
+                customerInvoice.getCell('E' + row).font = { bold: true, size: 12 };
+                customerInvoice.getCell('E' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getRow(row).height = 46;
+                setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+                hsnCode = Number(products[i][1]);
+                if (i == 0) {
+                    allProductsType = String(products[i][0]);
+                }
+                else {
+                    allProductsType += '/' + String(products[i][0]);
+                }
+
+                if (i !== 0) {
+                    customerInvoice.getCell('A' + row).border = {
+                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                        left: { style: 'thin', color: { argb: 'FF000000' } },
+                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        right: { style: 'thin', color: { argb: 'FF000000' } },
+                    };
+
+                    setOuterBorder('B' + row + ':D' + row, customerInvoice);
+                }
+                setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+
+                setOuterBorder('R' + row + ':S' + row, customerInvoice);
+                setOuterBorder('T' + row + ':U' + row, customerInvoice);
+                setOuterBorder('V' + row + ':X' + row, customerInvoice);
+                setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+
+            } else {
+                customerInvoice.getCell('A' + row).value = srNo;
+                customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                customerInvoice.getCell('A' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+                srNo++;
+
+                customerInvoice.mergeCells('B' + row + ':D' + row);
+                customerInvoice.getCell('B' + row).value = hsnCode;
+                customerInvoice.getCell('B' + row).font = { bold: true };
+                customerInvoice.getCell('B' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('B' + row + ':D' + row, customerInvoice);
+
+                customerInvoice.mergeCells('E' + row + ':Q' + row);
+                customerInvoice.getCell('E' + row).value = products[i][0];
+                customerInvoice.getCell('E' + row).font = { size: 12 };
+                customerInvoice.getCell('E' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+                if (String(products[i][0]).length > 56) {
+                    customerInvoice.getRow(row).height = 36;
+                }
+
+                customerInvoice.mergeCells('R' + row + ':S' + row);
+                customerInvoice.getCell('R' + row).value = products[i][2];
+                customerInvoice.getCell('R' + row).font = { size: 12 };
+                customerInvoice.getCell('R' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('R' + row + ':S' + row, customerInvoice);
+
+                customerInvoice.mergeCells('T' + row + ':U' + row);
+                customerInvoice.getCell('T' + row).value = products[i][3];
+                customerInvoice.getCell('T' + row).font = { size: 12 };
+                customerInvoice.getCell('T' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('T' + row + ':U' + row, customerInvoice);
+
+                customerInvoice.mergeCells('V' + row + ':X' + row);
+                customerInvoice.getCell('V' + row).value = products[i][6];
+                customerInvoice.getCell('V' + row).numFmt = '0.00';
+                customerInvoice.getCell('V' + row).font = { size: 12 };
+                customerInvoice.getCell('V' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('V' + row + ':X' + row, customerInvoice);
+
+                customerInvoice.mergeCells('Y' + row + ':AA' + row);
+                // customerInvoice.getCell('Y' + row).value = products[i][7];
+                customerInvoice.getCell('Y' + row).value = { formula: `ROUND(R${row}*V${row}, 2)`, result: 0 };
+                customerInvoice.getCell('Y' + row).numFmt = '0.00';
+                customerInvoice.getCell('Y' + row).font = { size: 12 };
+                customerInvoice.getCell('Y' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+            }
+        }
+    }
+
+    row++;
+    customerInvoice.mergeCells('A' + row + ':D' + (row + 3));
+    setOuterBorder('A' + row + ':D' + (row + 3), customerInvoice);
+
+    skipRow = 2;
+    addSkipRow = 3;
+    if (taxStatus == "with") {
+        skipRow = 2;
+        addSkipRow = 3;
+    }
+    if (type !== "tiles") {
+        for (let i = 0; i < skipRow; i++) {
+            setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+
+            customerInvoice.getCell('R' + row).border = {
+                top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+                bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                right: { style: 'thin', color: { argb: 'FF000000' } },
+            };
+
+            setOuterBorder('S' + row + ':T' + row, customerInvoice);
+            setOuterBorder('U' + row + ':V' + row, customerInvoice);
+            setOuterBorder('W' + row + ':X' + row, customerInvoice);
+
+            customerInvoice.getCell('Y' + row).border = {
+                top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+                bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                right: { style: 'thin', color: { argb: 'FF000000' } },
+            };
+
+            customerInvoice.getCell('Z' + row).border = {
+                top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+                bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                right: { style: 'thin', color: { argb: 'FF000000' } },
+            };
+
+            customerInvoice.getCell('AA' + row).border = {
+                top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+                bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                right: { style: 'thin', color: { argb: 'FF000000' } },
+            };
+            row++;
+        }
+
+        customerInvoice.mergeCells('R' + row + ':R' + (row + addSkipRow));
+        setOuterBorder('R' + row + ':R' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('S' + row + ':T' + (row + addSkipRow));
+        setOuterBorder('S' + row + ':T' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('U' + row + ':V' + (row + addSkipRow));
+        setOuterBorder('U' + row + ':V' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('W' + row + ':X' + (row + addSkipRow));
+        setOuterBorder('W' + row + ':X' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('Y' + row + ':Y' + (row + addSkipRow));
+        setOuterBorder('Y' + row + ':Y' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('Z' + row + ':Z' + (row + addSkipRow));
+        setOuterBorder('Z' + row + ':Z' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('AA' + row + ':AA' + (row + addSkipRow));
+        setOuterBorder('AA' + row + ':AA' + (row + addSkipRow), customerInvoice);
+    }
+    else {
+        for (let i = 0; i < skipRow; i++) {
+            setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+
+            setOuterBorder('R' + row + ':S' + row, customerInvoice);
+            setOuterBorder('T' + row + ':U' + row, customerInvoice);
+            setOuterBorder('V' + row + ':X' + row, customerInvoice);
+            setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+            row++;
+        }
+
+        customerInvoice.mergeCells('R' + row + ':S' + (row + addSkipRow));
+        setOuterBorder('R' + row + ':S' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('T' + row + ':U' + (row + addSkipRow));
+        setOuterBorder('T' + row + ':U' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('V' + row + ':X' + (row + addSkipRow));
+        setOuterBorder('V' + row + ':X' + (row + addSkipRow), customerInvoice);
+        customerInvoice.mergeCells('Y' + row + ':AA' + (row + addSkipRow));
+        setOuterBorder('Y' + row + ':AA' + (row + addSkipRow), customerInvoice);
+    }
+
+    if (taxStatus == "with") {
+        // customerInvoice.mergeCells('E' + row + ':Q' + row);
+        //   customerInvoice.getCell('E' + row).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
+        //   customerInvoice.getCell('E' + row).font = { name: 'Arial' };
+        //   customerInvoice.getCell('E' + row).alignment = { horizontal: 'center' };
+        // setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+        // row++;
+    }
+
+    // customerInvoice.mergeCells('E' + row + ':Q' + row);
+    // customerInvoice.getCell('E' + row).value = "Export Under Duty Drawback Scheme";
+    // customerInvoice.getCell('E' + row).font = { bold: true };
+    // customerInvoice.getCell('E' + row).alignment = { horizontal: 'center' };
+    // setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+    // row++;
+
+    // customerInvoice.mergeCells('E' + row + ':Q' + (row + 1));
+    // customerInvoice.getCell('E' + row).value = "I/we shall claim under chapter 3 incentive of FTP as admissible at time policy in force - MEIS, RODTEP ";
+    // customerInvoice.getCell('E' + row).font = { bold: true };
+    // customerInvoice.getCell('E' + row).alignment = { wrapText: true, horizontal: 'center' };
+    // setOuterBorder('E' + row + ':Q' + (row + 1), customerInvoice);
+    // row += 2;
+
+    customerInvoice.mergeCells('E' + row + ':Q' + (row + 1));
+    setOuterBorder('E' + row + ':Q' + (row + 1), customerInvoice);
+    row += 2;
+
+    if (type !== 'tiles') {
+        customerInvoice.mergeCells('A' + row + ':E' + row);
+        customerInvoice.getCell('A' + row).value = "NET WT. (KGS): ";
+        customerInvoice.getCell('A' + row).font = { underline: true };
+        customerInvoice.getCell('A' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('A' + row + ':E' + row, customerInvoice);
+
+        customerInvoice.mergeCells('F' + row + ':H' + row);
+        customerInvoice.getCell('F' + row).value = netWeight;
+        customerInvoice.getCell('F' + row).numFmt = '0.00';
+        // customerInvoice.getCell('F' + row).fill = {
+        //     type: 'pattern',
+        //     pattern: 'solid',
+        //     fgColor: { argb: 'FFFFFF00' },
+        // };
+        customerInvoice.getCell('F' + row).font = { bold: true, underline: true };
+        customerInvoice.getCell('F' + row).alignment = { horizontal: 'left' };
+        setOuterBorder('F' + row + ':H' + row, customerInvoice);
+
+        customerInvoice.mergeCells('I' + row + ':Q' + row);
+        setOuterBorder('I' + row + ':Q' + row, customerInvoice);
+        row++;
+
+        customerInvoice.mergeCells('A' + row + ':E' + row);
+        customerInvoice.getCell('A' + row).value = "GROSS WT.(KGS): ";
+        customerInvoice.getCell('A' + row).font = { underline: true };
+        customerInvoice.getCell('A' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('A' + row + ':E' + row, customerInvoice);
+
+        customerInvoice.mergeCells('F' + row + ':H' + row);
+        customerInvoice.getCell('F' + row).value = grossWeight;
+        customerInvoice.getCell('F' + row).numFmt = '0.00';
+        // customerInvoice.getCell('F' + row).fill = {
+        //     type: 'pattern',
+        //     pattern: 'solid',
+        //     fgColor: { argb: 'FFFFFF00' },
+        // };
+        customerInvoice.getCell('F' + row).font = { bold: true, underline: true };
+        customerInvoice.getCell('F' + row).alignment = { horizontal: 'left' };
+        setOuterBorder('F' + row + ':H' + row, customerInvoice);
+
+        customerInvoice.mergeCells('I' + row + ':Q' + row);
+        setOuterBorder('I' + row + ':Q' + row, customerInvoice);
+        row++;
+    } else {
+        customerInvoice.mergeCells('A' + row + ':D' + row);
+        customerInvoice.getCell('A' + row).value = "NET WT. (KGS): ";
+        customerInvoice.getCell('A' + row).font = { underline: true };
+        customerInvoice.getCell('A' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('A' + row + ':D' + row, customerInvoice);
+
+        customerInvoice.mergeCells('E' + row + ':G' + row);
+        customerInvoice.getCell('E' + row).value = netWeight;
+        customerInvoice.getCell('E' + row).numFmt = '0.00';
+        // customerInvoice.getCell('E' + row).fill = {
+        //     type: 'pattern',
+        //     pattern: 'solid',
+        //     fgColor: { argb: 'FFFFFF00' },
+        // };
+        customerInvoice.getCell('E' + row).font = { bold: true, underline: true };
+        customerInvoice.getCell('E' + row).alignment = { horizontal: 'left' };
+        setOuterBorder('E' + row + ':G' + row, customerInvoice);
+
+        customerInvoice.mergeCells('H' + row + ':Q' + row);
+        setOuterBorder('H' + row + ':Q' + row, customerInvoice);
+        row++;
+
+        customerInvoice.mergeCells('A' + row + ':D' + row);
+        customerInvoice.getCell('A' + row).value = "GROSS WT.(KGS): ";
+        customerInvoice.getCell('A' + row).font = { underline: true };
+        customerInvoice.getCell('A' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('A' + row + ':D' + row, customerInvoice);
+
+        customerInvoice.mergeCells('E' + row + ':G' + row);
+        customerInvoice.getCell('E' + row).value = grossWeight;
+        customerInvoice.getCell('E' + row).numFmt = '0.00';
+        // customerInvoice.getCell('E' + row).fill = {
+        //     type: 'pattern',
+        //     pattern: 'solid',
+        //     fgColor: { argb: 'FFFFFF00' },
+        // };
+        customerInvoice.getCell('E' + row).font = { bold: true, underline: true };
+        customerInvoice.getCell('E' + row).alignment = { horizontal: 'left' };
+        setOuterBorder('E' + row + ':G' + row, customerInvoice);
+
+        customerInvoice.mergeCells('H' + row + ':Q' + row);
+        setOuterBorder('H' + row + ':Q' + row, customerInvoice);
+        row++;
+    }
+
+    customerInvoice.mergeCells('A' + row + ':G' + row);
+    customerInvoice.getCell('A' + row).value = "Nos. of Kind Packages";
+    customerInvoice.getCell('A' + row).font = { bold: true };
+    customerInvoice.getCell('A' + row).alignment = { horizontal: 'center' };
+
+    customerInvoice.mergeCells('H' + row + ':Q' + (row + 1));
+    customerInvoice.getCell('H' + row).value = "Total     >>>>>>>>>>";
+    customerInvoice.getCell('H' + row).font = { bold: true };
+    customerInvoice.getCell('H' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('H' + row + ':Q' + (row + 1), customerInvoice);
+
+    if (type !== "tiles") {
+        setOuterBorder('R' + row + ':R' + (row + 1), customerInvoice);
+
+        customerInvoice.mergeCells('S' + row + ':T' + row);
+        customerInvoice.getCell('S' + row).value = { formula: `SUM(S30:S${row - 1})`, result: 0 };
+        ;
+        customerInvoice.getCell('S' + row).font = { bold: true };
+        customerInvoice.getCell('S' + row).alignment = { horizontal: 'center' };
+
+        setOuterBorder('U' + row + ':V' + (row + 1), customerInvoice);
+
+        customerInvoice.mergeCells('W' + row + ':Y' + row);
+        customerInvoice.getCell('W' + row).value = `TOTAL SQM`;
+        customerInvoice.getCell('W' + row).font = { bold: true };
+        customerInvoice.getCell('W' + row).alignment = { horizontal: 'center' };
+
+        customerInvoice.mergeCells('W' + (row + 1) + ':Y' + (row + 1));
+        customerInvoice.getCell('W' + (row + 1)).value = { formula: `SUM(Y30:Y${row - 1})`, result: 0 };
+        ;
+        customerInvoice.getCell('W' + (row + 1)).font = { bold: true };
+        customerInvoice.getCell('W' + (row + 1)).alignment = { horizontal: 'center' };
+        setOuterBorder('W' + row + ':Y' + (row + 1), customerInvoice);
+
+        customerInvoice.mergeCells('Z' + row + ':Z' + (row + 1));
+        if (termsOfDeliveryMain === "CIF -> FOB") {
+            customerInvoice.getCell('Z' + row).value = `CIF ${currency}`;
+            // } else if (termsOfDeliveryMain === "CNF") {
+            //     customerInvoice.getCell('Z' + row).value = `TOTAL ${termsOfDelivery} ${currency}`;
+        } else {
+            customerInvoice.getCell('Z' + row).value = `${termsOfDelivery} ${currency}`;
+        }
+        customerInvoice.getCell('Z' + row).font = { bold: true };
+        customerInvoice.getCell('Z' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Z' + row + ':Z' + (row + 1), customerInvoice);
+
+        customerInvoice.mergeCells('AA' + row + ':AA' + (row + 1));
+        if (termsOfDeliveryMain === "CIF -> FOB") {
+            customerInvoice.getCell('AA' + row).value = { formula: `ROUND(SUM(AA${row + 2}:AA${row + 4}), 2)`, result: 0 };
+        } else {
+            customerInvoice.getCell('AA' + row).value = { formula: `ROUND(SUM(AA28:AA${row - 1}), 2)`, result: 0 };
+        }        // customerInvoice.getCell('AA' + row).value = {
+        //   formula: `SUM(AA30:AA${row-1})`,
+        //   result: 0, // optional static value
+        // };
+        customerInvoice.getCell('AA' + row).font = { bold: true };
+        customerInvoice.getCell('AA' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('AA' + row + ':AA' + (row + 1), customerInvoice);
+    }
+    else {
+        customerInvoice.mergeCells('R' + row + ':S' + row);
+        customerInvoice.getCell('R' + row).value = { formula: `ROUND(SUM(R30:R${row - 1}), 2)`, result: 0 };
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'center' };
+
+        customerInvoice.mergeCells('T' + row + ':U' + row);
+        customerInvoice.getCell('T' + row).value = "UNIT TYPE";
+        customerInvoice.getCell('T' + row).font = { bold: true };
+        customerInvoice.getCell('T' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('T' + row + ':U' + row, customerInvoice);
+
+        customerInvoice.mergeCells('T' + (row + 1) + ':U' + (row + 1));
+        customerInvoice.getCell('T' + (row + 1)).value = packegingType;
+        customerInvoice.getCell('T' + (row + 1)).font = { bold: true };
+        customerInvoice.getCell('T' + (row + 1)).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('T' + (row + 1) + ':U' + (row + 1), customerInvoice);
+
+        customerInvoice.mergeCells('V' + row + ':X' + (row + 1));
+        if (termsOfDeliveryMain === "CIF -> FOB") {
+            customerInvoice.getCell('V' + row).value = `CIF ${currency}`;
+            // } else if (termsOfDeliveryMain === "CNF") {
+            //     customerInvoice.getCell('V' + row).value = `TOTAL ${termsOfDelivery} ${currency}`;
+        } else {
+            customerInvoice.getCell('V' + row).value = `${termsOfDelivery} ${currency}`;
+        }
+        customerInvoice.getCell('V' + row).font = { bold: true };
+        customerInvoice.getCell('V' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('V' + row + ':X' + (row + 1), customerInvoice);
+
+
+
+        customerInvoice.mergeCells('Y' + row + ':AA' + (row + 1));
+        if (termsOfDeliveryMain === "CIF -> FOB") {
+            customerInvoice.getCell('Y' + row).value = { formula: `ROUND(SUM(Y${row + 2}:Y${row + 4}), 2)`, result: 0 };
+        } else {
+            customerInvoice.getCell('Y' + row).value = { formula: `ROUND(SUM(Y30:Y${row - 1}), 2)`, result: 0 };
+        }
+        customerInvoice.getCell('Y' + row).font = { bold: true };
+        customerInvoice.getCell('Y' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Y' + row + ':AA' + (row + 1), customerInvoice);
+    }
+    row++;
+
+    customerInvoice.mergeCells('A' + row + ':G' + row);
+    if (type !== "tiles") {
+        customerInvoice.getCell('A' + row).value = { formula: `INT(SUM(S30:S${row - 2})) & " ${unitOfIt}"`, result: `0${unitOfIt}`, };
+    }
+    else {
+        customerInvoice.getCell('A' + row).value = { formula: `INT(SUM(R30:R${row - 2})) & " ${unitOfIt}"`, result: `0${unitOfIt}`, };
+    }
+    customerInvoice.getCell('A' + row).font = { bold: true };
+    customerInvoice.getCell('A' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('A' + (row - 1) + ':G' + row, customerInvoice);
+
+    if (type !== "tiles") {
+        customerInvoice.mergeCells('S' + row + ':T' + row);
+        customerInvoice.getCell('S' + row).value = unitOfIt;
+        customerInvoice.getCell('S' + row).font = { bold: true };
+        customerInvoice.getCell('S' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('S' + (row - 1) + ':T' + row, customerInvoice);
+    }
+    else {
+        customerInvoice.mergeCells('R' + row + ':S' + row);
+        customerInvoice.getCell('R' + row).value = unitOfIt;
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('R' + (row - 1) + ':S' + row, customerInvoice);
+    }
+    row++;
+
+    customerInvoice.mergeCells('A' + row + ':Q' + row);
+    customerInvoice.getCell('A' + row).value = `TOTAL ${termsOfDelivery} ${currency}:`;
+    customerInvoice.getCell('A' + row).font = { bold: true };
+    customerInvoice.getCell('A' + row).alignment = { horizontal: 'left' };
+    setOuterBorder('A' + row + ':Q' + row, customerInvoice);
+
+    if (type === "sanitary" && termsOfDelivery === "CIF") {
+        setOuterBorder('R' + row + ':R' + row, customerInvoice);
+        setOuterBorder('S' + row + ':Y' + row, customerInvoice);
+
+        customerInvoice.mergeCells('Z' + row + ':Z' + row);
+        customerInvoice.getCell('Z' + row).value = "INSURANCE";
+        customerInvoice.getCell('Z' + row).font = { bold: true };
+        customerInvoice.getCell('Z' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Z' + row + ':Z' + row, customerInvoice);
+
+        customerInvoice.mergeCells('AA' + row + ':AA' + row);
+        customerInvoice.getCell('AA' + row).value = insurance;
+        customerInvoice.getCell('AA' + row).font = { bold: true };
+        customerInvoice.getCell('AA' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('AA' + row + ':AA' + row, customerInvoice);
+    }
+    else if (type === "tiles" && termsOfDelivery === "CIF") {
+        customerInvoice.mergeCells('R' + row + ':X' + row);
+        customerInvoice.getCell('R' + row).value = "INSURANCE";
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('R' + row + ':X' + row, customerInvoice);
+
+        customerInvoice.mergeCells('Y' + row + ':AA' + row);
+        customerInvoice.getCell('Y' + row).value = insurance;
+        customerInvoice.getCell('Y' + row).font = { bold: true };
+        customerInvoice.getCell('Y' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+    } else if (type === "sanitary") {
+        setOuterBorder('R' + row + ':R' + row, customerInvoice);
+        setOuterBorder('S' + row + ':Y' + row, customerInvoice);
+
+        customerInvoice.mergeCells('Z' + row + ':Z' + row);
+        setOuterBorder('Z' + row + ':Z' + row, customerInvoice);
+
+        customerInvoice.mergeCells('AA' + row + ':AA' + row);
+        setOuterBorder('AA' + row + ':AA' + row, customerInvoice);
+    } else if (type === "tiles") {
+        customerInvoice.mergeCells('R' + row + ':X' + row);
+        setOuterBorder('R' + row + ':X' + row, customerInvoice);
+
+        customerInvoice.mergeCells('Y' + row + ':AA' + row);
+        setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+    }
+    row++;
+
+    customerInvoice.mergeCells('A' + row + ':Q' + (row + 1));
+    customerInvoice.getCell('A' + row).value = `${amountInWords}.`;
+    // customerInvoice.getCell('A' + row).fill = {
+    //     type: 'pattern',
+    //     pattern: 'solid',
+    //     fgColor: { argb: 'FFFFFF00' },
+    // };
+
+    customerInvoice.getCell('A' + row).font = { bold: true };
+    customerInvoice.getCell('A' + row).alignment = { horizontal: 'left', vertical: 'top' };
+    setOuterBorder('A' + row + ':Q' + (row + 1), customerInvoice);
+
+    if (type === "sanitary") {
+        customerInvoice.getCell('R' + row).border = {
+            top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } },
+        };
+
+        customerInvoice.getCell('R' + (row + 1)).border = {
+            top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } },
+        };
+    }
+
+    setOuterBorder('S' + row + ':Y' + row, customerInvoice);
+
+    if (type === "sanitary" && termsOfDelivery !== "FOB") {
+        customerInvoice.mergeCells('Z' + row + ':Z' + row);
+        customerInvoice.getCell('Z' + row).value = "FREIGHT";
+        customerInvoice.getCell('Z' + row).font = { bold: true };
+        customerInvoice.getCell('Z' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Z' + row + ':Z' + row, customerInvoice);
+
+        customerInvoice.mergeCells('AA' + row + ':AA' + row);
+        customerInvoice.getCell('AA' + row).value = freight;
+        customerInvoice.getCell('AA' + row).font = { bold: true };
+        customerInvoice.getCell('AA' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('AA' + row + ':AA' + row, customerInvoice);
+    }
+    else if (type === "tiles" && termsOfDelivery !== "FOB") {
+        customerInvoice.mergeCells('R' + row + ':X' + row);
+        customerInvoice.getCell('R' + row).value = "FREIGHT";
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('R' + row + ':X' + row, customerInvoice);
+
+        customerInvoice.mergeCells('Y' + row + ':AA' + row);
+        customerInvoice.getCell('Y' + row).value = freight;
+        customerInvoice.getCell('Y' + row).font = { bold: true };
+        customerInvoice.getCell('Y' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+    } else if (type === "sanitary") {
+        customerInvoice.mergeCells('Z' + row + ':Z' + row);
+        setOuterBorder('Z' + row + ':Z' + row, customerInvoice);
+
+        customerInvoice.mergeCells('AA' + row + ':AA' + row);
+        setOuterBorder('AA' + row + ':AA' + row, customerInvoice);
+    }
+    else if (type === "tiles") {
+        customerInvoice.mergeCells('R' + row + ':X' + row);
+        setOuterBorder('R' + row + ':X' + row, customerInvoice);
+
+        customerInvoice.mergeCells('Y' + row + ':AA' + row);
+        setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+    }
+    row++;
+
+    if (type === "sanitary") {
+        customerInvoice.mergeCells('S' + row + ':Y' + row);
+        if (termsOfDeliveryMain === "CIF -> FOB") {
+            customerInvoice.getCell('S' + row).value = `TOTAL FOB ${currency}`;
+        } else {
+            customerInvoice.getCell('S' + row).value = `TOTAL ${termsOfDelivery} ${currency}`;
+        }
+        customerInvoice.getCell('S' + row).font = { bold: true };
+        customerInvoice.getCell('S' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('S' + row + ':Y' + row, customerInvoice);
+
+        if (termsOfDeliveryMain === "CIF -> FOB" || termsOfDeliveryMain === "FOB") {
+            customerInvoice.getCell('AA' + row).value = { formula: `ROUND(SUM(AA28:AA${row - 5}), 4)`, result: 0 };
+        } else {
+            customerInvoice.getCell('AA' + row).value = { formula: `ROUND(SUM(AA${row - 5}:AA${row - 1}), 4)`, result: 0 };
+        }
+        customerInvoice.getCell('AA' + row).font = { bold: true };
+        customerInvoice.getCell('AA' + row).alignment = { horizontal: 'center' };
+        customerInvoice.getCell('AA' + row).border = {
+            top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+            left: { style: 'thin', color: { argb: 'FF000000' } },
+            bottom: { style: 'thin', color: { argb: 'FF000000' } },
+            right: { style: 'thin', color: { argb: 'FF000000' } },
+        };
+
+    }
+    else if (type === "tiles") {
+        customerInvoice.mergeCells('R' + row + ':X' + row);
+        if (termsOfDeliveryMain === "CIF -> FOB") {
+            customerInvoice.getCell('R' + row).value = `TOTAL FOB ${currency}`;
+        } else {
+            customerInvoice.getCell('R' + row).value = `TOTAL ${termsOfDelivery} ${currency}`;
+        }
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('R' + row + ':X' + row, customerInvoice);
+
+        customerInvoice.mergeCells('Y' + row + ':AA' + row);
+        // customerInvoice.getCell('Y' + row).value = totalFOBEuro;
+        if (termsOfDeliveryMain === "CIF -> FOB" || termsOfDeliveryMain === "FOB") {
+            customerInvoice.getCell('Y' + row).value = { formula: `ROUND(SUM(Y28:Y${row - 5}), 4)`, result: 0 };
+        } else {
+            customerInvoice.getCell('Y' + row).value = { formula: `ROUND(SUM(Y${row - 5}:Y${row - 1}), 4)`, result: 0 };
+        }
+
+        customerInvoice.getCell('Y' + row).font = { bold: true };
+        customerInvoice.getCell('Y' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Y' + row + ':AA' + row, customerInvoice);
+
+    }
+
+    customerInvoice.getCell('R' + (row + 1)).border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } },
+    };
+
+    row++;
+
+    customerInvoice.mergeCells('A' + row + ':AA' + row);
+    customerInvoice.getCell('A' + row).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
+    customerInvoice.getCell('A' + row).font = { bold: true };
+    customerInvoice.getCell('A' + row).alignment = { horizontal: 'left' };
+    setOuterBorder('A' + row + ':AA' + row, customerInvoice);
+    row++;
+
+    // customerInvoice.mergeCells('A' + row + ':AA' + (row + 1));
+    // if (taxStatus === "without") {
+    //   customerInvoice.getCell('A' + row).value = `LETTER OF UNDERTAKING NO.ACKNOWLEDGMENT FOR LUT  APPLICATION REFERENCE NUMBER (ARN) ${arn}\nDT:${lutDate}`;
+    // } else {
+    //   customerInvoice.getCell('A' + row).value = `SUPPLY MEANT FOR EXPORT ON PAYMENT OF IGST UNDER CLAIM OF REFUND RS. TOTAL : ${gstValue}\n(TAXABLE ${termsOfDelivery} INR VALUE ${totalInINR}@ 18%)                                                                            ${gstValue}  `;
+    // }
+    // customerInvoice.getCell('A' + row).font = { name: 'Arial', italic: true, color: { argb: 'FFFF0000' } };
+    // customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
+    // setOuterBorder('A' + row + ':AA' + (row + 1), customerInvoice);
+    // row += 2;
+
+    if (taxStatus === "with") {
+        for (let i = 0; i < 4; i++) {
+            customerInvoice.getCell('A' + (row + i)).border = {
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+            }
+        }
+    }
+
+
+    // if (supplierDetails.length % 2 === 0 || supplierDetails.length == 0) {
+    if (type == "tiles") {
+        customerInvoice.mergeCells('A' + row + ':M' + (row + 6));
+        customerInvoice.getCell('A' + row).value = "Exporter Bank Details:\nBENEFICIARY NAME: ZERIC CERAMICA\nBANK NAME: HDFC BANK\nACCOUNT NUMBER: 50200052577831\nSWIFT CODE: HDFCINBBXXX\nIFSC CODE: HDFC0002499\nTAX ID: 24AACFZ6694H1ZP";
+        customerInvoice.getCell('A' + row).font = { bold: true };
+        customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left' };
+        setOuterBorder('A' + row + ':M' + (row + 6), customerInvoice);
+    } else {
+        customerInvoice.mergeCells('A' + row + ':Q' + (row + 6));
+        customerInvoice.getCell('A' + row).value = "Exporter Bank Details:\nBENEFICIARY NAME: ZERIC CERAMICA\nBANK NAME: HDFC BANK\nACCOUNT NUMBER: 50200052577831\nSWIFT CODE: HDFCINBBXXX\nIFSC CODE: HDFC0002499\nTAX ID: 24AACFZ6694H1ZP";
+        customerInvoice.getCell('A' + row).font = { bold: true };
+        customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left' };
+        setOuterBorder('A' + row + ':Q' + (row + 6), customerInvoice);
+    }
+    // }
+
+
+    if (type === "sanitary") {
+        customerInvoice.mergeCells('R' + row + ':AA' + row);
+        customerInvoice.getCell('R' + row).value = "Signature & Date";
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'right' };
+        row++;
+
+        customerInvoice.mergeCells('R' + row + ':AA' + row);
+        customerInvoice.getCell('R' + row).value = "For, ZERIC CERAMICA";
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'right' };
+
+        customerInvoice.addImage(signature, {
+            tl: { col: 24, row: (row) }, // X66 (X = col 24 → 24 - 1 = 23 → 22 for 0-based)
+            ext: { width: 100, height: 100 }, // adjust size as needed
+        });
+        row += 7;
+
+        customerInvoice.mergeCells('R' + row + ':AA' + row);
+        customerInvoice.getCell('R' + row).value = "AUTHORISED SIGN.";
+        customerInvoice.getCell('R' + row).font = { bold: true };
+        customerInvoice.getCell('R' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('R' + (row - 8) + ':AA' + row, customerInvoice);
+
+
+        customerInvoice.mergeCells('A' + (row - 1) + ':Q' + row);
+        customerInvoice.getCell('A' + (row - 1)).value = "Declaration:We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.";
+        customerInvoice.getCell('A' + (row - 1)).font = { bold: true };
+        customerInvoice.getCell('A' + (row - 1)).alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
+        setOuterBorder('A' + (row - 1) + ':Q' + row, customerInvoice);
+        setOuterBorder('A' + (row - 2) + ':Q' + (row - 2), customerInvoice);
+    }
+    else if (type === "tiles") {
+        customerInvoice.mergeCells('N' + row + ':AA' + row);
+        customerInvoice.getCell('N' + row).value = "Signature & Date";
+        customerInvoice.getCell('N' + row).font = { bold: true };
+        customerInvoice.getCell('N' + row).alignment = { horizontal: 'right' };
+        row++;
+
+        customerInvoice.mergeCells('N' + row + ':AA' + row);
+        customerInvoice.getCell('N' + row).value = "For, ZERIC CERAMICA";
+        customerInvoice.getCell('N' + row).font = { bold: true };
+        customerInvoice.getCell('N' + row).alignment = { horizontal: 'right' };
+
+        customerInvoice.addImage(signature, {
+            tl: { col: 20, row: (row) }, // X66 (X = col 24 → 24 - 1 = 23 → 22 for 0-based)
+            ext: { width: 100, height: 100 }, // adjust size as needed
+        });
+        row += 7;
+
+        customerInvoice.mergeCells('N' + row + ':AA' + row);
+        customerInvoice.getCell('N' + row).value = "AUTHORISED SIGN.";
+        customerInvoice.getCell('N' + row).font = { bold: true };
+        customerInvoice.getCell('N' + row).alignment = { horizontal: 'right' };
+        setOuterBorder('N' + (row - 8) + ':AA' + row, customerInvoice);
+
+
+        customerInvoice.mergeCells('A' + (row - 1) + ':M' + row);
+        customerInvoice.getCell('A' + (row - 1)).value = "Declaration:We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.";
+        customerInvoice.getCell('A' + (row - 1)).font = { bold: true };
+        customerInvoice.getCell('A' + (row - 1)).alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
+        setOuterBorder('A' + (row - 1) + ':M' + row, customerInvoice);
+        setOuterBorder('A' + (row - 2) + ':M' + (row - 2), customerInvoice);
+    }
+
+    setOuterBorder('A1:AA' + row, customerInvoice, 'medium');
+
+    customerInvoice.pageSetup.fitToPage = true;
+
+    MAX_WIDTH = 5;
+    if (type === "tiles") {
+
+        customerInvoice.columns.forEach((column) => {
+            let maxLength = 10;
+
+            column.eachCell({ includeEmpty: true }, (cell) => {
+                const cellValue = cell.value ? cell.value.toString() : '';
+                const lines = cellValue.split('\n');
+                const longestLine = Math.max(...lines.map(line => line.length));
+                if (longestLine > maxLength) {
+                    maxLength = longestLine;
+                }
+            });
+
+            column.width = Math.min(maxLength + 2, MAX_WIDTH); // 👈 LIMIT IT
+        });
+        customerInvoice.getColumn(1).width = pixelToExcelWidth(50);
+    }
+    else if (type === "sanitary") {
+        columnWidths.forEach((px, index) => {
+            customerInvoice.getColumn(index + 1).width = pixelToExcelWidth(px);
+        });
+    }
+    customerInvoice.getColumn(17).width = 0;
+
+    setGlobalFontSize(customerInvoice);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    const pLWorkbook = new ExcelJS.Workbook();
+    const pl = pLWorkbook.addWorksheet('PL');
+
+    if (signatureUrl) {
+
+        const { buffer, extension, width, height } = await loadImageBuffer(signatureUrl);
+        signature = pLWorkbook.addImage({
+            buffer: buffer,
+            extension: extension,
+        });
+        vgnSignatureW = width;
+        vgnSignatureH = height;
+
+    }
+
+    pl.mergeCells('A1:AA1');
+    pl.getCell('A1').value = 'PACKING LIST';
+    pl.getCell('A1').font = { bold: true };
+    pl.getCell('A1').alignment = { horizontal: 'center' };
+    setOuterBorder('A1:AA1', pl);
+
+    pl.mergeCells('A2:M9');
+    pl.getCell('A2').value = `EXPORTER:\n${companyName}\n${companyAddress}`;
+    pl.getCell('A2').alignment = { wrapText: true, vertical: 'top' };
+    pl.getCell('A2').font = { bold: true };
+    setOuterBorder('A2:M9', pl);
+
+    // ✅ Email & Tax No
+    pl.mergeCells('A10:B10');
+    pl.getCell('A10').value = `EMAIL:`;
+    pl.getCell('A10').font = { bold: true };
+    pl.getCell('A10').alignment = { wrapText: true };
+
+    pl.mergeCells('A11:B11');
+    pl.getCell('A11').value = `TAX ID:`;
+    pl.getCell('A11').font = { bold: true };
+    pl.getCell('A11').alignment = { wrapText: true };
+
+    pl.mergeCells('C10:M10');
+    pl.getCell('C10').value = email;
+    pl.getCell('C10').alignment = { wrapText: true };
+
+    pl.mergeCells('C11:M11');
+    pl.getCell('C11').value = taxid;
+    pl.getCell('C11').alignment = { wrapText: true };
+    setOuterBorder('A10:M11', pl);
+
+    // ✅ Invoice No. & Date
+    pl.mergeCells('N2:T2');
+    pl.getCell('N2').value = "Invoice No. & Date:";
+    pl.getCell('N2').font = { bold: true };
+    pl.getCell('N2').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('N3:T3');
+    pl.getCell('N3').value = `${invoiceNo}`;
+
+    pl.mergeCells('N4:T4');
+    pl.getCell('N4').value = `Dt. ${invoiceDate}`;
+
+    setOuterBorder('N2:T4', pl);
+
+    // ✅ Exporter's Ref
+    pl.mergeCells('U2:AA2');
+    pl.getCell('U2').value = "Exporter’s Ref.:";
+    pl.getCell('U2').font = { bold: true };
+
+    pl.mergeCells('U3:AA11');
+    pl.getCell('U3').value = `I. E. Code #: ${ieCode}\nPAN No #: ${panNo}\nGSTIN No #: ${gstinNo}\nSTATE CODE : ${stateCode}`;
+    pl.getCell('U3').alignment = { wrapText: true, vertical: 'top' };
+    setOuterBorder('U2:AA11', pl);
+
+    // ✅ Buyer's Order No
+    pl.mergeCells('N5:T5');
+    pl.getCell('N5').value = "Buyer's Order no. & Date";
+    pl.getCell('N5').font = { bold: true };
+
+    pl.mergeCells('N6:T7');
+    pl.getCell('N6').value = `${buyersOrderNo}    ${buyersOrderDate}`;
+    pl.getCell('N6').alignment = { wrapText: true, vertical: 'top' };
+
+    pl.mergeCells('N11:T11');
+    pl.getCell('N11').value = `PO No: ${poNo}`;
+    setOuterBorder('N5:T11', pl);
+
+    // ✅ Consignee
+    pl.mergeCells('A12:M12');
+    pl.getCell('A12').value = "Consignee:";
+    pl.getCell('A12').font = { bold: true };
+
+    pl.mergeCells('A13:M18');
+    pl.getCell('A13').value = `${consignee}`;
+    pl.getCell('A13').alignment = { wrapText: true, vertical: 'top' };
+    setOuterBorder('A12:M18', pl);
+
+    // ✅ Notify Party
+    pl.mergeCells('N12:AA12');
+    pl.getCell('N12').value = "Notify Party # :";
+    pl.getCell('N12').font = { bold: true };
+
+    pl.mergeCells('N13:AA18');
+    pl.getCell('N13').value = `${notifyParty}`;
+    pl.getCell('N13').alignment = { wrapText: true, vertical: 'top' };
+    setOuterBorder('N12:AA18', pl);
+
+    pl.mergeCells('A19:F19');
+    pl.getCell('A19').value = 'Pre-Carriage By';
+    pl.getCell('A19').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('A20:F20');
+    pl.getCell('A20').value = `${preCarriage}`;
+    pl.getCell('A20').font = { bold: true };
+    pl.getCell('A20').alignment = { horizontal: 'center' };
+    setOuterBorder('A19:F20', pl);
+
+    pl.mergeCells('G19:M19');
+    pl.getCell('G19').value = "Place of Receipt by Pre-Carrier";
+    pl.getCell('G19').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('G20:M20');
+    pl.getCell('G20').value = `${placeOfReceipt}`;
+    pl.getCell('G20').font = { bold: true };
+    pl.getCell('G20').alignment = { horizontal: 'center' };
+    setOuterBorder('G19:M20', pl);
+
+    pl.mergeCells('N19:V19');
+    pl.getCell('N19').value = "Country of Origin of Goods : INDIA";
+    pl.getCell('N19').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('N20:V20');
+    pl.getCell('N20').value = `ORIGIN : DISTRICT MORBI, STATE GUJARAT`;
+    pl.getCell('N20').font = { bold: true };
+    pl.getCell('N20').alignment = { horizontal: 'center' };
+    setOuterBorder('N19:V20', pl);
+
+    pl.mergeCells('W19:AA19');
+    pl.getCell('W19').value = "Country of Final Destination";
+    pl.getCell('W19').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('W20:AA20');
+    pl.getCell('W20').value = `${finalDestination}`;
+    pl.getCell('W20').font = { bold: true };
+    pl.getCell('W20').alignment = { horizontal: 'center' };
+    setOuterBorder('W19:AA20', pl);
+
+    pl.mergeCells('A21:F21');
+    pl.getCell('A21').value = 'Vessel Flight No.';
+    pl.getCell('A21').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('A22:F22');
+    pl.getCell('A22').value = `${vassalFlightNo}`;
+    pl.getCell('A22').font = { bold: true };
+    pl.getCell('A22').alignment = { horizontal: 'center' };
+    setOuterBorder('A21:F22', pl);
+
+    pl.mergeCells('G21:M21');
+    pl.getCell('G21').value = "Port of Loading";
+    pl.getCell('G21').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('G22:M22');
+    pl.getCell('G22').value = `${portOfLoading}`;
+    pl.getCell('G22').font = { bold: true };
+    pl.getCell('G22').alignment = { horizontal: 'center' };
+    setOuterBorder('G21:M22', pl);
+
+    pl.mergeCells('A23:F23');
+    pl.getCell('A23').value = 'Port of Discharge';
+    pl.getCell('A23').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('A24:F25');
+    pl.getCell('A24').value = `${portOfDischarge}`;
+    pl.getCell('A24').font = { bold: true };
+    pl.getCell('A24').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('A23:F25', pl);
+
+    pl.mergeCells('G23:M23');
+    pl.getCell('G23').value = "Final Destination";
+    pl.getCell('G23').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('G24:M25');
+    pl.getCell('G24').value = `${finalDestination}`;
+    pl.getCell('G24').font = { bold: true };
+    pl.getCell('G24').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('G23:M25', pl);
+
+    pl.mergeCells('N21:AA21');
+    pl.getCell('N21').value = "Terms of Delivery & Payment :-";
+    // pl.getCell('N21').font = { bold: true };
+
+    pl.mergeCells('N22:AA22');
+    if (termsOfDelivery === "FOB") {
+        pl.getCell('N22').value = termsOfDeliveryMainAt;
+    } else {
+        pl.getCell('N22').value = termsOfDeliveryMainAt;
+    }
+
+    pl.mergeCells('N23:AA24');
+    pl.getCell('N23').value = `PAYMENT : ${paymentTerms}`;
+    pl.getCell('N23').alignment = { wrapText: true, vertical: 'top' };
+
+    pl.mergeCells('N25:V25');
+    pl.getCell('N25').value = shippingMethod;
+    pl.getCell('N25').font = { bold: true };
+    setOuterBorder('N21:AA25', pl);
+
+    configurePrintSheet(pl);
+
+    pl.mergeCells('A26:D26');
+    pl.getCell('A26').value = "Marks & Nos.";
+    pl.getCell('A26').font = { bold: true };
+    pl.getCell('A26').alignment = { horizontal: 'center' };
+
+    if (containerType === 'FCL') {
+        pl.mergeCells('A27:D27');
+        pl.getCell('A27').value = `${marksAndNos} ${containerType}`;
+        pl.getCell('A27').font = { bold: true };
+        pl.getCell('A27').alignment = { horizontal: 'center' };
+        setOuterBorder('A26:D27', pl);
+    } else {
+        pl.mergeCells('A27:D27');
+        pl.getCell('A27').value = containerType;
+        pl.getCell('A27').font = { bold: true };
+        pl.getCell('A27').alignment = { horizontal: 'center' };
+        setOuterBorder('A26:D27', pl);
+    }
+
+    pl.mergeCells('E26:P27');
+    pl.getCell('E26').value = "Description of Goods";
+    pl.getCell('E26').font = { bold: true };
+    pl.getCell('E26').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('E26:P27', pl);
+
+    pl.mergeCells('Q26:U26');
+    pl.getCell('Q26').value = "QUANTITY";
+    pl.getCell('Q26').font = { bold: true };
+    pl.getCell('Q26').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('Q27:U27');
+    pl.getCell('Q27').value = packegingType;
+    pl.getCell('Q27').font = { bold: true };
+    pl.getCell('Q27').alignment = { horizontal: 'center' };
+    setOuterBorder('Q26:U27', pl);
+
+    pl.mergeCells('V26:X26');
+    pl.getCell('V26').value = "NET. WT.";
+    pl.getCell('V26').font = { bold: true };
+    pl.getCell('V26').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('V27:X27');
+    pl.getCell('V27').value = "IN KGS.";
+    pl.getCell('V27').font = { bold: true };
+    pl.getCell('V27').alignment = { horizontal: 'center' };
+    setOuterBorder('V26:X27', pl);
+
+    pl.mergeCells('Y26:AA26');
+    pl.getCell('Y26').value = "GRS. WT.";
+    pl.getCell('Y26').font = { bold: true };
+    pl.getCell('Y26').alignment = { horizontal: 'center' };
+
+    pl.mergeCells('Y27:AA27');
+    pl.getCell('Y27').value = "IN KGS.";
+    pl.getCell('Y27').font = { bold: true };
+    pl.getCell('Y27').alignment = { horizontal: 'center' };
+    setOuterBorder('Y26:AA27', pl);
+
+    pl.getCell('A28').value = "SR NO.";
+    pl.getCell('A28').font = { bold: true };
+    pl.getCell('A28').alignment = { horizontal: 'center', vertical: 'middle' };
+    pl.getCell('A28').border = {
+        top: { style: 'thin', color: { argb: 'FF000000' } },
+        left: { style: 'thin', color: { argb: 'FF000000' } },
+        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+        right: { style: 'thin', color: { argb: 'FF000000' } },
+    };
+
+    pl.mergeCells('B28:D28');
+    pl.getCell('B28').value = "HSN CODE";
+    pl.getCell('B28').font = { bold: true };
+    pl.getCell('B28').alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('B28:D28', pl);
+
+
+    row = 27;
+    srNo = 1;
+    for (let i = 0; i < products.length; i++) {
+        row++;
+        if (products[i].length === 2) {
+            pl.mergeCells('E' + row + ':P' + row);
+            pl.getCell('E' + row).value = products[i][0];
+            pl.getCell('E' + row).font = { bold: true, size: 12 };
+            pl.getCell('E' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+            pl.getRow(row).height = 46;
+            setOuterBorder('E' + row + ':P' + row, pl);
+            hsnCode = Number(products[i][1]);
+
+            if (i !== 0) {
+                pl.getCell('A' + row).border = {
+                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                    left: { style: 'thin', color: { argb: 'FF000000' } },
+                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    right: { style: 'thin', color: { argb: 'FF000000' } },
+                };
+
+                setOuterBorder('B' + row + ':D' + row, pl);
+            }
+            setOuterBorder('E' + row + ':P' + row, pl);
+
+            setOuterBorder('Q' + row + ':U' + row, pl);
+            setOuterBorder('V' + row + ':X' + row, pl);
+            setOuterBorder('Y' + row + ':AA' + row, pl);
+
+        } else {
+            pl.getCell('A' + row).value = srNo;
+            pl.getCell('A' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+            pl.getCell('A' + row).font = { bold: true };
+            pl.getCell('A' + row).border = {
+                top: { style: 'thin', color: { argb: 'FF000000' } },     // black
+                left: { style: 'thin', color: { argb: 'FF000000' } },
+                bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                right: { style: 'thin', color: { argb: 'FF000000' } },
+            };
+            srNo++;
+
+            pl.mergeCells('B' + row + ':D' + row);
+            pl.getCell('B' + row).value = hsnCode;
+            pl.getCell('B' + row).font = { bold: true };
+            pl.getCell('B' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('B' + row + ':D' + row, pl);
+
+            if (type !== 'tiles') {
+                pl.mergeCells('E' + row + ':J' + row);
+                pl.getCell('E' + row).value = products[i][0];
+                pl.getCell('E' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('E' + row + ':J' + row, pl);
+
+                pl.mergeCells('K' + row + ':P' + row);
+                pl.getCell('K' + row).value = products[i][1];
+                pl.getCell('K' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('K' + row + ':P' + row, pl);
+            } else {
+                pl.mergeCells('E' + row + ':P' + row);
+                pl.getCell('E' + row).value = products[i][0];
+                pl.getCell('E' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+                setOuterBorder('E' + row + ':P' + row, pl);
+            }
+            if (String(products[i][0]).length > 26) {
+                pl.getRow(row).height = 36;
+            }
+
+            pl.mergeCells('Q' + row + ':U' + row);
+            pl.getCell('Q' + row).value = products[i][2];
+            pl.getCell('Q' + row).font = { bold: true };
+            pl.getCell('Q' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('Q' + row + ':U' + row, pl);
+
+            pl.mergeCells('V' + row + ':X' + row);
+            pl.getCell('V' + row).value = products[i][8];
+            pl.getCell('V' + row).numFmt = '0.00'
+            // pl.getCell('V' + row).fill = {
+            //     type: 'pattern',
+            //     pattern: 'solid',
+            //     fgColor: { argb: 'FFFFFF00' },
+            // };
+            pl.getCell('V' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('V' + row + ':X' + row, pl);
+
+            pl.mergeCells('Y' + row + ':AA' + row);
+            pl.getCell('Y' + row).value = products[i][9];
+            pl.getCell('Y' + row).numFmt = '0.00'
+            // pl.getCell('Y' + row).fill = {
+            //     type: 'pattern',
+            //     pattern: 'solid',
+            //     fgColor: { argb: 'FFFFFF00' },
+            // };
+            pl.getCell('Y' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('Y' + row + ':AA' + row, pl);
+        }
+    }
+
+
+    row++;
+    pl.mergeCells('A' + row + ':D' + (row + 4));
+    setOuterBorder('A' + row + ':D' + (row + 4), pl);
+
+    pl.mergeCells('Q' + row + ':U' + (row + 5));
+    setOuterBorder('Q' + row + ':U' + (row + 5), pl);
+
+    pl.mergeCells('V' + row + ':X' + (row + 5));
+    setOuterBorder('V' + row + ':AA' + (row + 5), pl);
+
+    pl.mergeCells('Y' + row + ':AA' + (row + 5));
+    setOuterBorder('Y' + row + ':AA' + (row + 5), pl);
+
+    // if (taxStatus == "with") {
+    //   pl.mergeCells('E' + row + ':P' + row);
+    //   pl.getCell('E' + row).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
+    //   pl.getCell('E' + row).font = { name: 'Arial' };
+    //   pl.getCell('E' + row).alignment = { horizontal: 'center' };
+    //   setOuterBorder('E' + row + ':P' + row, pl);
+    //   row++;
+    // }
+
+    pl.mergeCells('E' + row + ':P' + (row + 4));
+    // pl.getCell('E' + row).value = "Export Under Duty Drawback Scheme";
+    // pl.getCell('E' + row).font = { bold: true };
+    // pl.getCell('E' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('E' + row + ':P' + (row + 4), pl);
+    row += 5;
+
+    // pl.mergeCells('E' + row + ':P' + (row + 1));
+    // // pl.getCell('E' + row).value = "I/we shall claim under chapter 3 incentive of FTP as admissible at time policy in force - MEIS, RODTEP ";
+    // // pl.getCell('E' + row).font = { bold: true };
+    // // pl.getCell('E' + row).alignment = { wrapText: true, horizontal: 'center' };
+    // // setOuterBorder('E' + row + ':P' + (row + 1), pl);
+    // row += 2;
+
+    // if (taxStatus == "without") {
+    //   pl.mergeCells('E' + row + ':P' + (row + 1));
+    //   setOuterBorder('E' + row + ':P' + (row + 1), pl);
+    //   row += 2;
+    // } else {
+    //   pl.mergeCells('E' + row + ':P' + row);
+    //   setOuterBorder('E' + row + ':P' + row, pl);
+    //   row++;
+    // }
+
+    pl.mergeCells('A' + row + ':D' + row);
+    pl.getCell('A' + row).value = "CONTAINER NO.";
+    pl.getCell('A' + row).font = { bold: true };
+    pl.getCell('A' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('A' + row + ':D' + row, pl);
+
+    pl.mergeCells('E' + row + ':H' + row);
+    pl.getCell('E' + row).value = "LINE SEAL NO.";
+    pl.getCell('E' + row).font = { bold: true };
+    pl.getCell('E' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('E' + row + ':H' + row, pl);
+
+    pl.mergeCells('I' + row + ':L' + row);
+    pl.getCell('I' + row).value = "RFID SEAL";
+    pl.getCell('I' + row).font = { bold: true };
+    pl.getCell('I' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('I' + row + ':L' + row, pl);
+
+    pl.mergeCells('M' + row + ':P' + row);
+    pl.getCell('M' + row).value = "Design no";
+    pl.getCell('M' + row).font = { bold: true };
+    pl.getCell('M' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('M' + row + ':P' + row, pl);
+
+    row++;
+
+    for (let i = 0; i < containerDetails.length; i++) {
+
+        pl.getRow(row).height = 36;  // fix height here
+
+        pl.mergeCells('A' + row + ':D' + row);
+        pl.getCell('A' + row).value = containerDetails[i][0];
+        pl.getCell('A' + row).font = { size: 11 };
+        // pl.getCell('A' + row).fill = {
+        //     type: 'pattern',
+        //     pattern: 'solid',
+        //     fgColor: { argb: 'FFD9EAF7' },
+        // };
+        pl.getCell('A' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('A' + row + ':D' + row, pl);
+
+        pl.mergeCells('E' + row + ':H' + row);
+        pl.getCell('E' + row).value = containerDetails[i][1];
+        pl.getCell('E' + row).font = { size: 11 };
+        // pl.getCell('E' + row).fill = {
+        //     type: 'pattern',
+        //     pattern: 'solid',
+        //     fgColor: { argb: 'FFFFFF00' },
+        // };
+        pl.getCell('E' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('E' + row + ':H' + row, pl);
+
+        pl.mergeCells('I' + row + ':L' + row);
+        pl.getCell('I' + row).value = containerDetails[i][2];
+        pl.getCell('I' + row).font = { size: 11 };
+        // pl.getCell('I' + row).fill = {
+        //     type: 'pattern',
+        //     pattern: 'solid',
+        //     fgColor: { argb: 'FFFFFF00' },
+        // };
+        pl.getCell('I' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('I' + row + ':L' + row, pl);
+
+        pl.mergeCells('M' + row + ':P' + row);
+        pl.getCell('M' + row).value = containerDetails[i][3];
+        pl.getCell('M' + row).font = { size: 11 };
+        pl.getCell('M' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('M' + row + ':P' + row, pl);
+        if (String(containerDetails[i][3]).length > 17) {
+            pl.getRow(row).height = 36;
+        }
+
+        pl.mergeCells('Q' + row + ':U' + row);
+        pl.getCell('Q' + row).value = containerDetails[i][4];
+        pl.getCell('Q' + row).font = { size: 11 };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Q' + row + ':U' + row, pl);
+
+        pl.mergeCells('V' + row + ':X' + row);
+        pl.getCell('V' + row).value = containerDetails[i][5];
+        pl.getCell('V' + row).numFmt = '0.00'
+        pl.getCell('V' + row).font = { size: 11 };
+        pl.getCell('V' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('V' + row + ':X' + row, pl);
+
+        pl.mergeCells('Y' + row + ':AA' + row);
+        pl.getCell('Y' + row).value = containerDetails[i][6];
+        pl.getCell('Y' + row).numFmt = '0.00'
+        pl.getCell('Y' + row).font = { size: 11 };
+        pl.getCell('Y' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Y' + row + ':AA' + row, pl);
+
+        row++;
+
+    }
+
+    pl.mergeCells('A' + row + ':D' + (row + 1));
+    // pl.getCell('A' + row).value = `Nos. of Kind Packages ${packegingType}`;
+    pl.getCell('A' + row).value = {
+        formula: `"Nos. of Kind Packages " & SUM(Q${row - containerDetails.length}:Q${row - 1}) & " ${packegingType}"`,
+        result: null
+    };
+    pl.getCell('A' + row).font = { bold: true };
+    pl.getCell('A' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('A' + row + ':D' + (row + 1), pl);
+    if (packegingType.length > 10) {
+        pl.getRow(row).height = 32;
+        pl.getRow(row + 1).height = 32;
+    }
+
+    if (totalPallet > 0) {
+        pl.mergeCells('E' + row + ':H' + (row + 1));
+        pl.getCell('E' + row).value = "Total     >>>>>>>>>>";
+        pl.getCell('E' + row).font = { bold: true };
+        pl.getCell('E' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('E' + row + ':H' + (row + 1), pl);
+
+        pl.mergeCells('I' + row + ':P' + (row + 1));
+        pl.getCell('I' + row).value = `TOTAL PALLET - ${totalPallet} NOS`;
+        pl.getCell('I' + row).font = { name: 'Arial', bold: true };
+        pl.getCell('I' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('I' + row + ':P' + (row + 1), pl);
+    } else {
+        pl.mergeCells('E' + row + ':P' + (row + 1));
+        pl.getCell('E' + row).value = "Total     >>>>>>>>>>";
+        pl.getCell('E' + row).font = { bold: true };
+        pl.getCell('E' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('E' + row + ':P' + (row + 1), pl);
+    }
+
+    pl.mergeCells('Q' + row + ':U' + (row + 1));
+    pl.getCell('Q' + row).value = { formula: `SUM(Q${row - containerDetails.length}:Q${row - 1})`, result: 0 };
+    pl.getCell('Q' + row).font = { bold: true };
+    pl.getCell('Q' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('Q' + row + ':U' + (row + 1), pl);
+
+    pl.mergeCells('V' + row + ':X' + (row + 1));
+    pl.getCell('V' + row).value = { formula: `SUM(V${row - containerDetails.length}:V${row - 1})`, result: 0 };
+    pl.getCell('V' + row).numFmt = '0.00'
+    pl.getCell('V' + row).font = { bold: true };
+    pl.getCell('V' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('V' + row + ':X' + (row + 1), pl);
+
+    pl.mergeCells('Y' + row + ':AA' + (row + 1));
+    pl.getCell('Y' + row).value = { formula: `SUM(Y${row - containerDetails.length}:Y${row - 1})`, result: 0 };
+    pl.getCell('Y' + row).numFmt = '0.00'
+    pl.getCell('Y' + row).font = { bold: true };
+    pl.getCell('Y' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('Y' + row + ':AA' + (row + 1), pl);
+
+    row += 2;
+
+    pl.mergeCells('A' + row + ':P' + row);
+    setOuterBorder('A' + row + ':P' + row, pl);
+
+    pl.mergeCells('Q' + row + ':U' + row);
+    pl.getCell('Q' + row).value = packegingType;
+    pl.getCell('Q' + row).font = { bold: true };
+    pl.getCell('Q' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('Q' + row + ':U' + row, pl);
+
+    pl.mergeCells('V' + row + ':X' + row);
+    pl.getCell('V' + row).value = "KGS";
+    pl.getCell('V' + row).font = { bold: true };
+    pl.getCell('V' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('V' + row + ':X' + row, pl);
+
+    pl.mergeCells('Y' + row + ':AA' + row);
+    pl.getCell('Y' + row).value = "KGS";
+    pl.getCell('Y' + row).font = { bold: true };
+    pl.getCell('Y' + row).alignment = { horizontal: 'center' };
+    setOuterBorder('Y' + row + ':AA' + row, pl);
+
+    row++;
+    pl.mergeCells('Q' + row + ':AA' + row);
+    pl.getCell('Q' + row).value = "Signature & Date";
+    pl.getCell('Q' + row).font = { bold: true };
+    pl.getCell('Q' + row).alignment = { horizontal: 'right' };
+
+    pl.mergeCells('Q' + (row + 1) + ':AA' + (row + 1));
+    pl.getCell('Q' + (row + 1)).value = `For, ${companyName}`;
+    pl.getCell('Q' + (row + 1)).font = { bold: true };
+    pl.getCell('Q' + (row + 1)).alignment = { horizontal: 'right' };
+
+    pl.addImage(signature, {
+        tl: { col: 20, row: row }, // X66 (X = col 24 → 24 - 1 = 23 → 22 for 0-based)
+        ext: { width: 95, height: 95 }, // adjust size as needed
+    });
+
+    pl.mergeCells('A' + row + ':P' + (row + 3));
+    setOuterBorder('A' + row + ':P' + (row + 3), pl);
+
+    pl.mergeCells('A' + (row + 4) + ':P' + (row + 4));
+    pl.getCell('A' + (row + 4)).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
+    pl.getCell('A' + (row + 4)).font = { bold: true };
+    pl.getCell('A' + (row + 4)).alignment = { horizontal: 'center' };
+    setOuterBorder('A' + (row + 4) + ':P' + (row + 4), pl);
+
+    pl.mergeCells('Q' + (row + 6) + ':AA' + (row + 6));
+    pl.getCell('Q' + (row + 6)).value = "AUTHORISED SIGN.";
+    pl.getCell('Q' + (row + 6)).font = { bold: true };
+    pl.getCell('Q' + (row + 6)).alignment = { horizontal: 'right' };
+    setOuterBorder('Q' + row + ':AA' + (row + 6), pl);
+
+    row += 5;
+
+    pl.mergeCells('A' + row + ':P' + (row + 1));
+    pl.getCell('A' + row).value = "Declaration:We declare that this invoice shows the actual price of the goods described and that all particulars are true and correct.";
+    pl.getCell('A' + row).font = { bold: true };
+    pl.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left', vertical: 'middle' };
+    setOuterBorder('A' + row + ':P' + (row + 1), pl);
+    row++;
+
+    setOuterBorder('A1:AA' + row, pl, 'medium');
+
+    MAX_WIDTH = 4; // reasonable width ~420px in Excel
+
+    pl.columns.forEach((column) => {
+        let maxLength = 10;
+
+        column.eachCell({ includeEmpty: true }, (cell) => {
+            const cellValue = cell.value ? cell.value.toString() : '';
+            const lines = cellValue.split('\n');
+            const longestLine = Math.max(...lines.map(line => line.length));
+            if (longestLine > maxLength) {
+                maxLength = longestLine;
+            }
+        });
+
+        column.width = Math.min(maxLength + 2, MAX_WIDTH); // 👈 LIMIT IT
+    });
+
+    setGlobalFontSize(pl);
+    pl.getColumn(1).width = pixelToExcelWidth(50);
+    pl.getColumn(24).width = pixelToExcelWidth(45);
+    pl.getColumn(25).width = pixelToExcelWidth(45);
+
+
+
+
+
+
+
+
+
+
+
+
+
     // ✅ Save File
     let fileName = "";
     if (containerType === "FCL") {
@@ -5979,6 +8233,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     const bufferVgn = await vgnWorkbook.xlsx.writeBuffer();
     allBuffers.push({ buffer: bufferVgn, fileName: `VGM.xlsx` });
+
+    const bufferCI = await customerInvoiceWorkbook.xlsx.writeBuffer();
+    allBuffers.push({ buffer: bufferCI, fileName: `CI.xlsx` });
+
+    const bufferPL = await pLWorkbook.xlsx.writeBuffer();
+    allBuffers.push({ buffer: bufferPL, fileName: `PL.xlsx` });
 
 
 

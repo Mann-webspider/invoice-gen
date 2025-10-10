@@ -53,7 +53,6 @@ import { useToast } from "@/components/ui/use-toast";
 import api from "@/lib/axios";
 import { LoadingButton } from "@/components/LoadingButton";
 
-
 type DropdownOption = {
   id: string;
   value: string;
@@ -288,6 +287,11 @@ const AdminPanel = () => {
     },
   ]);
 
+  // UPDATED: Separate state for port-destination pairs (moved from tableInfo)
+  const [portDestinationPairs, setPortDestinationPairs] = useState([
+   
+  ]);
+
   // State for adding new values
   const [newValue, setNewValue] = useState("");
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
@@ -296,7 +300,7 @@ const AdminPanel = () => {
   const [editingItemValue, setEditingItemValue] = useState("");
   const [isEditValueDialogOpen, setIsEditValueDialogOpen] = useState(false);
 
-  // Add table information data
+  // UPDATED: Table information data without port-destination pairs
   const [tableInfo, setTableInfo] = useState({
     descriptionHsnPairs: [
       {
@@ -320,6 +324,7 @@ const AdminPanel = () => {
       { id: "5", size: "300 X 300", sqm: "0.18" },
     ],
     unitTypes: [{ id: "1", value: "Box" }],
+    // REMOVED: portDestinationPairs - moved to separate state
   });
 
   // State for adding/editing table information
@@ -341,6 +346,14 @@ const AdminPanel = () => {
     number | null
   >(null);
   const [editingUnitTypeValue, setEditingUnitTypeValue] = useState("");
+
+  // Port of Discharge & Final Destination pair states
+  const [newPortDestinationPair, setNewPortDestinationPair] = useState({
+    port_of_discharge: "",
+    final_destination: "",
+  });
+  const [isAddPortDestinationDialogOpen, setIsAddPortDestinationDialogOpen] = useState(false);
+  const [isEditPortDestinationDialogOpen, setIsEditPortDestinationDialogOpen] = useState(false);
 
   // Add supplier details state
   const [suppliers, setSuppliers] = useState([
@@ -382,7 +395,6 @@ const AdminPanel = () => {
   const handleSaveArnDeclaration = async () => {
     try {
     setIsLoading(true);
-    // Here you would save to database
     async function createArn() {
         let res = await api.post("/arn", arnDeclaration);
         console.log(res.data);
@@ -399,65 +411,68 @@ const AdminPanel = () => {
     }finally {
       setIsLoading(false);
     }
-
   };
-  // Define an async function inside useEffect
+
+  // Fetch functions
   const fetchExporterDetails = async () => {
     try {
-      // Check if there's a valid exporter id
       const response = await api.get(`/exporter`);
       const exporterData = response.data.data;
       console.log(exporterData);
-
       setExporters(exporterData);
     } catch (error) {
       console.error("Failed to fetch exporter details:", error);
     }
   };
+
   const fetchShippingDetails = async () => {
     try {
-      // Check if there's a valid exporter id
       const response = await api.get(`/dropdown-options`);
       const shippingData = response.data.data.shipping;
-      // Shipping data received - handled silently
       console.log(shippingData);
-
       setShippingDetails(shippingData);
     } catch (error) {
       console.error("Failed to fetch exporter details:", error);
     }
   };
+
+
+
   const fetchTableDetails = async () => {
     try {
-      // Check if there's a valid exporter id
       const response = await api.get(`/tableinfo`);
       const tableData = response.data.data;
-      // Table data received - handled silently
-
       setTableInfo(tableData);
     } catch (error) {
       console.error("Failed to fetch exporter details:", error);
     }
   };
+
+  // ADDED: Fetch function for port-destination pairs
+  const fetchPortDestinationDetails = async () => {
+    try {
+      const response = await api.get(`/country-category`);
+      const portDestinationData = response.data.data;
+      setPortDestinationPairs(portDestinationData);
+    } catch (error) {
+      console.error("Failed to fetch port destination details:", error);
+    }
+  };
+
   const fetchSupplierDetails = async () => {
     try {
-      // Check if there's a valid exporter id
       const response = await api.get(`/supplier`);
       const supplierData = response.data.data;
-      // Supplier data received - handled silently
-
       setSuppliers(supplierData);
     } catch (error) {
       console.error("Failed to fetch exporter details:", error);
     }
   };
+
   const fetchArn = async () => {
     try {
-      // Check if there's a valid exporter id
       const response = await api.get(`/arn/1`);
       const arnData = response.data.data;
-      // ARN data received - handled silently
-
       setArnDeclaration({
         applicationRefNumber: arnData["arn"],
         gstCircular: arnData["gst_circular"],
@@ -472,12 +487,12 @@ const AdminPanel = () => {
     fetchExporterDetails();
     fetchShippingDetails();
     fetchTableDetails();
+    fetchPortDestinationDetails(); // ADDED: Fetch port-destination pairs
     fetchSupplierDetails();
+
     fetchArn();
-    // if (selectedExporter && isEditExporterDialogOpen) {
-    // }
   }, []);
-  // Initialize form data when editing an exporter
+
   useEffect(() => {
     if (selectedExporter && isEditExporterDialogOpen) {
       setFormData({
@@ -520,12 +535,11 @@ const AdminPanel = () => {
     });
   };
 
-  // ------------------------start exporter --------------------------------
+  // All existing CRUD handlers for exporters (keeping original implementation)
   const handleAddExporter = async () => {
     const createExporter = async (data) => {
       try {
         setIsLoading(true);
-      // Check if there's a valid exporter id
       let header = data.letterhead_top_image;
       let footer = data.letterhead_bottom_image;
       let signature = data.stamp_image;
@@ -540,8 +554,6 @@ const AdminPanel = () => {
       
       const response = await api.post(`/exporter`, data);
       const exporterData = response.data.data;
-      
-      // add promise for 3 api post call for header, footer and signature with responses
       
       if (header?.file) {
         const headerFormData = new FormData();
@@ -571,21 +583,18 @@ const AdminPanel = () => {
         );
       }
       
-      // Exporter data received - handled silently
-      
       return exporterData;
     } catch (error) {
       console.log(error);
       
         if (error.status == 500) {
-          // Failed to add exporter details - handled silently
+          // Failed to add exporter details
         }
         return error.response;
       }finally {
         setIsLoading(false);
       }
     };
-    // Validate required fields
 
     const newExporter = await createExporter(formData);
     if (newExporter.status == 400) {
@@ -597,7 +606,6 @@ const AdminPanel = () => {
       return;
     }
 
-    // Add to exporters array
     setExporters([...exporters, newExporter]);
     setIsAddExporterDialogOpen(false);
     resetFormData();
@@ -614,7 +622,6 @@ const AdminPanel = () => {
         let header = data.letterhead_top_image;
         let footer = data.letterhead_bottom_image;
         let signature = data.stamp_image;
-        // Check if there's a valid exporter id
         const response = await api.put(`/exporter/${id}`, data);
         const exporterData = response.data.data;
         if (header?.file) {
@@ -627,7 +634,6 @@ const AdminPanel = () => {
               headers: { "Content-Type": "multipart/form-data" },
             }
           );
-          // Header image upload response - handled silently
         }
 
         if (footer?.file) {
@@ -640,7 +646,6 @@ const AdminPanel = () => {
               headers: { "Content-Type": "multipart/form-data" },
             }
           );
-          // Footer image upload response - handled silently
         }
 
         if (signature?.file) {
@@ -653,17 +658,14 @@ const AdminPanel = () => {
               headers: { "Content-Type": "multipart/form-data" },
             }
           );
-          // Signature image upload response - handled silently
         }
-        // setExporters(exporterData);
       } catch (error) {
-        // Failed to update exporter details - handled silently
+        // Failed to update exporter details
       }
     };
     if (!selectedExporter) return;
     updateExporterDetails(formData.id, formData);
 
-    // Update the exporter
     const updatedExporters = exporters.map((exporter) => {
       if (exporter.id === selectedExporter.id) {
         return {
@@ -705,7 +707,6 @@ const AdminPanel = () => {
       });
     }
 
-    // Filter out the exporter to delete
     const updatedExporters = exporters.filter(
       (exporter) => exporter.id !== exporterToDelete
     );
@@ -718,7 +719,8 @@ const AdminPanel = () => {
       description: "Exporter deleted successfully",
     });
   };
-  // ------------------------finish exporter --------------------------------
+
+  // Shipping handlers
   const openEditDialog = (exporter: Exporter) => {
     setSelectedExporter(exporter);
     setIsEditExporterDialogOpen(true);
@@ -733,8 +735,6 @@ const AdminPanel = () => {
     setExporterToDelete(exporterId);
     setIsDeleteDialogOpen(true);
   };
-
-  // ------------------------start shipping --------------------------------
 
   const handleAddShippingValue =async () => {
     try {
@@ -776,7 +776,7 @@ const AdminPanel = () => {
     setShippingDetails((prev) => {
       const updated = [...prev ];
       updated.push({
-        id: shipping_res.id, // Generate a random ID
+        id: shipping_res.id,
         category: shipping_res.category,
         value: shipping_res.value,
       })
@@ -784,8 +784,6 @@ const AdminPanel = () => {
         return updated;
       }
   );
-    
-
 
     setNewValue("");
     setIsAddValueDialogOpen(false);
@@ -853,10 +851,8 @@ const AdminPanel = () => {
     });
   };
 
-  // ------------------------finish shipping --------------------------------
   const openEditValueDialog = (category: string, value: string) => {
     setEditingCategory(()=>category);
-    // setEditingItemIndex(index);
     setEditingItemValue(()=>value);
     setIsEditValueDialogOpen(true);
   };
@@ -867,7 +863,7 @@ const AdminPanel = () => {
     setIsAddValueDialogOpen(true);
   };
 
-  // ------------------------start table information --------------------------------
+  // Table information handlers (existing)
   const handleAddDescHsnPair = async () => {
     try {
     setIsLoading(true);
@@ -1010,8 +1006,7 @@ const AdminPanel = () => {
     }
   };
 
-  // ------------------------finish table information --------------------------------
-  // ------------------------start size and sqm --------------------------------
+  // Size/SQM handlers (existing)
   const handleAddSizeSqmPair = async () => {
     try {
     setIsLoading(true);
@@ -1144,8 +1139,8 @@ const AdminPanel = () => {
       });
     }
   };
-  // ------------------------finish size and sqm --------------------------------
-  // ------------------------start unit type --------------------------------
+
+  // Unit type handlers (existing)
   const handleAddUnitType = async () => {
     try {
     setIsLoading(true);
@@ -1300,7 +1295,144 @@ const AdminPanel = () => {
       });
     }
   };
-  // ------------------------finish unit type --------------------------------
+
+  // UPDATED: Port of Discharge & Final Destination pair handlers (now using separate state)
+  const handleAddPortDestinationPair = async () => {
+    try {
+      setIsLoading(true);
+      if (!newPortDestinationPair.port_of_discharge.trim() || !newPortDestinationPair.final_destination.trim()) {
+        toast({
+          title: "Error",
+          description: "Both Port of Discharge and Final Destination are required",
+          variant: "destructive",
+        });
+        console.log(newPortDestinationPair);
+      
+        
+        return;
+      }
+
+      const response = await api.post("/country-category", newPortDestinationPair);
+      
+      if (response.data && response.status === 201) {
+        setPortDestinationPairs((prev) => [
+          ...prev,
+          {
+            id: response.data.data.id,
+            port_of_discharge: response.data.data.port_of_discharge,
+            final_destination: response.data.data.final_destination,
+          },
+        ]);
+
+        setNewPortDestinationPair({ port_of_discharge: "", final_destination: "" });
+        setIsAddPortDestinationDialogOpen(false);
+
+        toast({
+          title: "Success",
+          description: "Port of Discharge & Final Destination pair added successfully",
+        });
+      } else {
+        throw new Error("Failed to add port destination pair");
+      }
+    } catch (error) {
+      console.error("Error adding port destination pair:", error);
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.error ||
+          "Failed to add port destination pair. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditPortDestinationPair = async () => {
+    if (
+      !editingItemId ||
+      !newPortDestinationPair.port_of_discharge.trim() ||
+      !newPortDestinationPair.final_destination.trim()
+    ) {
+      toast({
+        title: "Error",
+        description: "Both Port of Discharge and Final Destination are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await api.put(
+        `/country-category/${editingItemId}`,
+        newPortDestinationPair
+      );
+
+      if (response.data && response.status === 200) {
+        setPortDestinationPairs((prev) =>
+          prev.map((pair) =>
+            pair.id === editingItemId
+              ? {
+                  id: response.data.data.id,
+                  port_of_discharge: response.data.data.port_of_discharge,
+                  final_destination: response.data.data.final_destination,
+                }
+              : pair
+          )
+        );
+
+        setNewPortDestinationPair({ port_of_discharge: "", final_destination: "" });
+        setIsEditPortDestinationDialogOpen(false);
+        setEditingItemId(null);
+
+        toast({
+          title: "Success",
+          description: "Port of Discharge & Final Destination pair updated successfully",
+        });
+      } else {
+        throw new Error("Failed to update port destination pair");
+      }
+    } catch (error) {
+      console.error("Error updating port destination pair:", error);
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message ||
+          "Failed to update port destination pair. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleDeletePortDestinationPair = async (id: string) => {
+    try {
+      const response = await api.delete(`/country-category/${id}`);
+
+      if (response.status === 200) {
+        setPortDestinationPairs((prev) =>
+          prev.filter((pair) => pair.id !== id)
+        );
+
+        toast({
+          title: "Success",
+          description: "Port of Discharge & Final Destination pair deleted successfully",
+        });
+      } else {
+        throw new Error("Failed to delete port destination pair");
+      }
+    } catch (error) {
+      console.error("Error deleting port destination pair:", error);
+      toast({
+        title: "Error",
+        description:
+          error.response?.data?.message ||
+          "Failed to delete port destination pair. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Dialog opener functions
   const openEditDescHsnDialog = (
     id: string,
     description: string,
@@ -1323,6 +1455,14 @@ const AdminPanel = () => {
     setIsEditUnitTypeDialogOpen(true);
   };
 
+  // Dialog opener function for port-destination pairs
+  const openEditPortDestinationDialog = (id: string, port_of_discharge: string, final_destination: string) => {
+    setEditingItemId(id);
+    setNewPortDestinationPair({ port_of_discharge, final_destination });
+    setIsEditPortDestinationDialogOpen(true);
+  };
+
+  // Supplier handlers (existing)
   const handleAddSupplier = async () => {
     try {
     setIsLoading(true);
@@ -1468,7 +1608,7 @@ const AdminPanel = () => {
     setIsEditSupplierDialogOpen(true);
   };
 
-  // Render functions for different sections
+  // Render functions
   const renderExporterSection = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
@@ -1480,7 +1620,6 @@ const AdminPanel = () => {
           <Plus className="h-4 w-4 mr-2" />
           Add New Exporter
         </Button>
-        
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -1495,7 +1634,6 @@ const AdminPanel = () => {
                 <TableHead>Email</TableHead>
                 <TableHead>IE Code</TableHead>
                 <TableHead>GSTIN</TableHead>
-                {/* <TableHead>Last Updated</TableHead> */}
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -1508,7 +1646,6 @@ const AdminPanel = () => {
                   <TableCell>{exporter.email}</TableCell>
                   <TableCell>{exporter.ie_code}</TableCell>
                   <TableCell>{exporter.gstin_number}</TableCell>
-                  {/* <TableCell>{exporter.updatedAt}</TableCell> */}
                   <TableCell className="text-right">
                     <div className="flex justify-end space-x-2">
                       <Button
@@ -1543,6 +1680,7 @@ const AdminPanel = () => {
     </div>
   );
 
+  // UPDATED: Modified shipping section render function with port-destination pairs
   const renderShippingSection = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center mb-4">
@@ -1555,7 +1693,7 @@ const AdminPanel = () => {
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Place of Receipt */}
+          {/* Place of Receipt - UNCHANGED */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label
@@ -1586,17 +1724,6 @@ const AdminPanel = () => {
                   >
                     <span className="truncate">{item.value}</span>
                     <div className="flex space-x-1 ml-2 shrink-0">
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          openEditValueDialog("place_of_receipt", item.value)
-                        }
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button> */}
-                      
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1620,7 +1747,7 @@ const AdminPanel = () => {
             </div>
           </div>
 
-          {/* Port of Loading */}
+          {/* Port of Loading - UNCHANGED */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label
@@ -1651,16 +1778,6 @@ const AdminPanel = () => {
                   >
                     <span className="truncate">{port.value}</span>
                     <div className="flex space-x-1 ml-2 shrink-0">
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          openEditValueDialog("port_of_loading", port.value)
-                        }
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button> */}
                       <Button
                         variant="ghost"
                         size="sm"
@@ -1683,56 +1800,131 @@ const AdminPanel = () => {
               )}
             </div>
           </div>
+        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-          {/* Port of Discharge */}
-          <div className="space-y-2">
+             
+        {/* NEW: Port of Discharge & Final Destination Pair Section - MOVED FROM TABLE INFO */}
+        <div className="mt-8 bg-white p-4 rounded-md shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+            <h4 className="font-medium text-base">Port of Discharge & Final Destination</h4>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setNewPortDestinationPair({ port_of_discharge: "", final_destination: "" });
+                setIsAddPortDestinationDialogOpen(true);
+              }}
+              className="bg-blue-50 text-blue-600 border-blue-200 hover:bg-blue-100 hover:text-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Pair
+            </Button>
+          </div>
+
+          <div className="h-40 overflow-y-auto border rounded-md">
+            <table className="w-full table-fixed">
+              <thead className="bg-gray-50 sticky top-0 z-10">
+                <tr>
+                  <th className="py-2 pl-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/2">
+                    Port of Discharge
+                  </th>
+                  <th className="py-2 pl-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                    Final Destination
+                  </th>
+                  <th className="py-2 pr-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-1/4">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {portDestinationPairs?.map((pair) => (
+                  <tr key={pair.id} className="hover:bg-gray-50">
+                    <td
+                      className="py-2 pl-3 text-md truncate"
+                      title={pair.port_of_discharge}
+                    >
+                      <div className="truncate">{pair.port_of_discharge}</div>
+                    </td>
+                    <td
+                      className="py-2 pl-3 text-md text-gray-500 truncate"
+                      title={pair.final_destination}
+                    >
+                      <div className="truncate">{pair.final_destination}</div>
+                    </td>
+                    <td className="py-2 pr-2 text-right">
+                      <div className="flex justify-end space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            openEditPortDestinationDialog(
+                              pair.id,
+                              pair.port_of_discharge,
+                              pair.final_destination
+                            )
+                          }
+                          className="h-6 w-6 p-0"
+                        >
+                          <Edit2 className="h-3.5 w-3.5 text-blue-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeletePortDestinationPair(pair.id)}
+                          className="h-6 w-6 p-0"
+                        >
+                          <Trash className="h-3.5 w-3.5 text-red-600" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+                {(!portDestinationPairs || portDestinationPairs.length === 0) && (
+                  <tr>
+                    <td colSpan={3} className="text-center py-4 text-gray-500">
+                      No Port of Discharge & Final Destination pairs added yet.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div className="space-y-2">
             <div className="flex justify-between items-center">
               <Label
-                htmlFor="portOfDischarge"
+                htmlFor="countryOfFinalDestination"
                 className="text-sm font-medium uppercase"
               >
-                PORT OF DISCHARGE
+                Country Of Final Destination
               </Label>
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => openAddValueDialog("port_of_discharge")}
+                onClick={() => openAddValueDialog("country_of_final_destination")}
                 className="h-8 px-2"
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="bg-white border rounded-md h-40 overflow-y-auto">
+            <div className="bg-white border rounded-md h-60 overflow-y-auto">
               {shippingDetails
                 .filter((val, idx) => {
-                  return val.category == "port_of_discharge";
+                  return val.category == "country_of_final_destination";
                 })
                 .map((port) => (
                   <div
-                    key={`port_of_discharge-${port.id}`}
+                    key={`country_of_final_destination-${port.id}`}
                     className="flex justify-between items-center p-2 hover:bg-gray-50 border-b last:border-b-0"
                   >
                     <span className="truncate">{port.value}</span>
                     <div className="flex space-x-1 ml-2 shrink-0">
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          openEditValueDialog("port_of_discharge", port.value)
-                        }
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button> */}
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() =>
-                          handleDeleteShippingValue(
-                            "port_of_discharge",
-                            port.id
-                          )
+                          handleDeleteShippingValue("country_of_final_destination", port.id)
                         }
                         className="h-6 w-6 p-0"
                       >
@@ -1742,89 +1934,20 @@ const AdminPanel = () => {
                   </div>
                 ))}
               {shippingDetails.filter((val, idx) => {
-                return val.category == "port_of_discharge";
+                return val.category == "country_of_final_destination";
               }).length === 0 && (
                 <div className="p-2 text-gray-500 text-center">
-                  No ports of discharge added
+                  No Country of loading added
                 </div>
               )}
             </div>
           </div>
-
-          {/* Final Destination */}
-          <div className="space-y-2">
-            <div className="flex justify-between items-center">
-              <Label
-                htmlFor="finalDestination"
-                className="text-sm font-medium uppercase"
-              >
-                FINAL DESTINATION
-              </Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => openAddValueDialog("final_destination")}
-                className="h-8 px-2"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-            </div>
-
-            <div className="bg-white border rounded-md h-40 overflow-y-auto">
-              {shippingDetails
-                .filter((val, idx) => {
-                  return val.category == "final_destination";
-                })
-                .map((destination) => (
-                  <div
-                    key={`final_destination-${destination.id}`}
-                    className="flex justify-between items-center p-2 hover:bg-gray-50 border-b last:border-b-0"
-                  >
-                    <span className="truncate">{destination.value}</span>
-                    <div className="flex space-x-1 ml-2 shrink-0">
-                      {/* <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          openEditValueDialog(
-                            "final_destination",
-                            destination.value
-                          )
-                        }
-                        className="h-6 w-6 p-0"
-                      >
-                        <Edit2 className="h-3.5 w-3.5 text-amber-600" />
-                      </Button> */}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          handleDeleteShippingValue(
-                            "final_destination",
-                            destination.id
-                          )
-                        }
-                        className="h-6 w-6 p-0"
-                      >
-                        <Trash className="h-3.5 w-3.5 text-red-600" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              {shippingDetails.filter((val, idx) => {
-                return val.category == "final_destination";
-              }).length === 0 && (
-                <div className="p-2 text-gray-500 text-center">
-                  No final destinations added
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+         </div>
       </div>
     </div>
   );
 
+  // UPDATED: Table section without port-destination pairs
   const renderTableSection = () => (
     <div className="space-y-6 ">
       <div className="bg-[#e8f5e9] rounded-lg shadow overflow-hidden p-4 border border-[#c8e6c9]">
@@ -2025,6 +2148,8 @@ const AdminPanel = () => {
           </div>
         </div>
 
+        {/* REMOVED: Port of Discharge & Final Destination Pair section - moved to shipping */}
+
         {/* Unit Type */}
         <div className="bg-white p-4 rounded-md shadow-sm">
           <div className="flex justify-between items-center mb-4">
@@ -2220,7 +2345,7 @@ const AdminPanel = () => {
                         No suppliers added yet.
                       </td>
                     </tr>
-                  )}
+                  )}  
                 </tbody>
               </table>
             </div>
@@ -2317,12 +2442,6 @@ const AdminPanel = () => {
               className="bg-purple-600 hover:bg-purple-700">
                 Add
             </LoadingButton>
-            {/* <Button
-              onClick={handleAddSupplier}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              Add
-            </Button> */}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -2472,13 +2591,6 @@ const AdminPanel = () => {
           </div>
 
           <div className="pt-4 flex justify-end">
-            {/* <Button
-              className="bg-amber-600 hover:bg-amber-700"
-              onClick={handleSaveArnDeclaration}
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save ARN & Declaration
-            </Button> */}
             <LoadingButton
               isGenerating={isLoading}
               onClick={handleSaveArnDeclaration}
@@ -2492,7 +2604,6 @@ const AdminPanel = () => {
     </div>
   );
 
-  // Add exporter form fields
   const renderExporterForm = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2709,228 +2820,136 @@ const AdminPanel = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Top Letterhead Image */}
-          <div className="space-y-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <Label
-                htmlFor="letterhead_top_image"
-                className="text-sm font-semibold text-gray-700"
-              >
-            <div className="flex items-center justify-between">
-                Top Letterhead Image *
-              
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Required
+          {/* Letterhead Top */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Letterhead Top
+              <span className="text-xs text-gray-500 ml-2">
+                (Recommended: 800x200px)
               </span>
-            </div>
-            <div className="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-gray-400 mr-1"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-xs text-gray-500">
-                Recommended: 1000 × 150 px (PNG, JPG)
-              </p>
-            </div>
-            <div className="border-2 border-dashed rounded-md p-6 text-center hover:bg-gray-50 cursor-pointer transition-colors duration-200 ease-in-out bg-gray-50">
-              {formData.letterhead_top_image ? (
+            </Label>
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
+              {formData.letterhead_top_image?.preview || formData.letterhead_top_image ? (
                 <div className="relative">
                   <img
-                    src={formData.letterhead_top_image.preview}
-                    alt="Top Letterhead"
-                    className="max-h-32 mx-auto object-contain rounded border border-gray-200"
+                    src={formData.letterhead_top_image?.preview || formData.letterhead_top_image}
+                    alt="Letterhead Top"
+                    className="w-full h-24 object-contain rounded"
                   />
                   <Button
+                    type="button"
                     variant="destructive"
                     size="sm"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 shadow-sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
                     onClick={() => handleRemoveImage("letterhead_top_image")}
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
               ) : (
-                <div>
-                  <div className="flex justify-center mb-3">
-                    <div className="p-3 rounded-full bg-gray-100">
-                      <Upload className="h-8 w-8 text-gray-500" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700">
-                    Drag and drop or click to upload
+                <div className="text-center">
+                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    Click to upload letterhead top
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Company letterhead for the top of documents
-                  </p>
-                  <input
-                    type="file"
-                    id="letterhead_top_image"
-                    accept="image/png, image/jpeg"
-                    className="hidden"
-                    onChange={(e) =>
-                      handleImageUpload(e, "letterhead_top_image")
-                    }
-                    />
+                  <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
                 </div>
               )}
-              
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, "letterhead_top_image")}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
             </div>
-              </Label>
           </div>
 
-          {/* Bottom Letterhead Image */}
-          <div className="space-y-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <Label
-                htmlFor="letterhead_bottom_image"
-                className="text-sm font-semibold text-gray-700"
-              >
-            <div className="flex items-center justify-between">
-                Bottom Letterhead Image *
-              
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Required
+          {/* Letterhead Bottom */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Letterhead Bottom
+              <span className="text-xs text-gray-500 ml-2">
+                (Recommended: 800x150px)
               </span>
-            </div>
-            <div className="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-gray-400 mr-1"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-xs text-gray-500">
-                Recommended: 1000 × 150 px (PNG, JPG)
-              </p>
-            </div>
-            <div className="border-2 border-dashed rounded-md p-6 text-center hover:bg-gray-50 cursor-pointer transition-colors duration-200 ease-in-out bg-gray-50">
-              {formData.letterhead_bottom_image ? (
+            </Label>
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
+              {formData.letterhead_bottom_image?.preview || formData.letterhead_bottom_image ? (
                 <div className="relative">
                   <img
-                    src={formData.letterhead_bottom_image.preview}
-                    alt="Bottom Letterhead"
-                    className="max-h-32 mx-auto object-contain rounded border border-gray-200"
+                    src={formData.letterhead_bottom_image?.preview || formData.letterhead_bottom_image}
+                    alt="Letterhead Bottom"
+                    className="w-full h-24 object-contain rounded"
                   />
                   <Button
+                    type="button"
                     variant="destructive"
                     size="sm"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 shadow-sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
                     onClick={() => handleRemoveImage("letterhead_bottom_image")}
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
               ) : (
-                <div>
-                  <div className="flex justify-center mb-3">
-                    <div className="p-3 rounded-full bg-gray-100">
-                      <Upload className="h-8 w-8 text-gray-500" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700">
-                    Drag and drop or click to upload
+                <div className="text-center">
+                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    Click to upload letterhead bottom
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Company letterhead for the bottom of documents
-                  </p>
-                  <input
-                    type="file"
-                    id="letterhead_bottom_image"
-                    accept="image/png, image/jpeg"
-                    className="hidden"
-                    onChange={(e) =>
-                      handleImageUpload(e, "letterhead_bottom_image")
-                    }
-                  />
+                  <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
                 </div>
               )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, "letterhead_bottom_image")}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
             </div>
-              </Label>
           </div>
 
-          {/* Stamp Image */}
-          <div className="space-y-3 bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-              <Label
-                htmlFor="stamp_image"
-                className="text-sm font-semibold text-gray-700"
-              >
-            <div className="flex items-center justify-between">
-                Company Stamp Image *
-              
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                Required
+          {/* Digital Stamp */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              Digital Stamp/Signature
+              <span className="text-xs text-gray-500 ml-2">
+                (Recommended: 200x150px)
               </span>
-            </div>
-            <div className="flex items-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 text-gray-400 mr-1"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z"
-                  clipRule="evenodd"
-                />
-              </svg>
-              <p className="text-xs text-gray-500">
-                Recommended: 200 × 200 px (PNG with transparency)
-              </p>
-            </div>
-            <div className="border-2 border-dashed rounded-md p-6 text-center hover:bg-gray-50 cursor-pointer transition-colors duration-200 ease-in-out bg-gray-50">
-              {formData.stamp_image ? (
+            </Label>
+            <div className="relative border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-gray-400 transition-colors">
+              {formData.stamp_image?.preview || formData.stamp_image ? (
                 <div className="relative">
                   <img
-                    src={formData.stamp_image.preview}
-                    alt="Company Stamp"
-                    className="max-h-32 mx-auto object-contain rounded border border-gray-200"
+                    src={formData.stamp_image?.preview || formData.stamp_image}
+                    alt="Digital Stamp"
+                    className="w-full h-24 object-contain rounded"
                   />
                   <Button
+                    type="button"
                     variant="destructive"
                     size="sm"
-                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0 shadow-sm"
+                    className="absolute -top-2 -right-2 h-6 w-6 rounded-full p-0"
                     onClick={() => handleRemoveImage("stamp_image")}
                   >
                     <X className="h-3 w-3" />
                   </Button>
                 </div>
               ) : (
-                <div>
-                  <div className="flex justify-center mb-3">
-                    <div className="p-3 rounded-full bg-gray-100">
-                      <Upload className="h-8 w-8 text-gray-500" />
-                    </div>
-                  </div>
-                  <p className="text-sm font-medium text-gray-700">
-                    Drag and drop or click to upload
+                <div className="text-center">
+                  <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600 mb-2">
+                    Click to upload digital stamp
                   </p>
-                  <p className="mt-1 text-xs text-gray-500">
-                    Official company stamp or signature
-                  </p>
-                  <input
-                    type="file"
-                    id="stamp_image"
-                    accept="image/png, image/jpeg"
-                    className="hidden"
-                    onChange={(e) => handleImageUpload(e, "stamp_image")}
-                  />
+                  <p className="text-xs text-gray-400">PNG, JPG up to 5MB</p>
                 </div>
               )}
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => handleImageUpload(e, "stamp_image")}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
             </div>
-            </Label>
           </div>
         </div>
       </div>
@@ -2939,63 +2958,76 @@ const AdminPanel = () => {
 
   return (
     <div className="container mx-auto p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold">Admin Panel</h1>
-          <p className="text-muted-foreground">
-            Manage dropdown options for invoice forms
-          </p>
-        </div>
-        <Button onClick={() => navigate("/")} variant="outline">
-          Back to Dashboard
-        </Button>
-      </div>
+      <PageHeader
+        title="Admin Panel"
+        description="Manage your invoice system settings and configurations"
+      />
 
-      <Card className="mt-6">
-        <CardHeader className="pb-3">
-          <CardTitle>Dropdown Options Management</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs
-            value={activeTab}
-            onValueChange={setActiveTab}
-            className="w-full"
-          >
-            <TabsList className="grid grid-cols-5 mb-6">
-              <TabsTrigger value="exporter">Exporter Section</TabsTrigger>
-              <TabsTrigger value="shipping">Shipping Details</TabsTrigger>
-              <TabsTrigger value="table">Table Information</TabsTrigger>
-              <TabsTrigger value="supplier">Supplier Details</TabsTrigger>
-              <TabsTrigger value="arn">ARN & Declaration</TabsTrigger>
-            </TabsList>
-            <TabsContent value="exporter">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid grid-cols-5 w-full">
+          {sections.map((section) => (
+            <TabsTrigger key={section.id} value={section.id}>
+              {section.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value="exporter" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
               {renderExporterSection()}
-            </TabsContent>
-            <TabsContent value="shipping">
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="shipping" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
               {renderShippingSection()}
-            </TabsContent>
-            <TabsContent value="table">{renderTableSection()}</TabsContent>
-            <TabsContent value="supplier">
+            </CardContent>
+            </Card>
+        </TabsContent>
+
+        <TabsContent value="table" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              {renderTableSection()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="supplier" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
               {renderSupplierSection()}
-            </TabsContent>
-            <TabsContent value="arn">{renderARNSection()}</TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="arn" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              {renderARNSection()}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Add Exporter Dialog */}
       <Dialog
         open={isAddExporterDialogOpen}
         onOpenChange={setIsAddExporterDialogOpen}
       >
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Exporter</DialogTitle>
             <DialogDescription>
-              Fill in the details to add a new exporter.
+              Enter the exporter details. All fields marked with * are required.
             </DialogDescription>
           </DialogHeader>
-          {renderExporterForm()}
+          <div className="py-4">
+            {renderExporterForm()}
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -3006,12 +3038,13 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            {/* <Button onClick={handleAddExporter}>Save Exporter</Button> */}
             <LoadingButton
               isGenerating={isLoading}
               onClick={handleAddExporter}
-              className="bg-black "
-              >Save Exporter</LoadingButton>
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              Add Exporter
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3021,14 +3054,16 @@ const AdminPanel = () => {
         open={isEditExporterDialogOpen}
         onOpenChange={setIsEditExporterDialogOpen}
       >
-        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Edit Exporter</DialogTitle>
             <DialogDescription>
-              Update the exporter details. 
+              Update the exporter details below.
             </DialogDescription>
           </DialogHeader>
-          {renderExporterForm()}
+          <div className="py-4">
+            {renderExporterForm()}
+          </div>
           <DialogFooter>
             <Button
               variant="outline"
@@ -3190,36 +3225,27 @@ const AdminPanel = () => {
         open={isAddValueDialogOpen}
         onOpenChange={setIsAddValueDialogOpen}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              Add New{" "}
-              {editingCategory === "place_of_receipt"
-                ? "Place of Receipt"
-                : editingCategory === "port_of_loading"
-                ? "Port of Loading"
-                : editingCategory === "port_of_discharge"
-                ? "Port of Discharge"
-                : "Final Destination"}
-            </DialogTitle>
+            <DialogTitle>Add Value</DialogTitle>
+            <DialogDescription>
+              Add a new value for {editingCategory?.replace(/_/g, ' ')}.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <Label htmlFor="newValue">Value</Label>
+          <div className="py-4">
+            <Label htmlFor="new-value">Value</Label>
             <Input
-              id="newValue"
+              id="new-value"
               value={newValue}
               onChange={(e) => setNewValue(e.target.value)}
               placeholder="Enter new value"
+              className="mt-1"
             />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => {
-                setIsAddValueDialogOpen(false);
-                setEditingCategory(null);
-                setNewValue("");
-              }}
+              onClick={() => setIsAddValueDialogOpen(false)}
             >
               Cancel
             </Button>
@@ -3227,10 +3253,9 @@ const AdminPanel = () => {
               isGenerating={isLoading}
               onClick={handleAddShippingValue}
               className="bg-black"
-              >
-                Add
-              </LoadingButton>
-            {/* <Button onClick={handleAddShippingValue}>Add</Button> */}
+            >
+              Add
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3240,26 +3265,21 @@ const AdminPanel = () => {
         open={isEditValueDialogOpen}
         onOpenChange={setIsEditValueDialogOpen}
       >
-        <DialogContent className="max-w-md">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>
-              Edit{" "}
-              {editingCategory === "place_of_receipt"
-                ? "Place of Receipt"
-                : editingCategory === "port_of_loading"
-                ? "Port of Loading"
-                : editingCategory === "port_of_discharge"
-                ? "Port of Discharge"
-                : "Final Destination"}
-            </DialogTitle>
+            <DialogTitle>Edit Value</DialogTitle>
+            <DialogDescription>
+              Update the value for {editingCategory?.replace(/_/g, ' ')}.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <Label htmlFor="editValue">Value</Label>
+          <div className="py-4">
+            <Label htmlFor="edit-value">Value</Label>
             <Input
-              id="editValue"
+              id="edit-value"
               value={editingItemValue}
               onChange={(e) => setEditingItemValue(e.target.value)}
-              placeholder="Enter updated value"
+              placeholder="Enter value"
+              className="mt-1"
             />
           </div>
           <DialogFooter>
@@ -3269,7 +3289,6 @@ const AdminPanel = () => {
                 setIsEditValueDialogOpen(false);
                 setEditingCategory(null);
                 setEditingItemIndex(null);
-                setEditingItemValue("");
               }}
             >
               Cancel
@@ -3279,7 +3298,7 @@ const AdminPanel = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Description/HSN Dialog */}
+      {/* Add Description & HSN Code Dialog */}
       <Dialog
         open={isAddDescHsnDialogOpen}
         onOpenChange={setIsAddDescHsnDialogOpen}
@@ -3334,13 +3353,14 @@ const AdminPanel = () => {
               isGenerating={isLoading}
               onClick={handleAddDescHsnPair}
               className="bg-black"
-              >Add</LoadingButton>
-            {/* <Button onClick={handleAddDescHsnPair}>Add</Button> */}
+            >
+              Add
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Description/HSN Dialog */}
+      {/* Edit Description & HSN Code Dialog */}
       <Dialog
         open={isEditDescHsnDialogOpen}
         onOpenChange={setIsEditDescHsnDialogOpen}
@@ -3349,7 +3369,7 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle>Edit Description & HSN Code</DialogTitle>
             <DialogDescription>
-              Update the description and HSN code as a pair.
+              Update the description and HSN code.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -3399,7 +3419,7 @@ const AdminPanel = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Size/SQM Dialog */}
+      {/* Add Size & SQM Dialog */}
       <Dialog
         open={isAddSizeSqmDialogOpen}
         onOpenChange={setIsAddSizeSqmDialogOpen}
@@ -3408,7 +3428,7 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle>Add Size & SQM</DialogTitle>
             <DialogDescription>
-              Enter the size and SQM value as a pair.
+              Enter the size and SQM as a pair.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -3418,7 +3438,10 @@ const AdminPanel = () => {
                 id="size"
                 value={newSizeSqmPair.size}
                 onChange={(e) =>
-                  setNewSizeSqmPair({ ...newSizeSqmPair, size: e.target.value })
+                  setNewSizeSqmPair({
+                    ...newSizeSqmPair,
+                    size: e.target.value,
+                  })
                 }
                 placeholder="e.g., 600 X 1200"
                 className="mt-1"
@@ -3430,7 +3453,10 @@ const AdminPanel = () => {
                 id="sqm"
                 value={newSizeSqmPair.sqm}
                 onChange={(e) =>
-                  setNewSizeSqmPair({ ...newSizeSqmPair, sqm: e.target.value })
+                  setNewSizeSqmPair({
+                    ...newSizeSqmPair,
+                    sqm: e.target.value,
+                  })
                 }
                 placeholder="e.g., 1.44"
                 className="mt-1"
@@ -3444,17 +3470,18 @@ const AdminPanel = () => {
             >
               Cancel
             </Button>
-            {/* <Button onClick={handleAddSizeSqmPair}>Add</Button> */}
             <LoadingButton
               isGenerating={isLoading}
               onClick={handleAddSizeSqmPair}
               className="bg-black"
-              >Add</LoadingButton>
+            >
+              Add
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Size/SQM Dialog */}
+      {/* Edit Size & SQM Dialog */}
       <Dialog
         open={isEditSizeSqmDialogOpen}
         onOpenChange={setIsEditSizeSqmDialogOpen}
@@ -3463,7 +3490,7 @@ const AdminPanel = () => {
           <DialogHeader>
             <DialogTitle>Edit Size & SQM</DialogTitle>
             <DialogDescription>
-              Update the size and SQM value as a pair.
+              Update the size and SQM.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
@@ -3473,7 +3500,10 @@ const AdminPanel = () => {
                 id="edit-size"
                 value={newSizeSqmPair.size}
                 onChange={(e) =>
-                  setNewSizeSqmPair({ ...newSizeSqmPair, size: e.target.value })
+                  setNewSizeSqmPair({
+                    ...newSizeSqmPair,
+                    size: e.target.value,
+                  })
                 }
                 placeholder="e.g., 600 X 1200"
                 className="mt-1"
@@ -3485,7 +3515,10 @@ const AdminPanel = () => {
                 id="edit-sqm"
                 value={newSizeSqmPair.sqm}
                 onChange={(e) =>
-                  setNewSizeSqmPair({ ...newSizeSqmPair, sqm: e.target.value })
+                  setNewSizeSqmPair({
+                    ...newSizeSqmPair,
+                    sqm: e.target.value,
+                  })
                 }
                 placeholder="e.g., 1.44"
                 className="mt-1"
@@ -3515,13 +3548,15 @@ const AdminPanel = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add Unit Type</DialogTitle>
-            <DialogDescription>Enter a new unit type.</DialogDescription>
+            <DialogDescription>
+              Enter a new unit type.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="unitType">Unit Type</Label>
+              <Label htmlFor="unit_type">Unit Type</Label>
               <Input
-                id="unitType"
+                id="unit_type"
                 value={newUnitType}
                 onChange={(e) => setNewUnitType(e.target.value)}
                 placeholder="e.g., Box"
@@ -3540,9 +3575,9 @@ const AdminPanel = () => {
               isGenerating={isLoading}
               onClick={handleAddUnitType}
               className="bg-black"
-              >Add</LoadingButton>
-            
-            {/* <Button onClick={handleAddUnitType}>Add</Button> */}
+            >
+              Add
+            </LoadingButton>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -3555,13 +3590,15 @@ const AdminPanel = () => {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Unit Type</DialogTitle>
-            <DialogDescription>Update the unit type.</DialogDescription>
+            <DialogDescription>
+              Update the unit type.
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="edit-unitType">Unit Type</Label>
+              <Label htmlFor="edit-unit_type">Unit Type</Label>
               <Input
-                id="edit-unitType"
+                id="edit-unit_type"
                 value={editingUnitTypeValue}
                 onChange={(e) => setEditingUnitTypeValue(e.target.value)}
                 placeholder="e.g., Box"
@@ -3580,6 +3617,127 @@ const AdminPanel = () => {
               Cancel
             </Button>
             <Button onClick={handleEditUnitType}>Update</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Port of Discharge & Final Destination Dialog */}
+      <Dialog
+        open={isAddPortDestinationDialogOpen}
+        onOpenChange={setIsAddPortDestinationDialogOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add Port of Discharge & Final Destination</DialogTitle>
+            <DialogDescription>
+              Enter the port of discharge and final destination as a pair.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="port_of_discharge">Port of Discharge</Label>
+              <Input
+                id="port_of_discharge"
+                value={newPortDestinationPair.port_of_discharge}
+                onChange={(e) =>
+                  setNewPortDestinationPair({
+                    ...newPortDestinationPair,
+                    port_of_discharge: e.target.value,
+                  })
+                }
+                placeholder="e.g., MUNDRA"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="final_destination">Final Destination</Label>
+              <Input
+                id="final_destination"
+                value={newPortDestinationPair.final_destination}
+                onChange={(e) =>
+                  setNewPortDestinationPair({
+                    ...newPortDestinationPair,
+                    final_destination: e.target.value,
+                  })
+                }
+                placeholder="e.g., NEW YORK"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAddPortDestinationDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <LoadingButton
+              isGenerating={isLoading}
+              onClick={handleAddPortDestinationPair}
+              className="bg-black"
+            >
+              Add
+            </LoadingButton>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Port of Discharge & Final Destination Dialog */}
+      <Dialog
+        open={isEditPortDestinationDialogOpen}
+        onOpenChange={setIsEditPortDestinationDialogOpen}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Port of Discharge & Final Destination</DialogTitle>
+            <DialogDescription>
+              Update the port of discharge and final destination.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div>
+              <Label htmlFor="edit-port_of_discharge">Port of Discharge</Label>
+              <Input
+                id="edit-port_of_discharge"
+                value={newPortDestinationPair.port_of_discharge}
+                onChange={(e) =>
+                  setNewPortDestinationPair({
+                    ...newPortDestinationPair,
+                    port_of_discharge: e.target.value,
+                  })
+                }
+                placeholder="e.g., MUNDRA"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label htmlFor="edit-final_destination">Final Destination</Label>
+              <Input
+                id="edit-final_destination"
+                value={newPortDestinationPair.final_destination}
+                onChange={(e) =>
+                  setNewPortDestinationPair({
+                    ...newPortDestinationPair,
+                    final_destination: e.target.value,
+                  })
+                }
+                placeholder="e.g., NEW YORK"
+                className="mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsEditPortDestinationDialogOpen(false);
+                setEditingItemId(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button onClick={handleEditPortDestinationPair}>Update</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

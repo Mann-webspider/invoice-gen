@@ -15,6 +15,15 @@ class CreateDropdownSchema
         updated_at  DATETIME DEFAULT UPDATED_TIMESTAMP
     )");
 
+        $pdo->exec("CREATE TABLE IF NOT EXISTS country_dropdown_options (
+        id TEXT PRIMARY KEY ,
+        final_destination VARCHAR(50) NOT NULL,
+        port_of_discharge TEXT NOT NULL,
+        is_active BOOLEAN DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at  DATETIME DEFAULT UPDATED_TIMESTAMP
+    )");
+
         
     }
 
@@ -22,6 +31,7 @@ class CreateDropdownSchema
     {
         $tables = [
             "dropdown_options",
+            "country_dropdown_options"
            
         ];
 

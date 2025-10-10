@@ -242,7 +242,7 @@ const safeFormatDate = (value) => {
             <div className="grid grid-cols-2 gap-4 mt-6">
               <div className="space-y-2">
                 <Label htmlFor="consignee">CONSIGNEE</Label>
-                <Input
+                <Textarea
                   id="consignee"
                   value={buyerForm?.consignee || ""}
                   {...register("invoice.buyer.consignee", { required: true })}
