@@ -56,6 +56,7 @@ import { useForm } from "@/context/FormContext";
 
 import { Controller, useForm as rhf,FormProvider,useFormContext  } from "react-hook-form";
 import { useDraftForm } from "@/hooks/useDraftForm";
+import RemarksToggleComponent from "@/components/forms/RemarksToggleComponent";
 import { nanoid } from "nanoid"; 
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
@@ -931,6 +932,7 @@ useEffect(() => {
         hydrated={hydrated}
       />
    
+      <RemarksToggleComponent form={form} />
 
       <PackageInfoSection
         paymentTerms={paymentTerms}
