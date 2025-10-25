@@ -11,16 +11,22 @@ import { ChevronDown, ChevronUp, MessageSquare, Plus, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Edit3, FileText, ClipboardList, StickyNote, Pencil, NotebookPen} from 'lucide-react';
 
+
 interface RemarksToggleComponentProps {
   form: any;
 }
 
+
 const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form }) => {
   const [showRemarks, setShowRemarks] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [isEpcgNoFocused, setIsEpcgNoFocused] = useState(false);
+  const [isEpcgDateFocused, setIsEpcgDateFocused] = useState(false);
+
 
   const remarksValue = form.watch("invoice.remarks") || "";
   const hasRemarks = remarksValue.trim().length > 0;
+
 
   return (
     <Card className="w-full border-gray-200 shadow-sm hover:shadow-md transition-all duration-200">
@@ -107,6 +113,75 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
                   />
                 )}
               />
+            </div>
+
+            {/* EPCG No. and EPCG Date */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="epcgNo" 
+                  className="text-sm font-medium text-gray-700"
+                >
+                  EPCG No.
+                </Label>
+                
+                <Controller
+                  control={form.control}
+                  name="invoice.epcgNo"
+                  defaultValue=""
+                  render={({ field }) => (
+                    <textarea
+                      {...field}
+                      id="epcgNo"
+                      rows={2}
+                      onFocus={() => setIsEpcgNoFocused(true)}
+                      onBlur={() => setIsEpcgNoFocused(false)}
+                      className={cn(
+                        "w-full p-3 border rounded-lg resize-none transition-all duration-200",
+                        "text-sm leading-relaxed placeholder:text-gray-400",
+                        "focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent",
+                        isEpcgNoFocused || field.value 
+                          ? "border-gray-400 bg-gray-50/30" 
+                          : "border-gray-300 bg-white hover:border-gray-400"
+                      )}
+                      placeholder="Enter EPCG number..."
+                      style={{ minHeight: '60px', maxHeight: '120px' }}
+                    />
+                  )}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label 
+                  htmlFor="epcgDate" 
+                  className="text-sm font-medium text-gray-700"
+                >
+                  EPCG Date
+                </Label>
+                
+                <Controller
+                  control={form.control}
+                  name="invoice.epcgDate"
+                  defaultValue=""
+                  render={({ field }) => (
+                    <input
+                      {...field}
+                      type="date"
+                      id="epcgDate"
+                      onFocus={() => setIsEpcgDateFocused(true)}
+                      onBlur={() => setIsEpcgDateFocused(false)}
+                      className={cn(
+                        "w-full p-3 border rounded-lg transition-all duration-200",
+                        "text-sm placeholder:text-gray-400",
+                        "focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent",
+                        isEpcgDateFocused || field.value 
+                          ? "border-gray-400 bg-gray-50/30" 
+                          : "border-gray-300 bg-white hover:border-gray-400"
+                      )}
+                    />
+                  )}
+                />
+              </div>
             </div>
           </div>
         </CardContent>
