@@ -532,6 +532,8 @@ const [isSubmitting, setIsSubmitting] = useState(false);
   const handleFiles = async (data: any) => {
   try {
     // Generate Excel and Docx
+    console.log("backend data",data);
+    
     const { allBuffers: excelBlobs, fileName: excelFileName } = await generateInvoiceExcel(data);
     const docxFile = await generateInvoigenerateDocxceExcel(data);
 

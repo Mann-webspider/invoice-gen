@@ -48,23 +48,6 @@ function round3(num: number): number {
 }
 
 
-// Extract initials from names, ignoring numbers and addresses
-function extractInitialsOnly(input: string): string {
-    return input
-        .split(/\r?\n+/)
-        .map(line => line.trim())
-        .filter(line => line && /^[A-Za-z\s]+$/.test(line)) // only keep pure text (names)
-        .map(name =>
-            name
-                .split(/\s+/)
-                .map(word => word.charAt(0).toUpperCase() + ".")
-                .join(" ")
-        )
-        .join("\n");
-}
-
-
-
 
 // Convert full names and address to initials except for numbers
 function convertNamesToInitials(input: string): string {
@@ -160,10 +143,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     // buyersOrderDate = `${day}/${month}/${year}`;
     let poNo = data.buyer.po_number === "-" ? "" : data.buyer.po_number;
     let consignee = data.buyer.consignee || "";
-    let formattedConsignee = extractInitialsOnly(consignee);
-
     let notifyParty = data.buyer.notify_party || "";
-    let formattedNotifyParty = extractInitialsOnly(notifyParty);
+    let formattedNotifyParty = convertNamesToInitials(notifyParty);
 
     let preCarriage = data.shipping.pre_carriage === "-" ? "" : data.shipping.pre_carriage;
     let vassalFlightNo = data.shipping.vessel_flight_no === "-" ? "" : data.shipping.vessel_flight_no;
@@ -236,10 +217,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     //   ['Coral Blush', '600X600', 1000, 'BOX', 1.44, 1440, 10.0, 14400.0, 32522.00, 65465.00],
     //   ['Shadow Brown', '600X600', 1000, 'BOX', 1.44, 1440, 10.0, 14400.0, 32522.00, 65465.00],
     // ];
-
-    let isRemarks = data?.is_remark === 1? true: false || false;
-    let remarks = data?.remarks || "";
-
     let packageInfo = data.package.number_of_package || "";
     let [totalPackages, unitOfIt] = packageInfo.split(' ');
 
@@ -673,7 +650,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     worksheet.getCell('O13').font = { bold: true };
 
     worksheet.mergeCells('O14:AA19');
-    worksheet.getCell('O14').value = `${formattedNotifyParty}\n${formattedConsignee}`;
+    worksheet.getCell('O14').value = `${formattedNotifyParty}`;
     worksheet.getCell('O14').font = { bold: true };
     worksheet.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('O13:AA19', worksheet, 'medium'); // Removalble
@@ -1284,32 +1261,15 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     }
 
     row++;
+    worksheet.mergeCells('A' + row + ':D' + (row + 7));
+    setOuterBorder('A' + row + ':D' + (row + 7), worksheet);
 
-    let skipRow;
-    let addSkipRow;
-    if (isRemarks) {
-        worksheet.mergeCells('A' + row + ':D' + (row + 8));
-        setOuterBorder('A' + row + ':D' + (row + 8), worksheet);
-
-        skipRow = 4;
-        addSkipRow = 6;
-        if (taxStatus == "with") {
-            skipRow = 3;
-            addSkipRow = 7;
-        }
+    let skipRow = 3;
+    let addSkipRow = 6;
+    if (taxStatus == "with") {
+        skipRow = 2;
+        addSkipRow = 7;
     }
-    else {
-        worksheet.mergeCells('A' + row + ':D' + (row + 7));
-        setOuterBorder('A' + row + ':D' + (row + 7), worksheet);
-
-        skipRow = 3;
-        addSkipRow = 6;
-        if (taxStatus == "with") {
-            skipRow = 2;
-            addSkipRow = 7;
-        }
-    }
-
     if (type !== "tiles") {
         for (let i = 0; i < skipRow; i++) {
             setOuterBorder('E' + row + ':Q' + row, worksheet);
@@ -1348,21 +1308,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             row++;
         }
 
-        if (isRemarks) {
-            worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-            worksheet.getCell('E' + (row - 1)).value = remarks;
-            // worksheet.getCell('R' + (row - 1)).font = { bold: true };
-            worksheet.getCell('E' + (row - 1)).alignment = { vertical: 'top', wrapText: true };
-
-            // Adjust height automatically
-            const lineCount = remarks.split(/\r?\n/).length;
-            worksheet.getRow(row - 1).height = 16 * lineCount;
-
-            // const estimatedLines = Math.ceil(remarks.length / 60); // assuming ~60 chars per line
-            // worksheet.getRow(1).height = 15 * estimatedLines;
-
-        }
-
         worksheet.mergeCells('R' + row + ':R' + (row + addSkipRow));
         setOuterBorder('R' + row + ':R' + (row + addSkipRow), worksheet);
         worksheet.mergeCells('S' + row + ':T' + (row + addSkipRow));
@@ -1381,26 +1326,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     else {
         for (let i = 0; i < skipRow; i++) {
             setOuterBorder('E' + row + ':Q' + row, worksheet);
+
             setOuterBorder('R' + row + ':S' + row, worksheet);
             setOuterBorder('T' + row + ':U' + row, worksheet);
             setOuterBorder('V' + row + ':X' + row, worksheet);
             setOuterBorder('Y' + row + ':AA' + row, worksheet);
             row++;
-        }
-
-        if (isRemarks) {
-            worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-            worksheet.getCell('E' + (row - 1)).value = remarks;
-            // worksheet.getCell('R' + (row - 1)).font = { bold: true };
-            worksheet.getCell('E' + (row - 1)).alignment = { vertical: 'top', wrapText: true };
-
-            // Adjust height automatically
-            const lineCount = remarks.split(/\r?\n/).length;
-            worksheet.getRow(row - 1).height = 16 * lineCount;
-
-            // const estimatedLines = Math.ceil(remarks.length / 60); // assuming ~60 chars per line
-            // worksheet.getRow(1).height = 15 * estimatedLines;
-
         }
 
         worksheet.mergeCells('R' + row + ':S' + (row + addSkipRow));
@@ -2468,7 +2399,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         worksheetCopy.getCell('O13').font = { bold: true };
 
         worksheetCopy.mergeCells('O14:AA19');
-        worksheetCopy.getCell('O14').value = `${formattedNotifyParty}\n${formattedConsignee}`;
+        worksheetCopy.getCell('O14').value = `${formattedNotifyParty}`;
         worksheetCopy.getCell('O14').font = { bold: true };
         worksheetCopy.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
         setOuterBorder('O13:AA19', worksheetCopy, 'medium'); // Removalble
@@ -3175,30 +3106,15 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         }
 
         row++;
+        worksheetCopy.mergeCells('A' + row + ':D' + (row + 7));
+        setOuterBorder('A' + row + ':D' + (row + 7), worksheetCopy);
 
-        if (isRemarks) {
-            worksheetCopy.mergeCells('A' + row + ':D' + (row + 8));
-            setOuterBorder('A' + row + ':D' + (row + 8), worksheetCopy);
-
-            skipRow = 4;
-            addSkipRow = 6;
-            if (taxStatus == "with") {
-                skipRow = 3;
-                addSkipRow = 7;
-            }
+        skipRow = 3;
+        addSkipRow = 6;
+        if (taxStatus == "with") {
+            skipRow = 2;
+            addSkipRow = 7;
         }
-        else {
-            worksheetCopy.mergeCells('A' + row + ':D' + (row + 7));
-            setOuterBorder('A' + row + ':D' + (row + 7), worksheetCopy);
-
-            skipRow = 3;
-            addSkipRow = 6;
-            if (taxStatus == "with") {
-                skipRow = 2;
-                addSkipRow = 7;
-            }
-        }
-
         if (type !== "tiles") {
             for (let i = 0; i < skipRow; i++) {
                 setOuterBorder('E' + row + ':Q' + row, worksheetCopy);
@@ -3237,21 +3153,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                 row++;
             }
 
-            if (isRemarks) {
-                worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-                worksheetCopy.getCell('E' + (row - 1)).value = remarks;
-                // worksheet.getCell('R' + (row - 1)).font = { bold: true };
-                worksheetCopy.getCell('E' + (row - 1)).alignment = { vertical: 'top', wrapText: true };
-
-                // Adjust height automatically
-                const lineCount = remarks.split(/\r?\n/).length;
-                worksheetCopy.getRow(row - 1).height = 16 * lineCount;
-
-                // const estimatedLines = Math.ceil(remarks.length / 60); // assuming ~60 chars per line
-                // worksheet.getRow(1).height = 15 * estimatedLines;
-
-            }
-
             worksheetCopy.mergeCells('R' + row + ':R' + (row + addSkipRow));
             setOuterBorder('R' + row + ':R' + (row + addSkipRow), worksheetCopy);
             worksheetCopy.mergeCells('S' + row + ':T' + (row + addSkipRow));
@@ -3276,21 +3177,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                 setOuterBorder('V' + row + ':X' + row, worksheetCopy);
                 setOuterBorder('Y' + row + ':AA' + row, worksheetCopy);
                 row++;
-            }
-
-            if (isRemarks) {
-                worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-                worksheetCopy.getCell('E' + (row - 1)).value = remarks;
-                // worksheet.getCell('R' + (row - 1)).font = { bold: true };
-                worksheetCopy.getCell('E' + (row - 1)).alignment = { vertical: 'top', wrapText: true };
-
-                // Adjust height automatically
-                const lineCount = remarks.split(/\r?\n/).length;
-                worksheetCopy.getRow(row - 1).height = 16 * lineCount;
-
-                // const estimatedLines = Math.ceil(remarks.length / 60); // assuming ~60 chars per line
-                // worksheet.getRow(1).height = 15 * estimatedLines;
-
             }
 
             worksheetCopy.mergeCells('R' + row + ':S' + (row + addSkipRow));
@@ -4321,7 +4207,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     packingList.getCell('N12').font = { bold: true };
 
     packingList.mergeCells('N13:AA18');
-    packingList.getCell('N13').value = `${formattedNotifyParty}\n${formattedConsignee}`;
+    packingList.getCell('N13').value = `${formattedNotifyParty}`;
     packingList.getCell('N13').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('N12:AA18', packingList);
 
@@ -6203,9 +6089,13 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         vgnSignatureH = height;
 
     }
+    
 
-    // customerInvoiceWorkbook.calcProperties.fullCalcOnLoad = true;
+    customerInvoiceWorkbook.calcProperties.fullCalcOnLoad = true;
+    customerInvoice.getColumn(1).width = 5;
+    customerInvoice.getCell('A1').value = worksheet.getCell('A1').value || ' ';
     configurePrintSheet(customerInvoice);
+    customerInvoice.getColumn(17).hidden = true;
 
 
     customerInvoice.mergeCells('A1:AA1');

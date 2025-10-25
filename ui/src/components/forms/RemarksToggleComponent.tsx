@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Controller } from "react-hook-form";
+import { Controller ,useWatch} from "react-hook-form";
 import {
   Card,
   CardContent,
@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MessageSquare, Plus, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Edit3, FileText, ClipboardList, StickyNote, Pencil, NotebookPen} from 'lucide-react';
+import { useEffect } from "react";
 
 interface RemarksToggleComponentProps {
   form: any;
@@ -19,7 +20,29 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
   const [showRemarks, setShowRemarks] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
 
-  const remarksValue = form.watch("invoice.remarks") || "";
+  // Use useWatch for better performance - isolates re-renders
+  const remarksValue = useWatch({
+    control: form.control,
+    name: "invoice.remarks",
+    defaultValue: ""
+  });
+  //   useEffect(() => {
+  //   const subscription = form.watch((value) => {
+  //     console.log("📋 Form values changed:", value);
+  //   });
+  //   return () => subscription.unsubscribe();
+  // }, [form]);
+
+  // Update dependent fields in useEffect to avoid render loops
+  useEffect(() => {
+    const hasRemarks = showRemarks && remarksValue.trim().length > 0;
+    
+    form.setValue("invoice.isRemark", hasRemarks, { shouldDirty: false });
+    form.setValue("invoice.remarks", remarksValue, { shouldDirty: false });
+    
+  }, [showRemarks, remarksValue, form]);
+ 
+
   const hasRemarks = remarksValue.trim().length > 0;
 
   return (

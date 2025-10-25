@@ -16,6 +16,8 @@ class Invoice extends Model
         "product_type",
         "currancy_type",
         "currancy_rate",
+        "is_remark",
+        "remarks",
         "exporter_id",
         "buyer_id",
         "product_id",
