@@ -237,7 +237,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     //   ['Shadow Brown', '600X600', 1000, 'BOX', 1.44, 1440, 10.0, 14400.0, 32522.00, 65465.00],
     // ];
 
-    let isRemarks = data?.is_remark === 1? true: false || false;
+let isRemarks = data?.is_remark === 1? true: false || false;
     let remarks = data?.remarks || "";
 
     let epcg = data?.epcg || "";
@@ -1313,55 +1313,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         }
     }
 
-    let lineCount = remarks.split(/\r?\n/).length;
-    if (lineCount < 1) { lineCount = 1; }
-
     if (type !== "tiles") {
         for (let i = 0; i < skipRow; i++) {
             if (i == skipRow - 1 && isRemarks) {
-
-                worksheet.getCell('R' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
-
                 worksheet.mergeCells('S' + (row - 1) + ':T' + (row - 1));
-                worksheet.getCell('S' + (row - 1)).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
                 worksheet.mergeCells('U' + (row - 1) + ':V' + (row - 1));
-                worksheet.getCell('U' + (row - 1)).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
                 worksheet.mergeCells('W' + (row - 1) + ':X' + (row - 1));
-                worksheet.getCell('W' + (row - 1)).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
-
-                worksheet.getCell('Y' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
-
-                worksheet.getCell('Z' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
-
-                worksheet.getCell('AA' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
             } else {
 
                 setOuterBorder('E' + row + ':Q' + row, worksheet);
@@ -1405,10 +1362,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             worksheet.mergeCells('E' + (row - 2) + ':Q' + (row - 2));
             worksheet.getCell('E' + (row - 2)).value = remarks;
             // worksheet.getCell('E' + (row - 1)).font = { bold: true };
-            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'middle', wrapText: true };
+            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'top', wrapText: true };
 
             // Adjust height automatically
-            // worksheet.getRow(row - 2).height = 15 * lineCount;
+            let lineCount = remarks.split(/\r?\n/).length;
+            if (lineCount < 1) { lineCount = 1; }
+            worksheet.getRow(row - 1).height = 15 * lineCount;
 
             worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
             worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -1439,33 +1398,9 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         for (let i = 0; i < skipRow; i++) {
             if (i == skipRow - 1 && isRemarks) {
                 worksheet.mergeCells('R' + (row - 1) + ':S' + (row - 1));
-                worksheet.getCell('R' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
                 worksheet.mergeCells('T' + (row - 1) + ':U' + (row - 1));
-                worksheet.getCell('T' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
                 worksheet.mergeCells('V' + (row - 1) + ':X' + (row - 1));
-                worksheet.getCell('V' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
                 worksheet.mergeCells('Y' + (row - 1) + ':AA' + (row - 1));
-                worksheet.getCell('Y' + row).border = {
-                    top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                    left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                    right: { style: 'thin', color: { argb: 'FF000000' } },
-                };
             } else {
                 setOuterBorder('E' + row + ':Q' + row, worksheet);
                 setOuterBorder('R' + row + ':S' + row, worksheet);
@@ -1480,10 +1415,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             worksheet.mergeCells('E' + (row - 2) + ':Q' + (row - 2));
             worksheet.getCell('E' + (row - 2)).value = remarks;
             // worksheet.getCell('E' + (row - 2)).font = { bold: true };
-            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'middle', wrapText: true };
+            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'top', wrapText: true };
 
             // Adjust height automatically
-            // worksheet.getRow(row - 2).height = 15 * lineCount;
+            let lineCount = remarks.split(/\r?\n/).length;
+            if (lineCount < 1) { lineCount = 1; }
+            worksheet.getRow(row - 1).height = 15 * lineCount;
 
             worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
             worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -3294,48 +3231,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         if (type !== "tiles") {
             for (let i = 0; i < skipRow; i++) {
                 if (i == skipRow - 1 && isRemarks) {
-                    worksheetCopy.getCell('R' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-
-                    worksheetCopy.mergeCells('S' + (row - 1) + ':T' + (row - 1));
-                    worksheetCopy.getCell('S' + (row - 1)).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-                    worksheetCopy.mergeCells('U' + (row - 1) + ':V' + (row - 1));
-                    worksheetCopy.getCell('U' + (row - 1)).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-                    worksheetCopy.mergeCells('W' + (row - 1) + ':X' + (row - 1));
-                    worksheetCopy.getCell('W' + (row - 1)).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-
-                    worksheetCopy.getCell('Y' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-
-                    worksheetCopy.getCell('Z' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-
-                    worksheetCopy.getCell('AA' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
+                    worksheetCopy.mergeCells('S' + (row - 1) + ':T' + (row - 1)); worksheetCopy.mergeCells('U' + (row - 1) + ':V' + (row - 1)); worksheetCopy.mergeCells('W' + (row - 1) + ':X' + (row - 1));
                 } else {
 
                     setOuterBorder('E' + row + ':Q' + row, worksheetCopy);
@@ -3379,10 +3275,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                 worksheetCopy.mergeCells('E' + (row - 2) + ':Q' + (row - 2));
                 worksheetCopy.getCell('E' + (row - 2)).value = remarks;
                 // worksheet.getCell('E' + (row - 2)).font = { bold: true };
-                worksheetCopy.getCell('E' + (row - 2)).alignment = { vertical: 'middle', wrapText: true };
+                worksheetCopy.getCell('E' + (row - 2)).alignment = { vertical: 'top', wrapText: true };
 
                 // Adjust height automatically
-                // worksheetCopy.getRow(row - 2).height = 15 * lineCount;
+                let lineCount = remarks.split(/\r?\n/).length;
+                if (lineCount < 1) { lineCount = 1; }
+                worksheetCopy.getRow(row - 1).height = 15 * lineCount;
 
                 worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
                 worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -3412,34 +3310,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         else {
             for (let i = 0; i < skipRow; i++) {
                 if (i == skipRow - 1 && isRemarks) {
-                    worksheetCopy.mergeCells('R' + (row - 1) + ':S' + (row - 1));
-                    worksheetCopy.getCell('R' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-                    worksheetCopy.mergeCells('T' + (row - 1) + ':U' + (row - 1));
-                    worksheetCopy.getCell('T' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-                    worksheetCopy.mergeCells('V' + (row - 1) + ':X' + (row - 1));
-                    worksheetCopy.getCell('V' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
-                    worksheetCopy.mergeCells('Y' + (row - 1) + ':AA' + (row - 1));
-                    worksheetCopy.getCell('Y' + row).border = {
-                        top: { style: 'thin', color: { argb: 'FF000000' } },     // black
-                        left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
-                        right: { style: 'thin', color: { argb: 'FF000000' } },
-                    };
+                    worksheetCopy.mergeCells('R' + (row - 1) + ':S' + (row - 1)); worksheetCopy.mergeCells('T' + (row - 1) + ':U' + (row - 1)); worksheetCopy.mergeCells('V' + (row - 1) + ':X' + (row - 1)); worksheetCopy.mergeCells('Y' + (row - 1) + ':AA' + (row - 1));
                 } else {
                     setOuterBorder('E' + row + ':Q' + row, worksheetCopy);
                     setOuterBorder('R' + row + ':S' + row, worksheetCopy);
@@ -3454,10 +3325,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                 worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
                 worksheetCopy.getCell('E' + (row - 1)).value = remarks;
                 // worksheet.getCell('R' + (row - 1)).font = { bold: true };
-                worksheetCopy.getCell('E' + (row - 1)).alignment = { vertical: 'middle', wrapText: true };
+                worksheetCopy.getCell('E' + (row - 1)).alignment = { vertical: 'top', wrapText: true };
 
                 // Adjust height automatically
-                // worksheetCopy.getRow(row - 2).height = 15 * lineCount;
+                let lineCount = remarks.split(/\r?\n/).length;
+                if (lineCount < 1) { lineCount = 1; }
+                worksheetCopy.getRow(row - 1).height = 15 * lineCount;
 
                 worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
                 worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -4777,50 +4650,17 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
 
     row++;
-    if (isRemarks) {
-        packingList.mergeCells('A' + row + ':D' + (row + 6));
-        setOuterBorder('A' + row + ':D' + (row + 6), packingList);
+    packingList.mergeCells('A' + row + ':D' + (row + 4));
+    setOuterBorder('A' + row + ':D' + (row + 4), packingList);
 
-        packingList.mergeCells('Q' + row + ':U' + (row + 7));
-        setOuterBorder('Q' + row + ':U' + (row + 7), packingList);
+    packingList.mergeCells('Q' + row + ':U' + (row + 5));
+    setOuterBorder('Q' + row + ':U' + (row + 5), packingList);
 
-        packingList.mergeCells('V' + row + ':X' + (row + 7));
-        setOuterBorder('V' + row + ':AA' + (row + 7), packingList);
+    packingList.mergeCells('V' + row + ':X' + (row + 5));
+    setOuterBorder('V' + row + ':AA' + (row + 5), packingList);
 
-        packingList.mergeCells('Y' + row + ':AA' + (row + 7));
-        setOuterBorder('Y' + row + ':AA' + (row + 7), packingList);
-
-    } else {
-        packingList.mergeCells('A' + row + ':D' + (row + 4));
-        setOuterBorder('A' + row + ':D' + (row + 4), packingList);
-
-        packingList.mergeCells('Q' + row + ':U' + (row + 5));
-        setOuterBorder('Q' + row + ':U' + (row + 5), packingList);
-
-        packingList.mergeCells('V' + row + ':X' + (row + 5));
-        setOuterBorder('V' + row + ':AA' + (row + 5), packingList);
-
-        packingList.mergeCells('Y' + row + ':AA' + (row + 5));
-        setOuterBorder('Y' + row + ':AA' + (row + 5), packingList);
-
-    }
-
-    if (isRemarks) {
-        packingList.mergeCells('E' + row + ':P' + row);
-        packingList.getCell('E' + row).value = remarks;
-        // packingList.getCell('E' + row).font = { bold: true };
-        packingList.getCell('E' + row).alignment = { vertical: 'middle', wrapText: true };
-        row++;
-
-        // Adjust height automatically
-        // packingList.getRow(row).height = 15 * lineCount;
-
-        packingList.mergeCells('E' + row + ':P' + row);
-        packingList.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
-        packingList.getCell('E' + row).font = { bold: true };
-        packingList.getCell('E' + row).alignment = { horizontal: 'center', wrapText: true };
-        row++;
-    }
+    packingList.mergeCells('Y' + row + ':AA' + (row + 5));
+    setOuterBorder('Y' + row + ':AA' + (row + 5), packingList);
 
     if (taxStatus == "with") {
         packingList.mergeCells('E' + row + ':P' + row);
@@ -7131,21 +6971,15 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     }
 
     row++;
-    if (isRemarks) {
-        customerInvoice.mergeCells('A' + row + ':D' + (row + 5));
-        setOuterBorder('A' + row + ':D' + (row + 5), customerInvoice);
-    } else {
-        customerInvoice.mergeCells('A' + row + ':D' + (row + 3));
-        setOuterBorder('A' + row + ':D' + (row + 3), customerInvoice);
-    }
+    customerInvoice.mergeCells('A' + row + ':D' + (row + 3));
+    setOuterBorder('A' + row + ':D' + (row + 3), customerInvoice);
 
-    // 33,378,000
     skipRow = 2;
     addSkipRow = 3;
-    if (isRemarks) {
-        addSkipRow = 5;
+    if (taxStatus == "with") {
+        skipRow = 2;
+        addSkipRow = 3;
     }
-
     if (type !== "tiles") {
         for (let i = 0; i < skipRow; i++) {
             setOuterBorder('E' + row + ':Q' + row, customerInvoice);
@@ -7220,14 +7054,14 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         setOuterBorder('Y' + row + ':AA' + (row + addSkipRow), customerInvoice);
     }
 
-    // if (taxStatus == "with") {
-    // customerInvoice.mergeCells('E' + row + ':Q' + row);
-    //   customerInvoice.getCell('E' + row).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
-    //   customerInvoice.getCell('E' + row).font = { name: 'Arial' };
-    //   customerInvoice.getCell('E' + row).alignment = { horizontal: 'center' };
-    // setOuterBorder('E' + row + ':Q' + row, customerInvoice);
-    // row++;
-    // }
+    if (taxStatus == "with") {
+        // customerInvoice.mergeCells('E' + row + ':Q' + row);
+        //   customerInvoice.getCell('E' + row).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
+        //   customerInvoice.getCell('E' + row).font = { name: 'Arial' };
+        //   customerInvoice.getCell('E' + row).alignment = { horizontal: 'center' };
+        // setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+        // row++;
+    }
 
     // customerInvoice.mergeCells('E' + row + ':Q' + row);
     // customerInvoice.getCell('E' + row).value = "Export Under Duty Drawback Scheme";
@@ -7242,23 +7076,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     // customerInvoice.getCell('E' + row).alignment = { wrapText: true, horizontal: 'center' };
     // setOuterBorder('E' + row + ':Q' + (row + 1), customerInvoice);
     // row += 2;
-
-    if (isRemarks) {
-        customerInvoice.mergeCells('E' + row + ':Q' + row);
-        customerInvoice.getCell('E' + row).value = remarks;
-        // customerInvoice.getCell('E' + row).font = { bold: true };
-        customerInvoice.getCell('E' + row).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-        setOuterBorder('E' + row + ':Q' + row, customerInvoice);
-        // customerInvoice.getRow(row ).height = 15 * lineCount;
-        row++;
-
-        customerInvoice.mergeCells('E' + row + ':Q' + row);
-        customerInvoice.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
-        customerInvoice.getCell('E' + row).font = { bold: true };
-        customerInvoice.getCell('E' + row).alignment = { horizontal: 'center' };
-        setOuterBorder('E' + row + ':Q' + row, customerInvoice);
-        row++;
-    }
 
     customerInvoice.mergeCells('E' + row + ':Q' + (row + 1));
     setOuterBorder('E' + row + ':Q' + (row + 1), customerInvoice);
@@ -8267,29 +8084,6 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     pl.mergeCells('Y' + row + ':AA' + (row + 5));
     setOuterBorder('Y' + row + ':AA' + (row + 5), pl);
 
-    if (isRemarks) {
-        row++;
-
-        pl.mergeCells('E' + row + ':P' + row);
-        pl.getCell('E' + row).value = remarks;
-        // pl.getCell('E' + row).font = { bold: true };
-        pl.getCell('E' + row).alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
-        setOuterBorder('E' + row + ':P' + row, pl);
-        // pl.getRow(row).height = 15 * lineCount;
-        row++;
-
-        pl.mergeCells('E' + row + ':P' + row);
-        pl.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
-        pl.getCell('E' + row).font = { bold: true };
-        pl.getCell('E' + row).alignment = { horizontal: 'center' };
-        setOuterBorder('E' + row + ':P' + row, pl);
-        row += 3;
-    } else {
-        pl.mergeCells('E' + row + ':P' + (row + 4));
-        setOuterBorder('E' + row + ':P' + (row + 4), pl);
-        row += 5;
-    }
-
     // if (taxStatus == "with") {
     //   pl.mergeCells('E' + row + ':P' + row);
     //   pl.getCell('E' + row).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
@@ -8299,12 +8093,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     //   row++;
     // }
 
-    // pl.mergeCells('E' + row + ':P' + (row + 4));
+    pl.mergeCells('E' + row + ':P' + (row + 4));
     // pl.getCell('E' + row).value = "Export Under Duty Drawback Scheme";
     // pl.getCell('E' + row).font = { bold: true };
     // pl.getCell('E' + row).alignment = { horizontal: 'center' };
-    // setOuterBorder('E' + row + ':P' + (row + 4), pl);
-    // row += 5;
+    setOuterBorder('E' + row + ':P' + (row + 4), pl);
+    row += 5;
 
     // pl.mergeCells('E' + row + ':P' + (row + 1));
     // // pl.getCell('E' + row).value = "I/we shall claim under chapter 3 incentive of FTP as admissible at time policy in force - MEIS, RODTEP ";
