@@ -257,6 +257,11 @@ class InvoiceController
                     'product_type' => $data['product_type']?? "-",
                     'currancy_type' => $data['currency_type']?? "-",
                     'currancy_rate' => $data['currency_rate']?? "-",
+                    'is_remark' => $data['isRemark']?? false,
+                    'remarks' => $data['remarks']?? "-",
+                    'epcg' => $data['epcg']?? null,
+                    'epcg_date' => $data['epcgDate']?? null,
+                    'has_epcg' => $data['hasEpcg']?? false,
                     'exporter_id' => $exporter->id,
                     'buyer_id' => $buyer->id,
                     'product_id' => $productDetails->id,
@@ -277,6 +282,11 @@ class InvoiceController
                     'product_type' => $invoice->product_type,
                     'currancy_type' => $invoice->currancy_type,
                     'currancy_rate' => $invoice->currancy_rate,
+                    'is_remark' => $invoice->is_remark,
+                    'remarks' => $invoice->remarks,
+                    'epcg' => $invoice->epcg,
+                    'epcg_date' => $invoice->epcg_date,
+                    'has_epcg' => $invoice->has_epcg,
                     'exporter_id' => $exporter->id,
                     'buyer_id' => $buyer->id,
                     'product_id' => $productDetails->id,
@@ -299,6 +309,11 @@ class InvoiceController
                     'product_type' => $data['product_type'],
                     'currancy_type' => $data['currency_type'],
                     'currancy_rate' => $data['currency_rate'],
+                    'is_remark' => $data['isRemark']?? false,
+                    'remarks' => $data['remarks']?? "-",
+                    'epcg' => $data['epcg']?? null,
+                    'epcg_date' => $data['epcgDate']?? null,
+                    'has_epcg' => $data['hasEpcg']?? false,
                     'exporter_id' => $exporter->id,
                     'buyer_id' => $buyer->id,
                     'product_id' => $productDetails->id,
@@ -319,6 +334,11 @@ class InvoiceController
                     'product_type' => $invoice->product_type,
                     'currancy_type' => $invoice->currancy_type,
                     'currancy_rate' => $invoice->currancy_rate,
+                    'is_remark' => $invoice->is_remark,
+                    'remarks' => $invoice->remarks,
+                    'epcg' => $invoice->epcg,
+                    'epcg_date' => $invoice->epcg_date,
+                    'has_epcg' => $invoice->has_epcg,
                     'exporter_id' => $exporter->id,
                     'buyer_id' => $buyer->id,
                     'product_id' => $productDetails->id,
@@ -995,6 +1015,4 @@ if ($invoice->invoice_number) {
     }
 }
 
-
-  
 }
