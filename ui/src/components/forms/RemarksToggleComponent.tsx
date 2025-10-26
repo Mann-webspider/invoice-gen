@@ -80,7 +80,7 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
       
       {showRemarks && (
         <CardContent className="pt-0 pb-6 animate-in slide-in-from-top-2 duration-300">
-          <div className="space-y-4">
+          <div className="space-y-6">
             <div className="space-y-2">
               <Label 
                 htmlFor="remarks" 
@@ -115,72 +115,87 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
               />
             </div>
 
-            {/* EPCG No. and EPCG Date */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="epcgNo" 
-                  className="text-sm font-medium text-gray-700"
-                >
-                  EPCG No.
-                </Label>
-                
-                <Controller
-                  control={form.control}
-                  name="invoice.epcgNo"
-                  defaultValue=""
-                  render={({ field }) => (
-                    <textarea
-                      {...field}
-                      id="epcgNo"
-                      rows={2}
-                      onFocus={() => setIsEpcgNoFocused(true)}
-                      onBlur={() => setIsEpcgNoFocused(false)}
-                      className={cn(
-                        "w-full p-3 border rounded-lg resize-none transition-all duration-200",
-                        "text-sm leading-relaxed placeholder:text-gray-400",
-                        "focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent",
-                        isEpcgNoFocused || field.value 
-                          ? "border-gray-400 bg-gray-50/30" 
-                          : "border-gray-300 bg-white hover:border-gray-400"
-                      )}
-                      placeholder="Enter EPCG number..."
-                      style={{ minHeight: '60px', maxHeight: '120px' }}
-                    />
-                  )}
-                />
+            {/* EPCG Information Section */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 pt-2">
+                <div className="h-px flex-1 bg-gray-200"></div>
+                <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">EPCG Details</span>
+                <div className="h-px flex-1 bg-gray-200"></div>
               </div>
 
-              <div className="space-y-2">
-                <Label 
-                  htmlFor="epcgDate" 
-                  className="text-sm font-medium text-gray-700"
-                >
-                  EPCG Date
-                </Label>
-                
-                <Controller
-                  control={form.control}
-                  name="invoice.epcgDate"
-                  defaultValue=""
-                  render={({ field }) => (
-                    <input
-                      {...field}
-                      type="date"
-                      id="epcgDate"
-                      onFocus={() => setIsEpcgDateFocused(true)}
-                      onBlur={() => setIsEpcgDateFocused(false)}
-                      className={cn(
-                        "w-full p-3 border rounded-lg transition-all duration-200",
-                        "text-sm placeholder:text-gray-400",
-                        "focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent",
-                        isEpcgDateFocused || field.value 
-                          ? "border-gray-400 bg-gray-50/30" 
-                          : "border-gray-300 bg-white hover:border-gray-400"
-                      )}
-                    />
-                  )}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label 
+                    htmlFor="epcgNo" 
+                    className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
+                  >
+                    <span>EPCG License Number</span>
+                    <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+                  </Label>
+                  
+                  <Controller
+                    control={form.control}
+                    name="invoice.epcgNo"
+                    defaultValue=""
+                    render={({ field }) => (
+                      <input
+                        {...field}
+                        type="text"
+                        id="epcgNo"
+                        onFocus={() => setIsEpcgNoFocused(true)}
+                        onBlur={() => setIsEpcgNoFocused(false)}
+                        className={cn(
+                          "w-full px-4 py-2.5 border rounded-lg transition-all duration-200",
+                          "text-sm placeholder:text-gray-400 font-mono",
+                          "focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent",
+                          isEpcgNoFocused || field.value 
+                            ? "border-gray-400 bg-gray-50/30" 
+                            : "border-gray-300 bg-white hover:border-gray-400"
+                        )}
+                        placeholder="e.g., EPCG-2345678901"
+                      />
+                    )}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Export Promotion Capital Goods license number
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label 
+                    htmlFor="epcgDate" 
+                    className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
+                  >
+                    <span>EPCG License Date</span>
+                    <span className="text-gray-400 text-xs font-normal">(Optional)</span>
+                  </Label>
+                  
+                  <Controller
+                    control={form.control}
+                    name="invoice.epcgDate"
+                    defaultValue=""
+                    render={({ field }) => (
+                      <input
+                        {...field}
+                        type="date"
+                        id="epcgDate"
+                        onFocus={() => setIsEpcgDateFocused(true)}
+                        onBlur={() => setIsEpcgDateFocused(false)}
+                        className={cn(
+                          "w-full px-4 py-2.5 border rounded-lg transition-all duration-200",
+                          "text-sm placeholder:text-gray-400",
+                          "focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent",
+                          isEpcgDateFocused || field.value 
+                            ? "border-gray-400 bg-gray-50/30" 
+                            : "border-gray-300 bg-white hover:border-gray-400"
+                        )}
+                      />
+                    )}
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Date of license issuance
+                  </p>
+                </div>
               </div>
             </div>
           </div>

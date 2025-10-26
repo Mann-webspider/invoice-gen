@@ -117,6 +117,8 @@ class CreateInvoiceSchema
             product_type TEXT,
             currancy_type TEXT,
             currancy_rate INT,
+            is_remark BOOLEAN,
+            remarks TEXT,
             exporter_id TEXT,
             buyer_id TEXT,
             product_id TEXT,
