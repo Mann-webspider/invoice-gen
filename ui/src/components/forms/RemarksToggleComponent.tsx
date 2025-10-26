@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Controller } from "react-hook-form";
+import React, { useState, useEffect } from "react";
+import { Controller, useWatch } from "react-hook-form";
 import {
   Card,
   CardContent,
@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp, MessageSquare, Plus, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Edit3, FileText, ClipboardList, StickyNote, Pencil, NotebookPen} from 'lucide-react';
-
 
 interface RemarksToggleComponentProps {
   form: any;
@@ -23,9 +22,45 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
   const [isEpcgNoFocused, setIsEpcgNoFocused] = useState(false);
   const [isEpcgDateFocused, setIsEpcgDateFocused] = useState(false);
 
+  // Watch all relevant fields
+  const remarksValue = useWatch({
+    control: form.control,
+    name: "invoice.remarks",
+    defaultValue: ""
+  });
 
-  const remarksValue = form.watch("invoice.remarks") || "";
-  const hasRemarks = remarksValue.trim().length > 0;
+  const epcgValue = useWatch({
+    control: form.control,
+    name: "invoice.epcg",
+    defaultValue: ""
+  });
+
+  const epcgDateValue = useWatch({
+    control: form.control,
+    name: "invoice.epcgDate",
+    defaultValue: ""
+  });
+
+  // Update form values when any field changes
+  useEffect(() => {
+    const hasRemarks = showRemarks && remarksValue.trim().length > 0;
+    const hasEpcg = epcgValue.trim().length > 0;
+    const hasEpcgDate = epcgDateValue.trim().length > 0;
+    
+    // Set the isRemark flag based on remarks presence
+    form.setValue("invoice.isRemark", hasRemarks, { shouldDirty: false });
+    
+    // Set all field values
+    form.setValue("invoice.remarks", remarksValue, { shouldDirty: false });
+    form.setValue("invoice.epcg", epcgValue, { shouldDirty: false });
+    form.setValue("invoice.epcgDate", epcgDateValue, { shouldDirty: false });
+    
+    // Optional: Set a flag if EPCG info is present
+    form.setValue("invoice.hasEpcg", hasEpcg || hasEpcgDate, { shouldDirty: false });
+    
+  }, [showRemarks, remarksValue, epcgValue, epcgDateValue, form]);
+   
+  
 
 
   return (
@@ -126,7 +161,7 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label 
-                    htmlFor="epcgNo" 
+                    htmlFor="epcg" 
                     className="text-sm font-medium text-gray-700 flex items-center gap-1.5"
                   >
                     <span>EPCG License Number</span>
@@ -135,13 +170,13 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
                   
                   <Controller
                     control={form.control}
-                    name="invoice.epcgNo"
+                    name="invoice.epcg"
                     defaultValue=""
                     render={({ field }) => (
                       <input
                         {...field}
                         type="text"
-                        id="epcgNo"
+                        id="epcg"
                         onFocus={() => setIsEpcgNoFocused(true)}
                         onBlur={() => setIsEpcgNoFocused(false)}
                         className={cn(
