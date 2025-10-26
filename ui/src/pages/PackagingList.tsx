@@ -929,22 +929,26 @@ const [formData, setFormData] = useState(null);
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-6">
-                    <div className="space-y-2">
+                   <div className="space-y-2">
                       <Label>Consignee</Label>
-                      <Input
+                      <textarea
+                        className="w-full p-2 rounded-md border bg-gray-50"
                         value={buyer?.consignee}
                         readOnly
-                        className="bg-gray-50"
+                        rows={3}
                       />
                     </div>
+
                     <div className="space-y-2">
                       <Label>Notify Party</Label>
-                      <Input
+                      <textarea
+                        className="w-full p-2 rounded-md border bg-gray-50"
                         value={buyer?.notify_party}
                         readOnly
-                        className="bg-gray-50"
+                        rows={3}
                       />
                     </div>
+
                   </div>
                 </div>
               </div>
