@@ -932,7 +932,7 @@ useEffect(() => {
         hydrated={hydrated}
       />
    
-      <RemarksToggleComponent form={form} />
+     <RemarksToggleComponent form={form} hydrated={hydrated} />
 
       <PackageInfoSection
         paymentTerms={paymentTerms}

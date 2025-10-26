@@ -11,16 +11,30 @@ import { ChevronDown, ChevronUp, MessageSquare, Plus, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { Edit3, FileText, ClipboardList, StickyNote, Pencil, NotebookPen} from 'lucide-react';
 
+
 interface RemarksToggleComponentProps {
   form: any;
+  hydrated?: boolean; // ✅ ADD THIS PROP
 }
 
 
-const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form }) => {
+
+const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form, hydrated }) => {
   const [showRemarks, setShowRemarks] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [isEpcgNoFocused, setIsEpcgNoFocused] = useState(false);
   const [isEpcgDateFocused, setIsEpcgDateFocused] = useState(false);
+
+  // ✅ WAIT FOR DRAFT TO LOAD, THEN RESTORE STATE
+  useEffect(() => {
+    if (hydrated) {
+      const savedValue = form.getValues("invoice.isRemark");
+      if (savedValue === true) {
+        setShowRemarks(true);
+      }
+    }
+  }, [hydrated, form]);
+
 
   // Watch all relevant fields
   const remarksValue = useWatch({
@@ -29,11 +43,13 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
     defaultValue: ""
   });
 
+
   const epcgValue = useWatch({
     control: form.control,
     name: "invoice.epcg",
     defaultValue: ""
   });
+
 
   const epcgDateValue = useWatch({
     control: form.control,
@@ -41,14 +57,15 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
     defaultValue: ""
   });
 
+
   // Update form values when any field changes
   useEffect(() => {
     const hasRemarks = showRemarks && remarksValue.trim().length > 0;
     const hasEpcg = epcgValue.trim().length > 0;
     const hasEpcgDate = epcgDateValue.trim().length > 0;
     
-    // Set the isRemark flag based on remarks presence
-    form.setValue("invoice.isRemark", hasRemarks, { shouldDirty: false });
+    // Set the isRemark flag based on toggle state
+    form.setValue("invoice.isRemark", showRemarks, { shouldDirty: false });
     
     // Set all field values
     form.setValue("invoice.remarks", remarksValue, { shouldDirty: false });
@@ -61,6 +78,7 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
   }, [showRemarks, remarksValue, epcgValue, epcgDateValue, form]);
    
   
+
 
 
   return (
@@ -150,6 +168,7 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
               />
             </div>
 
+
             {/* EPCG Information Section */}
             <div className="space-y-4">
               <div className="flex items-center gap-2 pt-2">
@@ -157,6 +176,7 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
                 <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">EPCG Details</span>
                 <div className="h-px flex-1 bg-gray-200"></div>
               </div>
+
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -187,7 +207,7 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
                             ? "border-gray-400 bg-gray-50/30" 
                             : "border-gray-300 bg-white hover:border-gray-400"
                         )}
-                        placeholder="e.g., EPCG-2345678901"
+                        placeholder="e.g., 2345670000"
                       />
                     )}
                   />
@@ -195,6 +215,7 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
                     Export Promotion Capital Goods license number
                   </p>
                 </div>
+
 
                 <div className="space-y-2">
                   <Label 
@@ -239,5 +260,6 @@ const RemarksToggleComponent: React.FC<RemarksToggleComponentProps> = ({ form })
     </Card>
   );
 };
+
 
 export default RemarksToggleComponent;
