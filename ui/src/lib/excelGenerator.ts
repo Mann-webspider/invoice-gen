@@ -243,8 +243,12 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     let epcg = data?.epcg || "";
     let epcgDate = data?.epcg_date || "";
-    let [year, month, day] = epcgDate.split('-');
-    epcgDate = `${day}/${month}/${year}`;
+    let [year, month, day] = ["", "", ""];
+    
+    if (epcgDate && epcgDate !== "-" && epcgDate.trim() !== "") {
+        [year, month, day] = epcgDate.split('-');
+        epcgDate = `${day}/${month}/${year}`;
+    }
 
     let packageInfo = data.package.number_of_package || "";
     let [totalPackages, unitOfIt] = packageInfo.split(' ');
@@ -1337,20 +1341,20 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
 
-                worksheet.mergeCells('S' + (row - 1) + ':T' + (row - 1));
-                worksheet.getCell('S' + (row - 1)).border = {
+                worksheet.mergeCells('S' + row + ':T' + row);
+                worksheet.getCell('S' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },
                     left: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
-                worksheet.mergeCells('U' + (row - 1) + ':V' + (row - 1));
-                worksheet.getCell('U' + (row - 1)).border = {
+                worksheet.mergeCells('U' + row + ':V' + row);
+                worksheet.getCell('U' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },
                     left: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
                 worksheet.mergeCells('W' + (row - 1) + ':X' + (row - 1));
-                worksheet.getCell('W' + (row - 1)).border = {
+                worksheet.getCell('W' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },
                     left: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
@@ -1422,7 +1426,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             worksheet.getRow(row - 2).height = 16 * lineCount;
 
             worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-            if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " ") {
+            if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
                 worksheet.getCell('E' + (row - 1)).value = "";
             } else {
                 worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -1453,29 +1457,29 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     else {
         for (let i = 0; i < skipRow; i++) {
             if (i == skipRow && isRemarks) {
-                worksheet.mergeCells('R' + (row - 1) + ':S' + (row - 1));
-                worksheet.getCell('R' + (row - 1)).border = {
+                worksheet.mergeCells('R' + row + ':S' + row);
+                worksheet.getCell('R' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
                     // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
-                worksheet.mergeCells('T' + (row - 1) + ':U' + (row - 1));
-                worksheet.getCell('T' + (row - 1)).border = {
+                worksheet.mergeCells('T' + row + ':U' + row);
+                worksheet.getCell('T' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
                     // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
-                worksheet.mergeCells('V' + (row - 1) + ':X' + (row - 1));
-                worksheet.getCell('V' + (row - 1)).border = {
+                worksheet.mergeCells('V' + row + ':X' + row);
+                worksheet.getCell('V' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
                     // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
-                worksheet.mergeCells('Y' + (row - 1) + ':AA' + (row - 1));
-                worksheet.getCell('Y' + (row - 1)).border = {
+                worksheet.mergeCells('Y' + row + ':AA' + row);
+                worksheet.getCell('Y' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
                     // bottom: { style: 'thin', color: { argb: 'FF000000' } },
@@ -1501,7 +1505,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             worksheet.getRow(row - 2).height = 16 * lineCount;
 
             worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-            if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " ") {
+            if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
                 worksheet.getCell('E' + (row - 1)).value = "";
             } else {
                 worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -3027,7 +3031,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                             if (products[i][5] === "" || products[i][5] === 0) {
                                 if (termsOfDeliveryMain === "CIF -> FOB") {
                                     price = Number(products[i][6]) - round3(x / Number(products[i][2]));
-                                } else {   
+                                } else {
                                     price = Number(products[i][6]) + round3(x / Number(products[i][2]));
                                 }
                             } else {
@@ -3240,7 +3244,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                         // if (termsOfDeliveryMain === "CIF -> FOB") {
                         //     price = Number(products[i][6]) - round3(y / Number(products[i][2]));
                         // } else {
-                            price = Number(products[i][6]) + round3(y / Number(products[i][2]));
+                        price = Number(products[i][6]) + round3(y / Number(products[i][2]));
                         // }
                         // console.log("price:"+price)
                         // } else if ((srNoCopy - 1) == srNo) {
@@ -3351,20 +3355,20 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
 
-                    worksheetCopy.mergeCells('S' + (row - 1) + ':T' + (row - 1));
-                    worksheetCopy.getCell('S' + (row - 1)).border = {
+                    worksheetCopy.mergeCells('S' + row + ':T' + row);
+                    worksheetCopy.getCell('S' + row).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },
                         left: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
-                    worksheetCopy.mergeCells('U' + (row - 1) + ':V' + (row - 1));
-                    worksheetCopy.getCell('U' + (row - 1)).border = {
+                    worksheetCopy.mergeCells('U' + row + ':V' + row);
+                    worksheetCopy.getCell('U' + row).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },
                         left: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
-                    worksheetCopy.mergeCells('W' + (row - 1) + ':X' + (row - 1));
-                    worksheetCopy.getCell('W' + (row - 1)).border = {
+                    worksheetCopy.mergeCells('W' + row + ':X' + row);
+                    worksheetCopy.getCell('W' + row).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },
                         left: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
@@ -3436,7 +3440,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                 worksheetCopy.getRow(row - 2).height = 16 * lineCount;
 
                 worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-                if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " ") {
+                if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
                     worksheetCopy.getCell('E' + (row - 1)).value = "";
                 } else {
                     worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -3467,29 +3471,29 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         else {
             for (let i = 0; i < skipRow; i++) {
                 if (i == skipRow && isRemarks) {
-                    worksheetCopy.mergeCells('R' + (row - 1) + ':S' + (row - 1));
-                    worksheetCopy.getCell('R' + (row - 1)).border = {
+                    worksheetCopy.mergeCells('R' + row + ':S' + row);
+                    worksheetCopy.getCell('R' + row).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
                         // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
-                    worksheetCopy.mergeCells('T' + (row - 1) + ':U' + (row - 1));
-                    worksheetCopy.getCell('T' + (row - 1)).border = {
+                    worksheetCopy.mergeCells('T' + row + ':U' + row);
+                    worksheetCopy.getCell('T' + row).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
                         // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
-                    worksheetCopy.mergeCells('V' + (row - 1) + ':X' + (row - 1));
-                    worksheetCopy.getCell('V' + (row - 1)).border = {
+                    worksheetCopy.mergeCells('V' + row + ':X' + row);
+                    worksheetCopy.getCell('V' + row).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
                         // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
-                    worksheetCopy.mergeCells('Y' + (row - 1) + ':AA' + (row - 1));
-                    worksheetCopy.getCell('Y' + (row - 1)).border = {
+                    worksheetCopy.mergeCells('Y' + row + ':AA' + row);
+                    worksheetCopy.getCell('Y' + row).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
                         // bottom: { style: 'thin', color: { argb: 'FF000000' } },
@@ -3515,7 +3519,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                 worksheetCopy.getRow(row - 2).height = 16 * lineCount;
 
                 worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-                if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " ") {
+                if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
                     worksheetCopy.getCell('E' + (row - 1)).value = "";
                 } else {
                     worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
@@ -4887,7 +4891,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         row++;
 
         packingList.mergeCells('E' + row + ':P' + row);
-        if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " ") {
+        if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
             packingList.getCell('E' + row).value = "";
         } else {
             packingList.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;

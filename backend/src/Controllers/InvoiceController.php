@@ -407,9 +407,9 @@ class InvoiceController
 
 
             if ($limit) {
-                $invoiceQuery->limit($limit)->orderBy("invoice_date", 'desc');
+                $invoiceQuery->limit($limit)->orderBy("updated_at", 'desc');
             }
-            $invoices = $invoiceQuery->get();
+            $invoices = $invoiceQuery->orderBy('updated_at','desc')->get();
             $invoicesWithProducts = $invoices->map(function ($invoice) {
                 $invoice->status = 'completed';
 
