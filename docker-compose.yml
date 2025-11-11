@@ -15,6 +15,10 @@ services:
       - mynet
     volumes:
       - shared_data:/var/www/html/database
+    environment:
+      - LICENSE_KEY=${LICENSE_KEY}  # ADD THIS
+    extra_hosts:  # ADD THIS for local DNS
+      - "invoice.zeric.com:host-gateway"
       
     deploy:
       replicas: 1
@@ -24,7 +28,7 @@ services:
         parallelism: 1
         delay: 10s
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000"]
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
       timeout: 10s
       retries: 3

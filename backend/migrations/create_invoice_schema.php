@@ -89,6 +89,7 @@ class CreateInvoiceSchema
             rfid_number TEXT,
             design_no TEXT,
             quantity_box INT,
+            pallet INT,
             net_weight INT,
             gross_weight INT
         )");

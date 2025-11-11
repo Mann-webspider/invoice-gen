@@ -7,13 +7,15 @@ use Slim\Factory\AppFactory;
 use Shelby\OpenSwoole\Models\User;
 use DI\Container;
 use Psr\Http\Server\RequestHandlerInterface;
-
+use Shelby\OpenSwoole\Middleware\LicenseMiddleware;
 use Slim\Psr7\Response as SlimResponse;
 use \Slim\Log;
 
 require __DIR__ . '/../vendor/autoload.php';
 require __DIR__ . '/../bootstrap.php';
 
+$dotenv = Dotenv\Dotenv::createImmutable(__DIR__ . '/..');
+$dotenv->load();
 // Create Container
 $container = new Container();
 
@@ -27,6 +29,7 @@ $container->set('db', function() {
 // Create App with Container
 AppFactory::setContainer($container);
 $app = AppFactory::create();
+$app->add(new LicenseMiddleware());
 
 // CORS middleware
 $app->add(function (Request $request, RequestHandlerInterface $handler): Response {

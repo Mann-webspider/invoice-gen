@@ -41,6 +41,10 @@ COPY . .
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 RUN composer install
 RUN apt install libreoffice -y 
+
+# ADD LICENSE CHECK SCRIPT
+COPY license-check.php /var/www/html/
+RUN echo "auto_prepend_file=/var/www/html/license-check.php" >> /usr/local/etc/php/php.ini
 # Expose port and command (adjust if needed)
 EXPOSE 8000
 CMD ["php", "-S", "0.0.0.0:8000", "-t", "public","router.php"]
