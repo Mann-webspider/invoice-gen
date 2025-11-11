@@ -104,6 +104,7 @@ class InvoiceController
                     'container_number' => $container['container_no']?? "-",
                     'line_seal_number' => $container['line_seal_no']?? "-",
                     'rfid_number' => $container['rfid_seal']?? "-",
+                    'pallet' => $container['pallet']?? "-",
                     'design_no' => $container['design_no']?? "-",
                     'quantity_box' => $container['quantity']?? "-",
                     'net_weight' => $container['net_weight']?? "-",
@@ -409,7 +410,7 @@ class InvoiceController
             if ($limit) {
                 $invoiceQuery->limit($limit)->orderBy("updated_at", 'desc');
             }
-            $invoices = $invoiceQuery->orderBy('updated_at','desc')->get();
+            $invoices = $invoiceQuery->orderBy("updated_at", 'desc')->get();
             $invoicesWithProducts = $invoices->map(function ($invoice) {
                 $invoice->status = 'completed';
 

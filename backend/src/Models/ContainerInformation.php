@@ -14,7 +14,7 @@ class ContainerInformation extends Model
         'rfid_number',
         'design_no',
         'quantity_box',
-        
+        'pallet',
         'net_weight',
         'gross_weight'
         
