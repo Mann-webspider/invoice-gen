@@ -655,85 +655,69 @@ const handleProcessUpdate = (id: string, status: ProcessItem['status']) => {
 
       <div className="grid grid-cols-1 gap-6">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="w-full relative shadow-sm border border-gray-100">
-
-          <CardHeader className="border-b pb-3 flex justify-center">
-            <div className="flex items-center gap-x-2">
-              <CardTitle>Invoices</CardTitle>
-              <Button size="sm" className="rounded-full w-8 h-8 p-0" asChild>
-                <Link to="/invoice">
-                  <Plus className="h-4 w-4" />
-                  <span className="sr-only">Add Invoice</span>
-                </Link>
-              </Button>
-            </div>
-          </CardHeader>
-
-
-
-            {/* PLUS BUTTON SARU LAGTU TU E CODE */}
-            {/* <CardHeader className="flex flex-row items-center justify-between border-b pb-3">
-              <CardTitle>Invoices</CardTitle>
-              <Button size="sm" className="rounded-full w-8 h-8 p-0" asChild>
-                <Link to="/invoice">
-                  <Plus className="h-4 w-4" />
-                  <span className="sr-only">Add Invoice</span>
-                </Link>
-              </Button>
-            </CardHeader> */}
-            <CardContent className="pt-4">
-              {loading ? (
-                <div className="flex justify-center items-center h-40">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-              ) : recentInvoices.length > 0 ? (
-                <div className="space-y-3">
-                  {recentInvoices.map((invoice) => (
-                    <div
-                      key={invoice.id}
-                      className="flex justify-between items-center p-3 border rounded-md hover:bg-gray-50 transition-colors duration-200 group"
-                    >
-
-                      <div className="flex-1">
-                        <div className="font-medium">{invoice.invoiceNo}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {invoice.date}
-                          
-                        </div>
-                      </div>
-                      <div className="flex-1 text-right">
-                        <div className="font-medium text-sm">
-                          {invoice.totalFOBEuro}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {invoice.items?.length || 0} items
-                        </div>
-                      </div>
-                      <div className="ml-3 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-7 w-7 p-0"
-                          onClick={() => handleViewInvoice(invoice.id)}
-                        >
-                          <Eye className="h-3.5 w-3.5" />
-                          <span className="sr-only">View</span>
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6 text-muted-foreground">
-                  <FileText className="h-10 w-10 mx-auto mb-3 opacity-20" />
-                  <p className="text-sm">No completed invoices yet</p>
-                  <Button asChild size="sm" className="mt-3">
-                    <Link to="/invoice">Create Invoice</Link>
+          <Card className="w-full relative shadow-sm border border-gray-100 ">
+              <CardHeader className="border-b pb-3 flex justify-center">
+                <div className="flex items-center gap-x-2">
+                  <CardTitle>Invoices</CardTitle>
+                  <Button size="sm" className="rounded-full w-8 h-8 p-0" asChild>
+                    <Link to="/invoice">
+                      <Plus className="h-4 w-4" />
+                      <span className="sr-only">Add Invoice</span>
+                    </Link>
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardHeader>
+              
+              <CardContent className="pt-4">
+                {loading ? (
+                  <div className="flex justify-center items-center h-40">
+                    <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+                  </div>
+                ) : recentInvoices.length > 0 ? (
+                  <div className="h-[50svh] overflow-y-auto pr-2">
+                    <div className="space-y-3 relative">
+                      {recentInvoices.map((invoice) => (
+                        <div
+                          key={invoice.id}
+                          className="flex justify-between items-center p-3 border rounded-md hover:bg-gray-50 transition-colors duration-200 group"
+                        >
+                          <div className="flex-1">
+                            <div className="font-medium">{invoice.invoiceNo}</div>
+                            <div className="text-xs text-muted-foreground">{invoice.date}</div>
+                          </div>
+                          <div className="flex-1 text-right">
+                            <div className="font-medium text-sm">{invoice.totalFOBEuro}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {invoice.items?.length || 0} items
+                            </div>
+                          </div>
+                          <div className="ml-3 flex space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 w-7 p-0"
+                              onClick={() => handleViewInvoice(invoice.id)}
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              <span className="sr-only">View</span>
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-6 text-muted-foreground">
+                    <FileText className="h-10 w-10 mx-auto mb-3 opacity-20" />
+                    <p className="text-sm">No completed invoices yet</p>
+                    <Button asChild size="sm" className="mt-3">
+                      <Link to="/invoice">Create Invoice</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
 
           <Card className="w-full relative shadow-sm border border-gray-100">
             <CardHeader className="flex flex-row items-center justify-between border-b pb-3">

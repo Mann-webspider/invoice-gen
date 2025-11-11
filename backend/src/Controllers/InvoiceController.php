@@ -409,6 +409,7 @@ class InvoiceController
 
             if ($limit) {
                 $invoiceQuery->limit($limit)->orderBy("updated_at", 'desc');
+                $invoiceQuery->limit($limit)->orderBy("updated_at", 'desc');
             }
             $invoices = $invoiceQuery->orderBy("updated_at", 'desc')->get();
             $invoicesWithProducts = $invoices->map(function ($invoice) {

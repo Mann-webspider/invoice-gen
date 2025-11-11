@@ -371,7 +371,9 @@ useEffect(() => {
   useEffect(() => {
     // Always show the tax option dialog when component mounts
     // Force it to be open by default
-    setTaxOptionDialogOpen(true);
+      if (!isDraftMode) {
+      setTaxOptionDialogOpen(true);
+    }
 
     // Reset localStorage value to ensure dialog shows
     // localStorage.removeItem("taxDialogBox");
@@ -932,7 +934,7 @@ useEffect(() => {
         hydrated={hydrated}
       />
    
-      <RemarksToggleComponent form={form} />
+     <RemarksToggleComponent form={form} hydrated={hydrated} />
 
       <PackageInfoSection
         paymentTerms={paymentTerms}
