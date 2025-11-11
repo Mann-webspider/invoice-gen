@@ -1626,7 +1626,7 @@ const [formData, setFormData] = useState(null);
                         BOX
                       </TableCell>
                       <TableCell className="border p-2 text-center font-medium bg-gray-100">
-                        PCS
+                        NOS
                       </TableCell>
                       <TableCell className="border p-2 text-center font-medium bg-gray-100">
                         KGS
