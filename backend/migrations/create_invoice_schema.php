@@ -160,7 +160,7 @@ class CreateInvoiceSchema
             )");
 
             // Add new columns if they don't exist (safe for existing tables)
-            // $this->addColumnIfNotExists($pdo, 'exporter_details', 'new_column_name', 'TEXT NULL');
+            $this->addColumnIfNotExists($pdo, 'container_information', 'pallet', 'INT NULL');
             // Example: Add new columns
             // $this->addColumnIfNotExists($pdo, 'exporter_details', 'bank_name', 'TEXT NULL');
             // $this->addColumnIfNotExists($pdo, 'exporter_details', 'account_number', 'TEXT NULL');
