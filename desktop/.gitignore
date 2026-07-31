@@ -1,0 +1,29 @@
+node_modules
+dist
+out
+release
+.vite
+
+# Never commit client data — the old repo leaked the live SQLite DB, backups and logos.
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+/userdata
+
+# Local env
+.env
+.env.local
+
+# Logs
+*.log
+logs
+
+# Editor
+.DS_Store
+.idea
+*.suo
+*.njsproj
+*.sln

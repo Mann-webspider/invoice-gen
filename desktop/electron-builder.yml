@@ -1,0 +1,28 @@
+appId: com.shelby.invoicegen
+productName: InvoiceGen
+directories:
+  buildResources: build
+  output: release
+
+files:
+  - out/**
+  - package.json
+
+asarUnpack:
+  # Native modules cannot run from inside the asar archive.
+  - '**/*.node'
+
+win:
+  target:
+    - nsis
+  artifactName: InvoiceGen-Setup-${version}.${ext}
+
+nsis:
+  oneClick: false
+  perMachine: false # per-user install: no admin prompt on the client's laptop
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Invoice Generator
+  # Uninstall must never touch %APPDATA%/InvoiceGen — that is the client's data.
+  deleteAppDataOnUninstall: false
