@@ -14,6 +14,8 @@ export const CH = {
     login: 'auth:login',
     logout: 'auth:logout',
     session: 'auth:session',
+    setPassword: 'auth:setPassword',
+    createAdmin: 'auth:createAdmin',
     changePassword: 'auth:changePassword'
   },
   master: {
@@ -25,7 +27,8 @@ export const CH = {
   },
   asset: {
     pick: 'asset:pick',
-    get: 'asset:get'
+    get: 'asset:get',
+    remove: 'asset:remove'
   },
   invoice: {
     list: 'invoice:list',

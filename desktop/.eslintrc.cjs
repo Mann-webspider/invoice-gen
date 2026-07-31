@@ -16,7 +16,10 @@ module.exports = {
       { allowExpressions: true, allowTypedFunctionExpressions: true }
     ],
     '@typescript-eslint/no-explicit-any': 'error',
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': [
+      'error',
+      { argsIgnorePattern: '^_', varsIgnorePattern: '^_', ignoreRestSiblings: true }
+    ],
     'no-console': ['error', { allow: ['warn', 'error'] }]
   },
   overrides: [
@@ -24,6 +27,15 @@ module.exports = {
       // Developer CLIs: their whole output is stdout.
       files: ['scripts/**/*.ts'],
       rules: { 'no-console': 'off' }
+    },
+    {
+      // shadcn primitives are generated: keep them byte-comparable with
+      // upstream rather than reformatting them to local house style.
+      files: ['src/renderer/src/components/ui/**/*.tsx'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        '@typescript-eslint/no-empty-object-type': 'off'
+      }
     }
   ]
 }

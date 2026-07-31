@@ -19,6 +19,7 @@
     "import:legacy": "tsx scripts/legacy-import-cli.ts"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.0.2",
     "better-sqlite3": "^11.10.0",
     "drizzle-orm": "^0.38.4",
     "electron-log": "^5.2.4",

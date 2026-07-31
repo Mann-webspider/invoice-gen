@@ -1,17 +1,20 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import {
   ChevronLeft,
   ChevronRight,
   DatabaseBackup,
   FilePlus2,
   Home,
+  LogOut,
   Settings,
   type LucideIcon
 } from 'lucide-react'
 
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@/context/AuthContext'
 import { useSidebar } from '@/context/SidebarContext'
+import { applyIpcError } from '@/lib/form'
 
 interface NavItem {
   name: string
@@ -35,10 +38,19 @@ const navItems: NavItem[] = [
 
 export const Sidebar = (): JSX.Element => {
   const { collapsed, toggleSidebar } = useSidebar()
+  const { isAdmin, user, logout } = useAuth()
+  const navigate = useNavigate()
 
-  // Auth lands in phase 2; until then every entry is visible.
-  const isAdmin = true
   const visibleItems = navItems.filter((item) => !item.adminOnly || isAdmin)
+
+  const handleLogout = async (): Promise<void> => {
+    try {
+      await logout()
+      navigate('/login', { replace: true })
+    } catch (error) {
+      applyIpcError(error)
+    }
+  }
 
   return (
     <div
@@ -90,8 +102,27 @@ export const Sidebar = (): JSX.Element => {
       </nav>
 
       <div className="border-t border-gray-200 p-4">
+        {!collapsed && user && (
+          <div className="mb-2 text-xs text-gray-500 truncate" title={user.email}>
+            Signed in as <span className="font-medium text-gray-700">{user.name}</span>
+          </div>
+        )}
+
+        <Button
+          variant="ghost"
+          className={cn(
+            'flex items-center gap-2 w-full text-red-500 hover:text-red-700 hover:bg-red-50',
+            collapsed ? 'justify-center' : ''
+          )}
+          onClick={() => void handleLogout()}
+          title={collapsed ? 'Logout' : ''}
+        >
+          <LogOut className="h-5 w-5" />
+          {!collapsed && <span>Logout</span>}
+        </Button>
+
         {!collapsed && (
-          <div className="text-xs text-gray-500 text-center">
+          <div className="text-xs text-gray-500 mt-4 text-center">
             &copy; {new Date().getFullYear()} Invoice Generator
           </div>
         )}
