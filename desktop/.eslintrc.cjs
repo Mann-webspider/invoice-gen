@@ -18,5 +18,12 @@ module.exports = {
     '@typescript-eslint/no-explicit-any': 'error',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     'no-console': ['error', { allow: ['warn', 'error'] }]
-  }
+  },
+  overrides: [
+    {
+      // Developer CLIs: their whole output is stdout.
+      files: ['scripts/**/*.ts'],
+      rules: { 'no-console': 'off' }
+    }
+  ]
 }

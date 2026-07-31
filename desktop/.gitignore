@@ -3,6 +3,7 @@ dist
 out
 release
 .vite
+tmp
 
 # Never commit client data — the old repo leaked the live SQLite DB, backups and logos.
 *.db

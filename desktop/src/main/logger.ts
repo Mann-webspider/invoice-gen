@@ -1,6 +1,7 @@
-import log from 'electron-log/main'
+import electronLog from 'electron-log/main'
 import { join } from 'node:path'
 import { paths } from './storage/paths'
+import { setLogSink } from './log'
 
 /**
  * Replaces the 155 stray console.log calls in ui/src and the error_log noise in
@@ -8,12 +9,17 @@ import { paths } from './storage/paths'
  * can send one file when something goes wrong on their machine.
  */
 export const initLogger = (): void => {
-  log.transports.file.resolvePathFn = () => join(paths.logs(), 'main.log')
-  log.transports.file.level = 'info'
-  log.transports.file.maxSize = 5 * 1024 * 1024
-  log.transports.console.level = process.env.NODE_ENV === 'development' ? 'debug' : false
-  log.errorHandler.startCatching({ showDialog: false })
-}
+  electronLog.transports.file.resolvePathFn = () => join(paths.logs(), 'main.log')
+  electronLog.transports.file.level = 'info'
+  electronLog.transports.file.maxSize = 5 * 1024 * 1024
+  electronLog.transports.console.level =
+    process.env.NODE_ENV === 'development' ? 'debug' : false
+  electronLog.errorHandler.startCatching({ showDialog: false })
 
-export const logger = log.scope('main')
-export default log
+  const scoped = electronLog.scope('main')
+  setLogSink({
+    info: (message, ...args) => scoped.info(message, ...args),
+    warn: (message, ...args) => scoped.warn(message, ...args),
+    error: (message, ...args) => scoped.error(message, ...args)
+  })
+}

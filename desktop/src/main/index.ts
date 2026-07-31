@@ -1,7 +1,10 @@
 import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { ensureStorageTree } from './storage/paths'
-import { initLogger, logger } from './logger'
+import { initLogger } from './logger'
+import { log } from './log'
+import { closeDatabase, getConnection, openDatabase } from './db/client'
+import { runMigrations } from './db/migrate'
 import { registerIpc } from './ipc'
 
 // Must run before any app.getPath('userData') call — Electron caches the path
@@ -46,7 +49,7 @@ const createWindow = (): void => {
     const devServer = process.env['ELECTRON_RENDERER_URL']
     if (!devServer || !url.startsWith(devServer)) {
       event.preventDefault()
-      logger.warn(`Blocked navigation to ${url}`)
+      log.warn(`Blocked navigation to ${url}`)
     }
   })
 
@@ -71,9 +74,12 @@ if (!app.requestSingleInstanceLock()) {
   void app.whenReady().then(() => {
     ensureStorageTree()
     initLogger()
-    registerIpc()
-    logger.info(`Starting ${app.getName()} ${app.getVersion()}`)
+    log.info(`Starting ${app.getName()} ${app.getVersion()}`)
 
+    openDatabase()
+    runMigrations(getConnection())
+
+    registerIpc()
     createWindow()
 
     app.on('activate', () => {
@@ -83,5 +89,11 @@ if (!app.requestSingleInstanceLock()) {
 
   app.on('window-all-closed', () => {
     app.quit()
+  })
+
+  // Checkpoint the WAL and release the file cleanly, so a backup taken right
+  // after closing the app is complete.
+  app.on('will-quit', () => {
+    closeDatabase()
   })
 }
