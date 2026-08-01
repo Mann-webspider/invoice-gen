@@ -16,14 +16,20 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "lint": "eslint . --ext .ts,.tsx",
     "db:generate": "drizzle-kit generate && tsx scripts/bundle-migrations.ts",
-    "import:legacy": "tsx scripts/legacy-import-cli.ts"
+    "import:legacy": "tsx scripts/legacy-import-cli.ts",
+    "docs:split": "node scripts/split-generator.mjs",
+    "docs:compare": "tsx scripts/compare-generators.mts"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
     "better-sqlite3": "^11.10.0",
+    "decimal.js": "^10.6.0",
+    "docx": "^9.7.1",
     "drizzle-orm": "^0.38.4",
     "electron-log": "^5.2.4",
-    "electron-updater": "^6.3.9"
+    "electron-updater": "^6.3.9",
+    "exceljs": "^4.4.0",
+    "pdf-lib": "^1.17.1"
   },
   "devDependencies": {
     "@hookform/resolvers": "^3.9.1",

@@ -34,14 +34,13 @@ export const CH = {
     list: 'invoice:list',
     get: 'invoice:get',
     create: 'invoice:create',
-    update: 'invoice:update',
-    remove: 'invoice:remove'
+    remove: 'invoice:remove',
+    allocateNumber: 'invoice:allocateNumber'
   },
   draft: {
     list: 'draft:list',
     get: 'draft:get',
-    create: 'draft:create',
-    update: 'draft:update',
+    save: 'draft:save',
     remove: 'draft:remove'
   },
   document: {
@@ -56,7 +55,8 @@ export const CH = {
     list: 'backup:list',
     restore: 'backup:restore',
     remove: 'backup:remove',
-    export: 'backup:export'
+    export: 'backup:export',
+    relaunch: 'backup:relaunch'
   }
 } as const
 

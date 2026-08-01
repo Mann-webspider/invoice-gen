@@ -1,5 +1,9 @@
 import { CH } from '@shared/ipc-channels'
 import type {
+  BackupFile,
+  RestoreResult,
+  AllocatedNumber,
+  AllocateNumberInput,
   AppInfo,
   ArnRecord,
   AssetGetInput,
@@ -8,8 +12,15 @@ import type {
   ChangePasswordInput,
   CountryOptionRecord,
   CreateAdminInput,
+  CreateInvoiceInput,
+  DraftRecord,
+  DraftSaveInput,
+  DocumentFile,
+  DraftWithData,
   DropdownOptionRecord,
+  GenerateDocumentsResult,
   ExporterRecord,
+  InvoiceSummary,
   IpcChannel,
   IpcRequest,
   IpcResponse,
@@ -22,7 +33,8 @@ import type {
   SessionState,
   SessionUser,
   SetPasswordInput,
-  SupplierRecord
+  SupplierRecord,
+  WizardData
 } from '@shared/contracts'
 import type { ErrorCode } from '@shared/result'
 
@@ -158,5 +170,41 @@ export const ipc = {
     get: (input: AssetGetInput): Promise<AssetResult> => call(CH.asset.get, input),
     pick: (input: AssetPickInput): Promise<AssetResult> => call(CH.asset.pick, input),
     remove: (input: AssetGetInput): Promise<null> => call(CH.asset.remove, input)
+  },
+
+  draft: {
+    list: (): Promise<DraftRecord[]> => call(CH.draft.list, undefined),
+    get: (id: string): Promise<DraftWithData> => call(CH.draft.get, { id }),
+    save: (input: DraftSaveInput): Promise<DraftRecord> => call(CH.draft.save, input),
+    remove: (id: string): Promise<null> => call(CH.draft.remove, { id })
+  },
+
+  invoice: {
+    list: (): Promise<InvoiceSummary[]> => call(CH.invoice.list, undefined),
+    get: (id: string): Promise<WizardData & { id: string }> => call(CH.invoice.get, { id }),
+    create: (input: CreateInvoiceInput): Promise<InvoiceSummary> =>
+      call(CH.invoice.create, input),
+    remove: (id: string): Promise<null> => call(CH.invoice.remove, { id }),
+    allocateNumber: (input: AllocateNumberInput): Promise<AllocatedNumber> =>
+      call(CH.invoice.allocateNumber, input)
+  },
+
+  document: {
+    generate: (invoiceId: string): Promise<GenerateDocumentsResult> =>
+      call(CH.document.generate, { invoiceId }),
+    list: (invoiceId: string): Promise<DocumentFile[]> =>
+      call(CH.document.list, { invoiceId }),
+    open: (path: string): Promise<null> => call(CH.document.open, { path }),
+    reveal: (path: string): Promise<null> => call(CH.document.reveal, { path })
+  },
+
+  backup: {
+    list: (): Promise<BackupFile[]> => call(CH.backup.list, undefined),
+    create: (): Promise<BackupFile> => call(CH.backup.create, undefined),
+    remove: (path: string): Promise<null> => call(CH.backup.remove, { path }),
+    export: (path: string): Promise<{ savedTo: string | null }> =>
+      call(CH.backup.export, { path }),
+    restore: (path: string): Promise<RestoreResult> => call(CH.backup.restore, { path }),
+    relaunch: (): Promise<null> => call(CH.backup.relaunch, undefined)
   }
 }

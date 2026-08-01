@@ -5,7 +5,7 @@ import { paths } from '../storage/paths'
 import { handle } from './guard'
 
 export const registerAppIpc = (): void => {
-  handle<void, AppInfo>(CH.app.info, null, () => ({
+  handle(CH.app.info, null, (): AppInfo => ({
     name: app.getName(),
     version: app.getVersion(),
     electron: process.versions.electron,

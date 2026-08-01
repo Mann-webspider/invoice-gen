@@ -19,10 +19,25 @@ import type {
   MasterRemoveInput,
   MasterReorderInput
 } from './master'
+import type {
+  BackupFile,
+  RestoreResult,
+  AllocatedNumber,
+  AllocateNumberInput,
+  CreateInvoiceInput,
+  DraftRecord,
+  DraftSaveInput,
+  DraftWithData,
+  DocumentFile,
+  GenerateDocumentsResult,
+  InvoiceSummary,
+  WizardData
+} from './wizard'
 
 export * from './app'
 export * from './auth'
 export * from './master'
+export * from './wizard'
 
 /**
  * The typed IPC surface: channel name -> { req, res }.
@@ -61,6 +76,29 @@ export interface IpcContract {
   [CH.asset.pick]: { req: AssetPickInput; res: AssetResult }
   [CH.asset.get]: { req: AssetGetInput; res: AssetResult }
   [CH.asset.remove]: { req: AssetGetInput; res: null }
+
+  [CH.draft.list]: { req: void; res: DraftRecord[] }
+  [CH.draft.get]: { req: { id: string }; res: DraftWithData }
+  [CH.draft.save]: { req: DraftSaveInput; res: DraftRecord }
+  [CH.draft.remove]: { req: { id: string }; res: null }
+
+  [CH.invoice.list]: { req: void; res: InvoiceSummary[] }
+  [CH.invoice.get]: { req: { id: string }; res: WizardData & { id: string } }
+  [CH.invoice.create]: { req: CreateInvoiceInput; res: InvoiceSummary }
+  [CH.invoice.remove]: { req: { id: string }; res: null }
+  [CH.invoice.allocateNumber]: { req: AllocateNumberInput; res: AllocatedNumber }
+
+  [CH.document.generate]: { req: { invoiceId: string }; res: GenerateDocumentsResult }
+  [CH.document.list]: { req: { invoiceId: string }; res: DocumentFile[] }
+  [CH.document.open]: { req: { path: string }; res: null }
+  [CH.document.reveal]: { req: { path: string }; res: null }
+
+  [CH.backup.list]: { req: void; res: BackupFile[] }
+  [CH.backup.create]: { req: void; res: BackupFile }
+  [CH.backup.remove]: { req: { path: string }; res: null }
+  [CH.backup.export]: { req: { path: string }; res: { savedTo: string | null } }
+  [CH.backup.restore]: { req: { path: string }; res: RestoreResult }
+  [CH.backup.relaunch]: { req: void; res: null }
 }
 
 export type IpcChannel = keyof IpcContract
