@@ -253,6 +253,11 @@ export const ChoiceField = ({
                     type="button"
                     role="radio"
                     aria-checked={active}
+                    // The label and the stored value differ wherever the value
+                    // is jargon — "By sea" is stored as SHIPPING - THROUGH SEA.
+                    // Carrying the value keeps it addressable by what it means
+                    // rather than by what it happens to read as.
+                    data-value={option.value}
                     variant={active ? 'default' : 'outline'}
                     className="h-10"
                     onClick={() => field.onChange(active ? '' : option.value)}

@@ -1,0 +1,260 @@
+{
+  "_source": {
+    "invoice": "INV/0089/2025-26",
+    "folder": "backend/database/data/2025-26/INV/0089",
+    "readFrom": [
+      "CUSTOM_INVOICE.xlsx",
+      "PACKING_LIST.xlsx",
+      "CI.xlsx",
+      "PL.xlsx",
+      "VGM.xlsx",
+      "INV-0089-2025-26-doc.docx"
+    ],
+    "note": [
+      "This invoice exists only as generated documents. There is no row for it in",
+      "the legacy database, so every value below was read back out of the workbooks",
+      "the old system produced. The exporter and supplier were matched against",
+      "exporters_dropdown and suppliers_dropdown, which do still hold them.",
+      "",
+      "Two things could not be recovered and are marked unrecoverable below:",
+      "the annexure was never generated for this invoice, and the marks value is",
+      "not printed when the load type is anything other than FCL."
+    ]
+  },
+
+  "master": {
+    "exporter": {
+      "companyName": "ZERIC CERAMICA",
+      "companyAddress": "SECOND FLOOR, OFFICE NO 7, ISHAN CERAMIC ZONE WING D,\nLALPAR, MORBI\nGUJARAT 363642\nINDIA",
+      "contactNumber": "9123456780",
+      "email": "info@zericceramic.com",
+      "taxId": "24AACFZ6694H1ZP",
+      "ieCode": "AACFZ6694H",
+      "panNumber": "AACFZ6694H",
+      "gstinNumber": "24AACFZ6694H1ZP",
+      "stateCode": "24",
+      "authorizedName": "MOHIT KACHADIYA ",
+      "authorizedDesignation": "Logistics Head",
+      "companyPrefix": "INV",
+      "invoiceYear": "2025-26",
+      "lastInvoiceNumber": 88
+    },
+    "supplier": {
+      "name": "HOLO SANITARYWARE PRIVATE LIMITED",
+      "address": "Survey No. 723/P3 and 724/P1,Ghuntu, Lakhdhirpur Road\nNear Rolex Ceramic,\nLakhdhirpur, Morbi, Gujarat-363642",
+      "gstinNumber": "24AACFZ6694H1ZP",
+      "permission": "CUS/TECH/SSP/209/2024-Tech-O/o Commr-Cus-Prev-Jamnagar, SSP NO. 2790/CCP/JMR/24-25 Dt.: 17.12.2024\nIssued by The Asst./Dy.Commissioner of Customs, Custom (PREV.), JAMNAGAR"
+    },
+    "arn": {
+      "arn": "AD2403250765509",
+      "gstCircular": "EXPORT UNDER GST CIRCULAR NO. 26/2017 Customs DT.01/07/2017"
+    },
+    "productCategory": {
+      "description": "Glazed porcelain Floor Tiles",
+      "hsnCode": "69072100"
+    },
+    "productSize": { "size": "600 X 1200", "sqm": "1.44" },
+    "destination": { "portOfDischarge": "GDAŃSK POLAND", "finalDestination": "POLAND" },
+    "dropdowns": {
+      "place_of_receipt": "MORBI",
+      "port_of_loading": "MUNDRA",
+      "country_of_origin": "INDIA",
+      "country_of_final_destination": "POLAND",
+      "unit_type": "BOX",
+      "marks_nos": "LCL"
+    }
+  },
+
+  "invoiceNumber": "INV/0089/2025-26",
+
+  "step1": {
+    "choices": {
+      "invoice.payment_term": "FOB",
+      "invoice.integrated_tax": "WITHOUT",
+      "invoice.product_type": "Tiles",
+      "invoice.shipping.shipping_method": "SHIPPING - THROUGH SEA"
+    },
+    "pickers": {
+      "invoice.currency_type": "INR",
+      "invoice.shipping.place_of_receipt": "MORBI",
+      "invoice.shipping.port_of_loading": "MUNDRA",
+      "invoice.shipping.port_of_discharge": "GDAŃSK POLAND",
+      "invoice.shipping.country_of_origin": "INDIA",
+      "invoice.shipping.country_of_final_destination": "POLAND",
+      "invoice.products.nos": "LCL"
+    },
+    "text": {
+      "invoice.invoice_date": "11/11/2023",
+      "invoice.currency_rate": "87.15",
+
+      "invoice.buyer.buyer_order_no": "Exp/0187/2025-26",
+      "invoice.buyer.buyer_order_date": "08/09/2025",
+      "invoice.buyer.po_no": "dcsdf",
+      "invoice.buyer.consignee": "sscsdc\nsdcsdc",
+      "invoice.buyer.notify_party": "sdcsdc\nsdcsc\nsdccs",
+
+      "invoice.shipping.pre_carriage_by": "xasa",
+      "invoice.shipping.vessel_flight_no": "asdas",
+      "invoice.shipping.final_destination": "POLAND",
+      "invoice.shipping.origin_details": "DISTRICT MORBI, STATE GUJARAT",
+      "invoice.shipping.terms_of_delivery": "FOB AT MUNDRA",
+      "invoice.shipping.payment": "sdcscasa",
+
+      "invoice.products.goods": "You got me in your love again",
+      "invoice.products.freight": "",
+      "invoice.products.insurance": "",
+
+      "invoice.package.no_of_packages": "0 BOX",
+      "invoice.package.taxable_value": "",
+      "invoice.package.gst_amount": "",
+      "invoice.package.lut_date": "23/07/2025",
+      "invoice.package.arn_no": "AD2403250765509",
+      "invoice.package.gst_circular": "EXPORT UNDER GST CIRCULAR NO. 26/2017 Customs DT.01/07/2017",
+      "_note_amount_in_words": "The generator appends the full stop, so it is not typed here.",
+      "invoice.package.amount_in_words": "FOURTEEN THOUSAND FOUR HUNDRED ONLY"
+    },
+    "unrecoverable": {
+      "invoice.products.leftValue": "Marks is only printed when the load type is FCL; this invoice is LCL.",
+      "invoice.products.rightValue": "Same."
+    },
+    "products": [
+      {
+        "category": "Glazed porcelain Floor Tiles",
+        "product_name": "asxcascsa",
+        "size": "600 X 1200",
+        "quantity": "1000",
+        "unit": "BOX",
+        "sqm": "1.44",
+        "price": "10",
+        "net_weight": "25907.7",
+        "gross_weight": "28430"
+      }
+    ],
+    "suppliers": [
+      {
+        "name": "HOLO SANITARYWARE PRIVATE LIMITED",
+        "tax_invoice_number": " GSTT/2329",
+        "date": "11/11/2025"
+      }
+    ]
+  },
+
+  "step2": {
+    "text": { "invoice.products.total_pallet_count": "6918" },
+    "containers": [
+      {
+        "container_no": "MSKU1281063",
+        "line_seal_no": "MLIN 2504862",
+        "rfid_seal": "SPPL 4023 5549",
+        "design_no": "Lucky Panda",
+        "quantity": "1000",
+        "net_weight": "25907.7",
+        "gross_weight": "26900"
+      },
+      {
+        "container_no": "MSKU1281063",
+        "line_seal_no": "R 83530888",
+        "rfid_seal": "SPPL 4023 1111",
+        "design_no": "Unlucky Panda",
+        "quantity": "988",
+        "net_weight": "27000",
+        "gross_weight": "26500"
+      },
+      {
+        "container_no": "OOCU8234963",
+        "line_seal_no": "R 83530888",
+        "rfid_seal": "SPPL 4023 1111",
+        "design_no": "where is panda",
+        "quantity": "1000",
+        "net_weight": "2211",
+        "gross_weight": "2200"
+      },
+      {
+        "container_no": "OOCU8234963",
+        "line_seal_no": "R 83530888",
+        "rfid_seal": "SPPL 4023 1111",
+        "design_no": "here is panda",
+        "quantity": "456",
+        "net_weight": "9088",
+        "gross_weight": "9100"
+      },
+      {
+        "container_no": "OOCU8234963",
+        "line_seal_no": "R 83530888",
+        "rfid_seal": "SPPL 4023 1111",
+        "design_no": "whoo panda",
+        "quantity": "879",
+        "net_weight": "10100",
+        "gross_weight": "10120"
+      },
+      {
+        "container_no": "SEGU1787598",
+        "line_seal_no": "R 83530888",
+        "rfid_seal": "SPPL 4023 1111",
+        "design_no": "Buta Gorilla",
+        "quantity": "89",
+        "net_weight": "1100",
+        "gross_weight": "1150"
+      }
+    ]
+  },
+
+  "step3": {
+    "_unrecoverable": [
+      "No annexure was generated for invoice 0089, so none of these values appear",
+      "in any of its documents. The four the step requires are filled with the",
+      "jurisdiction the client's other Morbi invoices use, purely so the step can",
+      "be completed. Replace them before treating the annexure as a faithful copy."
+    ],
+    "text": {
+      "annexure.commissionerate": "RAJKOT",
+      "annexure.division": "MORBI II",
+      "annexure.range": "MORBI",
+      "annexure.exam_date": "11/11/2023",
+      "annexure.invoice_date": "11/11/2023",
+      "annexure.lut_date": "23/07/2025"
+    },
+    "manufacturer": "HOLO SANITARYWARE PRIVATE LIMITED"
+  },
+
+  "step4": {
+    "choices": {
+      "vgm.verified_gross_mass": "method-1",
+      "vgm.unit_of_measurement": "KG",
+      "vgm.type": "NORMAL"
+    },
+    "text": {
+      "vgm.shipper_name": "ZERIC CERAMICA",
+      "vgm.ie_code": "AACFZ6694H",
+      "vgm.authorized_name": "MOHIT KACHADIYA ",
+      "vgm.authorized_contact": "9123456780",
+      "vgm.container_number": "AS PER ANNEXURE",
+      "_note_container_size": "The generator appends the apostrophe for feet.",
+      "vgm.container_size": "LCL",
+      "vgm.permissible_weight": "AS PER ANNEXURE",
+      "vgm.weighbridge_registration": "AS PER ANNEXURE",
+      "vgm.dt_weighing": "11/11/2023",
+      "vgm.weighing_slip_no": "AS PER ANNEXURE",
+      "vgm.imdg_class": "NA"
+    },
+    "containers": [
+      { "booking_no": "EID0848891", "container_no": "MSKU1281063", "gross_weight": "26900", "tare_weight": "2100" },
+      { "booking_no": "EID0848891", "container_no": "MSKU1281063", "gross_weight": "26500", "tare_weight": "2100" },
+      { "booking_no": "EID0848891", "container_no": "OOCU8234963", "gross_weight": "2200", "tare_weight": "1100" },
+      { "booking_no": "EID0848891", "container_no": "OOCU8234963", "gross_weight": "9100", "tare_weight": "1200" },
+      { "booking_no": "EID0848891", "container_no": "OOCU8234963", "gross_weight": "10120", "tare_weight": "1900" },
+      { "booking_no": "EID0848891", "container_no": "SEGU1787598", "gross_weight": "1150", "tare_weight": "2000" }
+    ]
+  },
+
+  "compare": {
+    "originalsFolder": "../backend/database/data/2025-26/INV/0089",
+    "workbooks": {
+      "CUSTOM_INVOICE.xlsx": "CUSTOM_INVOICE.xlsx",
+      "PACKING_LIST.xlsx": "PACKING_LIST.xlsx",
+      "CI.xlsx": "CI.xlsx",
+      "PL.xlsx": "PL.xlsx",
+      "VGM.xlsx": "VGM.xlsx"
+    }
+  }
+}

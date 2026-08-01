@@ -29,6 +29,18 @@ const categoryLookup = (): Map<string, CategoryInfo> =>
       .map((row) => [row.id, { description: row.description, hsnCode: row.hsnCode }])
   )
 
+/**
+ * The wizard writes dates the way they print, DD/MM/YYYY. The supplier block is
+ * the one place the generator re-splits a date itself, and it expects the shape
+ * the old web form's `<input type="date">` produced.
+ */
+const toIsoDate = (value: string): string => {
+  const match = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(value.trim())
+  if (!match) return value
+  const [, day, month, year] = match
+  return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`
+}
+
 export const toLegacyInvoiceData = (data: WizardData): LegacyInvoiceData => {
   const { invoice } = data
   const categories = categoryLookup()
@@ -152,13 +164,22 @@ export const toLegacyInvoiceData = (data: WizardData): LegacyInvoiceData => {
       product_section: [...sections.values()]
     },
 
+    /**
+     * The legacy column names, not the wizard's.
+     *
+     * `formatSupplierDetails` in the sheet context reads `supplier_name`,
+     * `tax_invoice_no` and a `yyyy-mm-dd` date it splits on the hyphen. Handing
+     * it the wizard's names printed a blank supplier and a date reading
+     * "undefined/undefined/11/11/2025" on every invoice — which is what the
+     * supplier block on invoice 0089 came out as.
+     */
     suppliers: invoice.suppliers.map((supplier) => ({
       id: supplier.id,
-      name: supplier.name,
-      address: supplier.address,
+      supplier_name: supplier.name,
+      supplier_address: supplier.address,
       gstin_number: supplier.gstin_number,
-      tax_invoice_number: supplier.tax_invoice_number,
-      date: supplier.date
+      tax_invoice_no: supplier.tax_invoice_number,
+      date: toIsoDate(supplier.date)
     })),
 
     annexure: {

@@ -21,6 +21,7 @@
     "import:legacy": "tsx scripts/legacy-import-cli.ts",
     "docs:split": "node scripts/split-generator.mjs",
     "docs:compare": "tsx scripts/compare-generators.mts",
+    "replicate": "node --experimental-websocket scripts/replicate-invoice.mjs",
     "make:icon": "node scripts/make-icon.mjs"
   },
   "dependencies": {
