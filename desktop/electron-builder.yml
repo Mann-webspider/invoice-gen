@@ -1,5 +1,7 @@
 appId: com.shelby.invoicegen
 productName: InvoiceGen
+copyright: Copyright © ${author}
+
 directories:
   buildResources: build
   output: release
@@ -7,22 +9,81 @@ directories:
 files:
   - out/**
   - package.json
+  # Everything else is bundled by electron-vite; node_modules only needs to
+  # carry the native modules, which cannot be bundled.
+  - '!**/*.{map,md,ts,tsx}'
 
 asarUnpack:
-  # Native modules cannot run from inside the asar archive.
+  # Native addons must sit on disk as real files; they cannot be loaded from
+  # inside the asar archive.
   - '**/*.node'
+  - node_modules/better-sqlite3/**
+  - node_modules/@node-rs/**
+
+# ------------------------------------------------------------------ #
+# Windows
+# ------------------------------------------------------------------ #
 
 win:
   target:
     - nsis
+  icon: build/icon.ico
   artifactName: InvoiceGen-Setup-${version}.${ext}
+  # Unsigned builds trip SmartScreen on first run. Add a certificate here when
+  # the client provides one.
 
 nsis:
   oneClick: false
-  perMachine: false # per-user install: no admin prompt on the client's laptop
+  # Per-user: installs under %LOCALAPPDATA% with no administrator prompt, which
+  # matters on a locked-down office machine.
+  perMachine: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
   shortcutName: Invoice Generator
-  # Uninstall must never touch %APPDATA%/InvoiceGen — that is the client's data.
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+  # The client's invoices live in %APPDATA%/InvoiceGen. Uninstalling the
+  # application must not take them with it.
   deleteAppDataOnUninstall: false
+
+# ------------------------------------------------------------------ #
+# macOS
+# ------------------------------------------------------------------ #
+
+mac:
+  target:
+    - target: dmg
+      arch:
+        # Both, so the same disk image serves Intel and Apple Silicon machines.
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.png
+  category: public.app-category.business
+  # macOS 12 Monterey and later, as the client requires.
+  minimumSystemVersion: '12.0'
+  darkModeSupport: false
+  # Unsigned and unnotarised: hardened runtime would make Gatekeeper refuse to
+  # launch it rather than merely warn. Turn this on together with signing and
+  # notarisation once the client has an Apple Developer account.
+  hardenedRuntime: false
+  gatekeeperAssess: false
+  extendInfo:
+    # The app writes only inside its own container; it never needs the user's
+    # Documents or Desktop, so no privacy usage strings are required.
+    LSApplicationCategoryType: public.app-category.business
+
+dmg:
+  artifactName: InvoiceGen-${version}-${arch}.${ext}
+  contents:
+    - x: 140
+      y: 200
+      type: file
+    - x: 400
+      y: 200
+      type: link
+      path: /Applications

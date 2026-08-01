@@ -10,6 +10,11 @@ export const CH = {
   app: {
     info: 'app:info'
   },
+  setup: {
+    state: 'setup:state',
+    importLegacy: 'setup:importLegacy',
+    recheckLibreOffice: 'setup:recheckLibreOffice'
+  },
   auth: {
     login: 'auth:login',
     logout: 'auth:logout',

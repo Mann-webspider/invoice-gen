@@ -6,9 +6,13 @@ import { log } from './log'
 import { closeDatabase, getConnection, openDatabase } from './db/client'
 import { runMigrations } from './db/migrate'
 import { registerIpc } from './ipc'
+import { buildMenu } from './menu'
+
+const isMac = process.platform === 'darwin'
 
 // Must run before any app.getPath('userData') call — Electron caches the path
-// on first read, and this determines the %APPDATA% folder name.
+// on first read. It decides the folder name under %APPDATA% on Windows and
+// under ~/Library/Application Support on macOS.
 app.setName('InvoiceGen')
 
 let mainWindow: BrowserWindow | null = null
@@ -20,7 +24,11 @@ const createWindow = (): void => {
     minWidth: 1100,
     minHeight: 700,
     show: false,
-    autoHideMenuBar: true,
+    // Windows and Linux hide the menu bar; macOS always shows its own.
+    autoHideMenuBar: !isMac,
+    // Standard title bar on every platform. An inset macOS title bar would put
+    // the traffic lights over the sidebar heading, and that is not something
+    // this build can be checked against.
     backgroundColor: '#ffffff',
     title: 'Invoice Generator',
     webPreferences: {
@@ -80,6 +88,7 @@ if (!app.requestSingleInstanceLock()) {
     runMigrations(getConnection())
 
     registerIpc()
+    buildMenu(() => mainWindow)
     createWindow()
 
     app.on('activate', () => {
@@ -87,8 +96,10 @@ if (!app.requestSingleInstanceLock()) {
     })
   })
 
+  // macOS keeps an application running with no windows; the dock icon reopens
+  // one through the 'activate' handler above.
   app.on('window-all-closed', () => {
-    app.quit()
+    if (!isMac) app.quit()
   })
 
   // Checkpoint the WAL and release the file cleanly, so a backup taken right
