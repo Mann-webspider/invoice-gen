@@ -74,3 +74,33 @@ export const ChangePasswordInput = z
     path: ['confirmPassword']
   })
 export type ChangePasswordInput = z.infer<typeof ChangePasswordInput>
+
+/* ------------------------------------------------------------------ *
+ * First run
+ * ------------------------------------------------------------------ */
+
+export const SetupState = z.object({
+  /** True once anything has been imported or created on this machine. */
+  hasData: z.boolean(),
+  invoiceCount: z.number(),
+  exporterCount: z.number(),
+  /** null when LibreOffice is not installed, so PDFs cannot be produced. */
+  libreOfficePath: z.string().nullable(),
+  dataFolder: z.string()
+})
+export type SetupState = z.infer<typeof SetupState>
+
+export const ImportSummary = z.object({
+  invoices: z.number(),
+  products: z.number(),
+  exporters: z.number(),
+  suppliers: z.number(),
+  drafts: z.number(),
+  users: z.number(),
+  assetsCopied: z.number(),
+  documentsCopied: z.number(),
+  /** Invoice numbers that appeared more than once; the newest was kept. */
+  duplicateInvoices: z.array(z.string()),
+  warnings: z.array(z.string())
+})
+export type ImportSummary = z.infer<typeof ImportSummary>

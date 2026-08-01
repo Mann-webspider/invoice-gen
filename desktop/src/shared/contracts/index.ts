@@ -6,7 +6,9 @@ import type {
   LoginInput,
   SessionState,
   SessionUser,
-  SetPasswordInput
+  SetPasswordInput,
+  SetupState,
+  ImportSummary
 } from './auth'
 import type {
   AssetGetInput,
@@ -50,6 +52,10 @@ export * from './wizard'
  */
 export interface IpcContract {
   [CH.app.info]: { req: void; res: AppInfo }
+
+  [CH.setup.state]: { req: void; res: SetupState }
+  [CH.setup.importLegacy]: { req: void; res: ImportSummary | null }
+  [CH.setup.recheckLibreOffice]: { req: void; res: SetupState }
 
   [CH.auth.session]: { req: void; res: SessionState }
   [CH.auth.login]: { req: LoginInput; res: SessionUser }

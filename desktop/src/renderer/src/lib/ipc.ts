@@ -33,6 +33,8 @@ import type {
   SessionState,
   SessionUser,
   SetPasswordInput,
+  SetupState,
+  ImportSummary,
   SupplierRecord,
   WizardData
 } from '@shared/contracts'
@@ -96,6 +98,14 @@ const masterApi = <E extends MasterEntity>(entity: E) => ({
 export const ipc = {
   app: {
     info: (): Promise<AppInfo> => call(CH.app.info, undefined)
+  },
+
+  setup: {
+    state: (): Promise<SetupState> => call(CH.setup.state, undefined),
+    recheckLibreOffice: (): Promise<SetupState> =>
+      call(CH.setup.recheckLibreOffice, undefined),
+    importLegacy: (): Promise<ImportSummary | null> =>
+      call(CH.setup.importLegacy, undefined)
   },
 
   auth: {
