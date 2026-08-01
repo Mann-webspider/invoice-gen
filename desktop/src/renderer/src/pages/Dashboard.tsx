@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
-import { FilePlus2, FileText, Loader2, Trash } from 'lucide-react'
+import { FilePlus2, FileText, FolderOpen, Loader2, RefreshCw, Trash } from 'lucide-react'
 
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -15,6 +15,14 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { ConfirmDeleteDialog } from '@/components/admin/ConfirmDeleteDialog'
+import { ProcessQueue } from '@/components/ProcessQueue'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { ipc } from '@/lib/ipc'
 import { applyIpcError, toastSuccess } from '@/lib/form'
 
@@ -31,6 +39,31 @@ export const Dashboard = (): JSX.Element => {
 
   const [pendingInvoice, setPendingInvoice] = useState<string | null>(null)
   const [pendingDraft, setPendingDraft] = useState<string | null>(null)
+  const [documentsFor, setDocumentsFor] = useState<string | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+
+  const documents = useQuery({
+    queryKey: ['documents', documentsFor],
+    queryFn: () => ipc.document.list(documentsFor as string),
+    enabled: documentsFor !== null
+  })
+
+  const generate = useMutation({
+    mutationFn: ipc.document.generate,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['documents'] })
+      toastSuccess('Documents generated')
+    },
+    onError: (error) => applyIpcError(error),
+    onSettled: () => setJobId(null)
+  })
+
+  const runGenerate = (invoiceId: string): void => {
+    setDocumentsFor(invoiceId)
+    // The panel filters on the job id the main process stamps each event with.
+    setJobId(crypto.randomUUID())
+    generate.mutate(invoiceId)
+  }
 
   const removeInvoice = useMutation({
     mutationFn: ipc.invoice.remove,
@@ -164,8 +197,24 @@ export const Dashboard = (): JSX.Element => {
                     <TableCell>{invoice.productCount}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" disabled title="Arrives in phase 5">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label="View documents"
+                          onClick={() => setDocumentsFor(invoice.id)}
+                        >
                           <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          aria-label="Generate documents"
+                          disabled={generate.isPending}
+                          onClick={() => runGenerate(invoice.id)}
+                        >
+                          <RefreshCw
+                            className={generate.isPending ? 'h-4 w-4 animate-spin' : 'h-4 w-4'}
+                          />
                         </Button>
                         <Button
                           variant="outline"
@@ -184,6 +233,54 @@ export const Dashboard = (): JSX.Element => {
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={documentsFor !== null} onOpenChange={(open) => !open && setDocumentsFor(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Generated documents</DialogTitle>
+            <DialogDescription>
+              Stored on this machine. Open uses whichever program handles the file type.
+            </DialogDescription>
+          </DialogHeader>
+
+          {documents.isPending ? (
+            <Spinner />
+          ) : documents.data?.length === 0 ? (
+            <p className="text-sm text-gray-500">
+              Nothing generated yet. Use the refresh button on the invoice row.
+            </p>
+          ) : (
+            <ul className="divide-y max-h-96 overflow-y-auto">
+              {documents.data?.map((file) => (
+                <li key={file.path} className="flex items-center gap-3 py-2">
+                  <span className="flex-1 text-sm">{file.name}</span>
+                  <span className="text-xs text-gray-400">
+                    {Math.round(file.sizeBytes / 1024)} KB
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void ipc.document.open(file.path).catch(applyIpcError)}
+                  >
+                    Open
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    aria-label="Show in folder"
+                    onClick={() => void ipc.document.reveal(file.path).catch(applyIpcError)}
+                  >
+                    <FolderOpen className="h-4 w-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <ProcessQueue jobId={jobId} />
 
       <ConfirmDeleteDialog
         open={pendingDraft !== null}

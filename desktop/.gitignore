@@ -28,3 +28,8 @@ logs
 *.suo
 *.njsproj
 *.sln
+
+# Comparison fixture: derived from the client's real database, so it carries
+# their company and buyer details. Regenerate locally, never commit.
+scripts/fixture-invoice.json
+scripts/.tmp-orig

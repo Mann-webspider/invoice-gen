@@ -382,3 +382,24 @@ export const InvoiceSummary = z.object({
   createdAt: z.string()
 })
 export type InvoiceSummary = z.infer<typeof InvoiceSummary>
+
+/* ------------------------------------------------------------------ *
+ * Generated documents
+ * ------------------------------------------------------------------ */
+
+export const DocumentFile = z.object({
+  name: z.string(),
+  path: z.string(),
+  sizeBytes: z.number(),
+  modifiedAt: z.string(),
+  kind: z.enum(['xlsx', 'docx', 'pdf'])
+})
+export type DocumentFile = z.infer<typeof DocumentFile>
+
+export const GenerateDocumentsResult = z.object({
+  directory: z.string(),
+  /** Prefix the PDFs are named with, e.g. "0089 - POLAND - LCL". */
+  baseFileName: z.string(),
+  files: z.array(DocumentFile)
+})
+export type GenerateDocumentsResult = z.infer<typeof GenerateDocumentsResult>

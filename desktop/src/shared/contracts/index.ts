@@ -26,6 +26,8 @@ import type {
   DraftRecord,
   DraftSaveInput,
   DraftWithData,
+  DocumentFile,
+  GenerateDocumentsResult,
   InvoiceSummary,
   WizardData
 } from './wizard'
@@ -83,6 +85,11 @@ export interface IpcContract {
   [CH.invoice.create]: { req: CreateInvoiceInput; res: InvoiceSummary }
   [CH.invoice.remove]: { req: { id: string }; res: null }
   [CH.invoice.allocateNumber]: { req: AllocateNumberInput; res: AllocatedNumber }
+
+  [CH.document.generate]: { req: { invoiceId: string }; res: GenerateDocumentsResult }
+  [CH.document.list]: { req: { invoiceId: string }; res: DocumentFile[] }
+  [CH.document.open]: { req: { path: string }; res: null }
+  [CH.document.reveal]: { req: { path: string }; res: null }
 }
 
 export type IpcChannel = keyof IpcContract

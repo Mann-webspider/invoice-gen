@@ -13,8 +13,10 @@ import type {
   CreateInvoiceInput,
   DraftRecord,
   DraftSaveInput,
+  DocumentFile,
   DraftWithData,
   DropdownOptionRecord,
+  GenerateDocumentsResult,
   ExporterRecord,
   InvoiceSummary,
   IpcChannel,
@@ -183,5 +185,14 @@ export const ipc = {
     remove: (id: string): Promise<null> => call(CH.invoice.remove, { id }),
     allocateNumber: (input: AllocateNumberInput): Promise<AllocatedNumber> =>
       call(CH.invoice.allocateNumber, input)
+  },
+
+  document: {
+    generate: (invoiceId: string): Promise<GenerateDocumentsResult> =>
+      call(CH.document.generate, { invoiceId }),
+    list: (invoiceId: string): Promise<DocumentFile[]> =>
+      call(CH.document.list, { invoiceId }),
+    open: (path: string): Promise<null> => call(CH.document.open, { path }),
+    reveal: (path: string): Promise<null> => call(CH.document.reveal, { path })
   }
 }
