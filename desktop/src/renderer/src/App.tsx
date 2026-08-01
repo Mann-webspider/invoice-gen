@@ -1,12 +1,14 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { HashRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom'
+import { HashRouter, Outlet, Route, Routes } from 'react-router-dom'
 
+import type { WizardStepId } from '@shared/contracts'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { Toaster } from '@/components/ui/sonner'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { AuthProvider } from '@/context/AuthContext'
 import { SidebarProvider } from '@/context/SidebarContext'
+import { WizardProvider } from '@/context/WizardContext'
 import { queryClient } from '@/lib/query-client'
 import { AdminPanel } from '@/pages/admin/AdminPanel'
 import { Dashboard } from '@/pages/Dashboard'
@@ -14,6 +16,26 @@ import { Login } from '@/pages/Login'
 import { NotFound } from '@/pages/NotFound'
 import { Placeholder } from '@/pages/Placeholder'
 import { Setup } from '@/pages/Setup'
+import { AnnexureStep } from '@/pages/wizard/AnnexureStep'
+import { InvoiceStep } from '@/pages/wizard/InvoiceStep'
+import { PackagingStep } from '@/pages/wizard/PackagingStep'
+import { VgmStep } from '@/pages/wizard/VgmStep'
+
+/**
+ * Each wizard step is reachable both fresh and with a draft id. The web app
+ * declared these as eight separate <Route> blocks with the page duplicated in
+ * each; here one table drives both forms of the path.
+ */
+const WIZARD_ROUTES: { path: string; step: WizardStepId; Component: () => JSX.Element }[] = [
+  { path: '/invoice', step: 'invoice', Component: InvoiceStep },
+  { path: '/invoice/drafts/:id', step: 'invoice', Component: InvoiceStep },
+  { path: '/packaging-list', step: 'packaging-list', Component: PackagingStep },
+  { path: '/packaging-list/drafts/:id', step: 'packaging-list', Component: PackagingStep },
+  { path: '/annexure', step: 'annexure', Component: AnnexureStep },
+  { path: '/annexure/drafts/:id', step: 'annexure', Component: AnnexureStep },
+  { path: '/vgm-form', step: 'vgm-form', Component: VgmStep },
+  { path: '/vgm-form/drafts/:id', step: 'vgm-form', Component: VgmStep }
+]
 
 /**
  * HashRouter, not BrowserRouter: the packaged renderer is loaded over file://,
@@ -45,56 +67,17 @@ const App = (): JSX.Element => (
               <Route element={<Shell />}>
                 <Route path="/" element={<Dashboard />} />
 
-                <Route
-                  path="/invoice"
-                  element={
-                    <Placeholder
-                      title="Invoice Generator"
-                      description="Step 1 of 4 — exporter, buyer, shipping and products"
-                      phase="phase 3"
-                    />
-                  }
-                />
-                <Route path="/invoice/drafts/:id" element={<Navigate to="/invoice" replace />} />
-
-                <Route
-                  path="/packaging-list"
-                  element={
-                    <Placeholder
-                      title="Packaging List"
-                      description="Step 2 of 4 — containers, marks and pallets"
-                      phase="phase 3"
-                    />
-                  }
-                />
-                <Route
-                  path="/packaging-list/drafts/:id"
-                  element={<Navigate to="/packaging-list" replace />}
-                />
-
-                <Route
-                  path="/annexure"
-                  element={
-                    <Placeholder
-                      title="Annexure"
-                      description="Step 3 of 4 — customs declaration"
-                      phase="phase 3"
-                    />
-                  }
-                />
-                <Route path="/annexure/drafts/:id" element={<Navigate to="/annexure" replace />} />
-
-                <Route
-                  path="/vgm-form"
-                  element={
-                    <Placeholder
-                      title="VGM Form"
-                      description="Step 4 of 4 — verified gross mass, then generate documents"
-                      phase="phase 3"
-                    />
-                  }
-                />
-                <Route path="/vgm-form/drafts/:id" element={<Navigate to="/vgm-form" replace />} />
+                {WIZARD_ROUTES.map(({ path, step, Component }) => (
+                  <Route
+                    key={path}
+                    path={path}
+                    element={
+                      <WizardProvider step={step}>
+                        <Component />
+                      </WizardProvider>
+                    }
+                  />
+                ))}
 
                 <Route
                   path="/backup"

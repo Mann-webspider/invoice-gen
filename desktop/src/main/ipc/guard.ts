@@ -1,5 +1,5 @@
 import { ipcMain } from 'electron'
-import { ZodError, type ZodType } from 'zod'
+import { ZodError, type z, type ZodType } from 'zod'
 import { AppError, err, ok, type Result } from '@shared/result'
 import { log } from '../log'
 
@@ -13,14 +13,29 @@ import { log } from '../log'
  * "-" when a field was missing, which is why placeholder dashes leaked into
  * printed invoices.
  */
-export const handle = <Req, Res>(
+export function handle<S extends ZodType, Res>(
   channel: string,
-  schema: ZodType<Req> | null,
-  handler: (input: Req) => Promise<Res> | Res
-): void => {
-  ipcMain.handle(channel, async (_event, raw: unknown): Promise<Result<Res>> => {
+  schema: S,
+  handler: (input: z.output<S>) => Promise<Res> | Res
+): void
+export function handle<Res>(
+  channel: string,
+  schema: null,
+  handler: () => Promise<Res> | Res
+): void
+export function handle(
+  channel: string,
+  schema: ZodType | null,
+  // The overloads above are the contract; this signature only has to be
+  // compatible with both.
+  handler: (input: unknown) => unknown
+): void {
+  ipcMain.handle(channel, async (_event, raw: unknown): Promise<Result<unknown>> => {
     try {
-      const input = schema ? schema.parse(raw) : (raw as Req)
+      // schema.parse returns the *output* type, so zod defaults are applied
+      // before a service sees the value — a draft saved with a missing
+      // `containers` array arrives as [].
+      const input = schema ? schema.parse(raw) : raw
       return ok(await handler(input))
     } catch (error) {
       return toErrorResult(channel, error)

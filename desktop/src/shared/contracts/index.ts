@@ -19,10 +19,21 @@ import type {
   MasterRemoveInput,
   MasterReorderInput
 } from './master'
+import type {
+  AllocatedNumber,
+  AllocateNumberInput,
+  CreateInvoiceInput,
+  DraftRecord,
+  DraftSaveInput,
+  DraftWithData,
+  InvoiceSummary,
+  WizardData
+} from './wizard'
 
 export * from './app'
 export * from './auth'
 export * from './master'
+export * from './wizard'
 
 /**
  * The typed IPC surface: channel name -> { req, res }.
@@ -61,6 +72,17 @@ export interface IpcContract {
   [CH.asset.pick]: { req: AssetPickInput; res: AssetResult }
   [CH.asset.get]: { req: AssetGetInput; res: AssetResult }
   [CH.asset.remove]: { req: AssetGetInput; res: null }
+
+  [CH.draft.list]: { req: void; res: DraftRecord[] }
+  [CH.draft.get]: { req: { id: string }; res: DraftWithData }
+  [CH.draft.save]: { req: DraftSaveInput; res: DraftRecord }
+  [CH.draft.remove]: { req: { id: string }; res: null }
+
+  [CH.invoice.list]: { req: void; res: InvoiceSummary[] }
+  [CH.invoice.get]: { req: { id: string }; res: WizardData & { id: string } }
+  [CH.invoice.create]: { req: CreateInvoiceInput; res: InvoiceSummary }
+  [CH.invoice.remove]: { req: { id: string }; res: null }
+  [CH.invoice.allocateNumber]: { req: AllocateNumberInput; res: AllocatedNumber }
 }
 
 export type IpcChannel = keyof IpcContract
