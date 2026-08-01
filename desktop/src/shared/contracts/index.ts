@@ -20,6 +20,8 @@ import type {
   MasterReorderInput
 } from './master'
 import type {
+  BackupFile,
+  RestoreResult,
   AllocatedNumber,
   AllocateNumberInput,
   CreateInvoiceInput,
@@ -90,6 +92,13 @@ export interface IpcContract {
   [CH.document.list]: { req: { invoiceId: string }; res: DocumentFile[] }
   [CH.document.open]: { req: { path: string }; res: null }
   [CH.document.reveal]: { req: { path: string }; res: null }
+
+  [CH.backup.list]: { req: void; res: BackupFile[] }
+  [CH.backup.create]: { req: void; res: BackupFile }
+  [CH.backup.remove]: { req: { path: string }; res: null }
+  [CH.backup.export]: { req: { path: string }; res: { savedTo: string | null } }
+  [CH.backup.restore]: { req: { path: string }; res: RestoreResult }
+  [CH.backup.relaunch]: { req: void; res: null }
 }
 
 export type IpcChannel = keyof IpcContract

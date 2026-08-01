@@ -400,6 +400,28 @@ export const GenerateDocumentsResult = z.object({
   directory: z.string(),
   /** Prefix the PDFs are named with, e.g. "0089 - POLAND - LCL". */
   baseFileName: z.string(),
-  files: z.array(DocumentFile)
+  files: z.array(DocumentFile),
+  /** Set when the workbooks succeeded but the PDF step did not. */
+  pdfWarning: z.string().optional()
 })
 export type GenerateDocumentsResult = z.infer<typeof GenerateDocumentsResult>
+
+/* ------------------------------------------------------------------ *
+ * Backups
+ * ------------------------------------------------------------------ */
+
+export const BackupFile = z.object({
+  name: z.string(),
+  path: z.string(),
+  sizeBytes: z.number(),
+  createdAt: z.string()
+})
+export type BackupFile = z.infer<typeof BackupFile>
+
+export const RestoreResult = z.object({
+  restoredFrom: z.string(),
+  /** Copy of the database that was replaced, so a restore can be undone. */
+  safetyCopy: z.string(),
+  requiresRestart: z.boolean()
+})
+export type RestoreResult = z.infer<typeof RestoreResult>

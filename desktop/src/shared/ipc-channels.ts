@@ -55,7 +55,8 @@ export const CH = {
     list: 'backup:list',
     restore: 'backup:restore',
     remove: 'backup:remove',
-    export: 'backup:export'
+    export: 'backup:export',
+    relaunch: 'backup:relaunch'
   }
 } as const
 

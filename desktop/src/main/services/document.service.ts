@@ -11,6 +11,8 @@ import { generateWorkbooks } from '../docs/excel'
 import { generateDocx } from '../docs/docx'
 import { loadImage } from '../docs/excel/images'
 import { setImageRegistry } from '../docs/excel/loadImageBuffer'
+import { libreOfficeRenderer } from '../docs/pdf/renderer'
+import { combineOrder, mergePdfs } from '../docs/pdf/merge'
 
 /**
  * Generates an invoice's documents and writes them to the documents tree.
@@ -55,7 +57,7 @@ export const listDocuments = (invoiceId: string): DocumentFile[] => {
 
 export const generateDocuments = async (
   invoiceId: string,
-  onProgress: (step: string, title: string, status: 'running' | 'completed') => void
+  onProgress: (step: string, title: string, status: 'running' | 'completed' | 'failed') => void
 ): Promise<GenerateDocumentsResult> => {
   const invoice = getInvoice(invoiceId)
   const data = toLegacyInvoiceData(invoice)
@@ -93,13 +95,80 @@ export const generateDocuments = async (
   writeFileSync(join(directory, docxName), await generateDocx(data))
   onProgress('DOCX', 'Word document', 'completed')
 
-  log.info(`Generated ${result.workbooks.length + 1} documents for ${invoice.invoice.invoice_number}`)
+  // PDFs are best-effort: the workbooks and the docx are already on disk, and
+  // losing the PDF step because LibreOffice is missing should not lose those.
+  const pdfWarning = await renderPdfs(
+    directory,
+    result.fileName,
+    invoice.invoice.payment_term,
+    result.workbooks.map((workbook) => workbook.fileName),
+    onProgress
+  )
+
+  log.info(
+    `Generated ${result.workbooks.length + 1} documents for ${invoice.invoice.invoice_number}`
+  )
 
   return {
     directory,
     baseFileName: result.fileName,
-    files: listDocuments(invoiceId)
+    files: listDocuments(invoiceId),
+    pdfWarning
   }
+}
+
+/**
+ * One PDF per workbook, named `<base> <SHEET>.pdf` exactly as the web app named
+ * them, then a merged COMBINED.pdf.
+ */
+const renderPdfs = async (
+  directory: string,
+  baseFileName: string,
+  paymentTerm: string,
+  workbookNames: string[],
+  onProgress: (step: string, title: string, status: 'running' | 'completed' | 'failed') => void
+): Promise<string | undefined> => {
+  if (!(await libreOfficeRenderer.isAvailable())) {
+    onProgress('PDF', 'PDF conversion skipped', 'failed')
+    return 'LibreOffice was not found, so no PDFs were produced. The Excel and Word files are ready.'
+  }
+
+  const rendered = new Map<string, string>()
+
+  for (const workbookName of workbookNames) {
+    const sheet = workbookName.replace('.xlsx', '')
+    onProgress(`PDF_${sheet}`, `${sheet} PDF`, 'running')
+    try {
+      const pdf = await libreOfficeRenderer.render(
+        join(directory, workbookName),
+        directory,
+        `${baseFileName} ${sheet}`
+      )
+      rendered.set(sheet, pdf)
+      onProgress(`PDF_${sheet}`, `${sheet} PDF`, 'completed')
+    } catch (error) {
+      log.error(`PDF conversion failed for ${workbookName}`, error)
+      onProgress(`PDF_${sheet}`, `${sheet} PDF failed`, 'failed')
+    }
+  }
+
+  const ordered = combineOrder(paymentTerm)
+    .map((sheet) => rendered.get(sheet))
+    .filter((path): path is string => Boolean(path))
+
+  if (ordered.length === 0) return 'No PDFs could be produced.'
+
+  onProgress('PDF_COMBINED', 'Combined PDF', 'running')
+  try {
+    const pages = await mergePdfs(ordered, join(directory, `${baseFileName} COMBINED.pdf`))
+    onProgress('PDF_COMBINED', `Combined PDF (${pages} pages)`, 'completed')
+  } catch (error) {
+    log.error('PDF merge failed', error)
+    onProgress('PDF_COMBINED', 'Combined PDF failed', 'failed')
+    return 'The individual PDFs were produced but could not be merged.'
+  }
+
+  return undefined
 }
 
 /** Opens a document in whatever the client has associated with the type. */

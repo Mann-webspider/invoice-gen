@@ -1,5 +1,7 @@
 import { CH } from '@shared/ipc-channels'
 import type {
+  BackupFile,
+  RestoreResult,
   AllocatedNumber,
   AllocateNumberInput,
   AppInfo,
@@ -194,5 +196,15 @@ export const ipc = {
       call(CH.document.list, { invoiceId }),
     open: (path: string): Promise<null> => call(CH.document.open, { path }),
     reveal: (path: string): Promise<null> => call(CH.document.reveal, { path })
+  },
+
+  backup: {
+    list: (): Promise<BackupFile[]> => call(CH.backup.list, undefined),
+    create: (): Promise<BackupFile> => call(CH.backup.create, undefined),
+    remove: (path: string): Promise<null> => call(CH.backup.remove, { path }),
+    export: (path: string): Promise<{ savedTo: string | null }> =>
+      call(CH.backup.export, { path }),
+    restore: (path: string): Promise<RestoreResult> => call(CH.backup.restore, { path }),
+    relaunch: (): Promise<null> => call(CH.backup.relaunch, undefined)
   }
 }

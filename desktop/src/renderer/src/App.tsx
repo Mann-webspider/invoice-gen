@@ -11,10 +11,10 @@ import { SidebarProvider } from '@/context/SidebarContext'
 import { WizardProvider } from '@/context/WizardContext'
 import { queryClient } from '@/lib/query-client'
 import { AdminPanel } from '@/pages/admin/AdminPanel'
+import { Backup } from '@/pages/Backup'
 import { Dashboard } from '@/pages/Dashboard'
 import { Login } from '@/pages/Login'
 import { NotFound } from '@/pages/NotFound'
-import { Placeholder } from '@/pages/Placeholder'
 import { Setup } from '@/pages/Setup'
 import { AnnexureStep } from '@/pages/wizard/AnnexureStep'
 import { InvoiceStep } from '@/pages/wizard/InvoiceStep'
@@ -79,16 +79,7 @@ const App = (): JSX.Element => (
                   />
                 ))}
 
-                <Route
-                  path="/backup"
-                  element={
-                    <Placeholder
-                      title="Backup & Restore"
-                      description="Database backups stored on this machine"
-                      phase="phase 5"
-                    />
-                  }
-                />
+                <Route path="/backup" element={<Backup />} />
               </Route>
 
               <Route element={<Shell requireAdmin />}>
