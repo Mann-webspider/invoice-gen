@@ -1,29 +1,10 @@
-import { useState } from 'react'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { Edit2, Loader2, Plus, Trash } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Edit2, Loader2, Plus, Search, Trash } from 'lucide-react'
 
-import { SupplierInput, type SupplierRecord } from '@shared/contracts'
+import type { SupplierRecord } from '@shared/contracts'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage
-} from '@/components/ui/form'
+import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Table,
   TableBody,
@@ -33,15 +14,10 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { ConfirmDeleteDialog } from '@/components/admin/ConfirmDeleteDialog'
+import { SectionHeader } from '@/components/admin/SectionHeader'
+import { SupplierDialog } from '@/components/master/SupplierDialog'
 import { useMasterList, useMasterMutations } from '@/hooks/useMaster'
 import { applyIpcError } from '@/lib/form'
-
-const emptySupplier: SupplierInput = {
-  name: '',
-  address: '',
-  gstinNumber: '',
-  permission: ''
-}
 
 export const SupplierSection = (): JSX.Element => {
   const { data: suppliers = [], isPending } = useMasterList('supplier')
@@ -54,95 +30,99 @@ export const SupplierSection = (): JSX.Element => {
   const [editing, setEditing] = useState<SupplierRecord | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<SupplierRecord | null>(null)
+  const [query, setQuery] = useState('')
 
-  const form = useForm<SupplierInput>({
-    resolver: zodResolver(SupplierInput),
-    defaultValues: emptySupplier
-  })
-
-  const openAdd = (): void => {
-    setEditing(null)
-    form.reset(emptySupplier)
-    setDialogOpen(true)
-  }
-
-  const openEdit = (supplier: SupplierRecord): void => {
-    setEditing(supplier)
-    form.reset({
-      name: supplier.name,
-      address: supplier.address,
-      gstinNumber: supplier.gstinNumber,
-      permission: supplier.permission
-    })
-    setDialogOpen(true)
-  }
-
-  const onSubmit = async (values: SupplierInput): Promise<void> => {
-    try {
-      if (editing) await mutations.update(editing.id, values)
-      else await mutations.create(values)
-      setDialogOpen(false)
-    } catch (error) {
-      applyIpcError(error, form.setError)
-    }
-  }
+  // Imported client data runs to dozens of suppliers; scrolling a table to find
+  // one to correct is the whole reason this box exists.
+  const visible = useMemo(() => {
+    const needle = query.trim().toLowerCase()
+    if (!needle) return suppliers
+    return suppliers.filter(
+      (supplier) =>
+        supplier.name.toLowerCase().includes(needle) ||
+        supplier.gstinNumber.toLowerCase().includes(needle)
+    )
+  }, [suppliers, query])
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold">Supplier Details</h2>
-        <Button onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          Add New Supplier
-        </Button>
-      </div>
+      <SectionHeader
+        title="Suppliers"
+        description="The factories the goods come from. They appear on the invoice and, as the manufacturer, on the annexure."
+        action={
+          <Button
+            onClick={() => {
+              setEditing(null)
+              setDialogOpen(true)
+            }}
+          >
+            <Plus />
+            Add a supplier
+          </Button>
+        }
+      />
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="p-4 bg-gray-50 border-b">
-          <h3 className="font-semibold">Saved Suppliers</h3>
+      {suppliers.length > 4 && (
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            value={query}
+            placeholder="Search by name or GSTIN"
+            className="pl-9"
+            onChange={(event) => setQuery(event.target.value)}
+          />
         </div>
-        <div className="p-4">
+      )}
+
+      <Card>
+        <CardContent className="p-0">
           {isPending ? (
-            <div className="p-6 flex justify-center">
+            <div className="flex justify-center p-10">
               <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
             </div>
-          ) : suppliers.length === 0 ? (
-            <p className="p-4 text-sm text-gray-500">No suppliers yet.</p>
+          ) : visible.length === 0 ? (
+            <p className="p-10 text-center text-sm text-gray-500">
+              {suppliers.length === 0 ? 'No suppliers yet.' : 'Nothing matches that search.'}
+            </p>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Supplier Name</TableHead>
+                  <TableHead>Name</TableHead>
                   <TableHead>GSTIN</TableHead>
                   <TableHead>Address</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="w-40 text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {suppliers.map((supplier) => (
+                {visible.map((supplier) => (
                   <TableRow key={supplier.id}>
                     <TableCell className="font-medium">{supplier.name}</TableCell>
-                    <TableCell>{supplier.gstinNumber}</TableCell>
+                    <TableCell className="font-mono text-xs">{supplier.gstinNumber}</TableCell>
                     <TableCell className="max-w-md truncate text-sm text-gray-600">
                       {supplier.address}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end space-x-2">
+                      <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
                           size="sm"
-                          aria-label={`Edit ${supplier.name}`}
-                          onClick={() => openEdit(supplier)}
+                          onClick={() => {
+                            setEditing(supplier)
+                            setDialogOpen(true)
+                          }}
                         >
-                          <Edit2 className="h-4 w-4" />
+                          <Edit2 />
+                          Edit
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-700"
                           aria-label={`Delete ${supplier.name}`}
                           onClick={() => setPendingDelete(supplier)}
                         >
-                          <Trash className="h-4 w-4" />
+                          <Trash />
                         </Button>
                       </div>
                     </TableCell>
@@ -151,94 +131,10 @@ export const SupplierSection = (): JSX.Element => {
               </TableBody>
             </Table>
           )}
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{editing ? 'Edit Supplier' : 'Add New Supplier'}</DialogTitle>
-            <DialogDescription>
-              Suppliers appear on the invoice form and in the annexure.
-            </DialogDescription>
-          </DialogHeader>
-
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Supplier name</FormLabel>
-                    <FormControl>
-                      <Input autoFocus {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="gstinNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>GSTIN number</FormLabel>
-                    <FormControl>
-                      <Input {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="address"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Address</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="permission"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Self-sealing permission</FormLabel>
-                    <FormControl>
-                      <Textarea rows={3} {...field} />
-                    </FormControl>
-                    <FormDescription>
-                      Printed on the annexure. Leave blank if not applicable.
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button type="submit" disabled={form.formState.isSubmitting}>
-                  {form.formState.isSubmitting && (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                  )}
-                  Save
-                </Button>
-              </DialogFooter>
-            </form>
-          </Form>
-        </DialogContent>
-      </Dialog>
+      <SupplierDialog open={dialogOpen} onOpenChange={setDialogOpen} editing={editing} />
 
       <ConfirmDeleteDialog
         open={pendingDelete !== null}
