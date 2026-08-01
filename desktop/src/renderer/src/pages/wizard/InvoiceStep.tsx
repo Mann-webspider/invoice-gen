@@ -82,7 +82,7 @@ const ExporterCard = (): JSX.Element => {
 
   /** Copies the master record into the form, which is what gets snapshotted. */
   const apply = (exporter: ExporterRecord): void => {
-    setValue('invoice.exporter', {
+    const snapshot: WizardData['invoice']['exporter'] = {
       id: exporter.id,
       company_name: exporter.companyName,
       company_address: exporter.companyAddress,
@@ -97,7 +97,24 @@ const ExporterCard = (): JSX.Element => {
       authorized_designation: exporter.authorizedDesignation,
       company_prefix: exporter.companyPrefix,
       invoice_year: exporter.invoiceYear
-    })
+    }
+
+    /**
+     * Field by field, not one setValue on 'invoice.exporter'.
+     *
+     * react-hook-form notifies watchers by the exact path that changed, and
+     * 'invoice.exporter' does not match a subscription to
+     * 'invoice.exporter.id'. Writing the object in one call put the company
+     * into the form and left the screen blank — no summary card, and a picker
+     * still reading "Choose your company" — until something else forced a
+     * render. The dialog path hid it, because adding a company also sets local
+     * state.
+     */
+    for (const [key, value] of Object.entries(snapshot)) {
+      setValue(`invoice.exporter.${key}` as 'invoice.exporter.id', value, {
+        shouldDirty: true
+      })
+    }
     // The VGM sheet repeats the exporter's identity; prefill rather than making
     // the client retype it on step 4.
     setValue('vgm.shipper_name', exporter.companyName)
@@ -497,7 +514,17 @@ const TotalsCard = (): JSX.Element => {
       description="Two of these are added up from the goods above; the rest print on the invoice as written."
     >
       <FieldGrid>
-        <NumberField name="invoice.package.no_of_packages" label="Number of packages" />
+        {/*
+          Text, not a number. The generator splits this value on a space to get
+          the count and the unit it prints beside it, so "1000 BOX" is the shape
+          it expects and a bare "1000" prints as "1000undefined".
+        */}
+        <TextField
+          name="invoice.package.no_of_packages"
+          label="Number of packages"
+          placeholder="1000 BOX"
+          help="Count and unit together, as it should print."
+        />
         <DerivedField label="Total SQM" value={totalSqm ?? ''} help="From the goods above." />
         <DerivedField label="Total FOB" value={totalFob ?? ''} help="Goods plus freight and insurance." />
         <NumberField name="invoice.package.taxable_value" label="Taxable value" />
