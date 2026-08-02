@@ -1,11 +1,11 @@
-import { useEffect } from 'react'
+import { forwardRef, useEffect, type ComponentPropsWithoutRef } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 import { Plus, Trash } from 'lucide-react'
 
 import { Step4Schema, type WizardData } from '@shared/contracts'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import {
   Table,
@@ -16,20 +16,38 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { WizardShell } from '@/components/wizard/WizardShell'
-import { ChoiceField, TextField } from '@/components/wizard/fields'
+import { FieldGrid, SectionCard } from '@/components/wizard/SectionCard'
+import { ChoiceField, DateField, NumberField, TextField } from '@/components/wizard/fields'
 import { useWizard } from '@/context/WizardContext'
 import { ipc } from '@/lib/ipc'
 import { toastSuccess } from '@/lib/form'
 import { sum } from '@/lib/money'
 
 const BASE = 'vgm.containers' as const
-const METHODS = ['method-1', 'method-2'] as const
-const UNITS = ['KG', 'MT'] as const
-const TYPES = ['NORMAL', 'REEFER', 'HAZARDOUS'] as const
+
+/**
+ * The two ways SOLAS allows a verified gross mass to be established. Spelled
+ * out rather than left as "method-1" and "method-2", which is what the form
+ * stores and what nobody can choose between without looking it up.
+ */
+const METHODS = [
+  { value: 'method-1', label: 'Method 1 — weigh the packed container' },
+  { value: 'method-2', label: 'Method 2 — add up the cargo and the tare weight' }
+] as const
+const UNITS = [
+  { value: 'KG', label: 'Kilograms' },
+  { value: 'MT', label: 'Tonnes' }
+] as const
+const TYPES = [
+  { value: 'NORMAL', label: 'Normal' },
+  { value: 'REEFER', label: 'Refrigerated' },
+  { value: 'HAZARDOUS', label: 'Hazardous' }
+] as const
 
 /** Step 4 — verified gross mass, then the invoice is written. */
 export const VgmStep = (): JSX.Element => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { form, draftId, saveNow } = useWizard()
 
   const finish = async (): Promise<void> => {
@@ -38,17 +56,22 @@ export const VgmStep = (): JSX.Element => {
       data: form.getValues(),
       draftId: draftId ?? undefined
     })
+    // Both lists are cached for thirty seconds, so without this the client is
+    // sent to a dashboard that says they have no invoices and still lists the
+    // draft that has just become one.
+    await queryClient.invalidateQueries({ queryKey: ['invoices'] })
+    await queryClient.invalidateQueries({ queryKey: ['drafts'] })
     toastSuccess(`Invoice ${summary.invoiceNumber} created`)
     navigate('/', { replace: true })
   }
 
   return (
     <WizardShell
-      title="VGM Form"
-      description="Step 4 of 4 — verified gross mass, then create the invoice"
+      title="Container weights"
+      description="Step 4 of 4 — the verified gross mass the shipping line requires. Creating the invoice is the last thing this page does."
       schema={Step4Schema}
       onFinish={finish}
-      finishLabel="Create invoice"
+      finishLabel="Create the invoice"
     >
       <div className="space-y-6">
         <ShipperCard />
@@ -60,38 +83,50 @@ export const VgmStep = (): JSX.Element => {
 }
 
 const ShipperCard = (): JSX.Element => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="text-base">Shipper</CardTitle>
-    </CardHeader>
-    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <SectionCard
+    title="Who is declaring the weight"
+    description="Filled in from the company you chose on step 1. Change it only if someone else signs."
+  >
+    <FieldGrid>
       <TextField name="vgm.shipper_name" label="Shipper name" />
       <TextField name="vgm.ie_code" label="IE code" />
-      <TextField name="vgm.forwarder_email" label="Forwarder email" />
-      <TextField name="vgm.authorized_name" label="Authorised name" />
-      <TextField name="vgm.authorized_contact" label="Authorised contact" />
-    </CardContent>
-  </Card>
+      <TextField name="vgm.forwarder_email" label="Forwarder's email" type="email" />
+      <TextField name="vgm.authorized_name" label="Authorised person" />
+      <TextField name="vgm.authorized_contact" label="Their phone number" />
+    </FieldGrid>
+  </SectionCard>
 )
 
 const WeighingCard = (): JSX.Element => (
-  <Card>
-    <CardHeader>
-      <CardTitle className="text-base">Weighing</CardTitle>
-    </CardHeader>
-    <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-4">
+  <SectionCard
+    title="How the weight was taken"
+    description="What the weighbridge recorded, as it prints on the VGM declaration."
+  >
+    <FieldGrid>
       <TextField name="vgm.container_number" label="Container number" />
-      <TextField name="vgm.container_size" label="Container size" />
-      <TextField name="vgm.permissible_weight" label="Permissible weight" />
+      <TextField name="vgm.container_size" label="Container size" placeholder="e.g. 20'" />
+      <NumberField
+        name="vgm.permissible_weight"
+        label="Maximum permitted weight"
+        help="The limit printed on the container itself."
+      />
       <TextField name="vgm.weighbridge_registration" label="Weighbridge registration" />
-      <ChoiceField name="vgm.verified_gross_mass" label="Determination method" options={METHODS} />
-      <ChoiceField name="vgm.unit_of_measurement" label="Unit" options={UNITS} />
-      <TextField name="vgm.dt_weighing" label="Date of weighing" placeholder="DD.MM.YYYY" />
-      <TextField name="vgm.weighing_slip_no" label="Weighing slip no." />
-      <ChoiceField name="vgm.type" label="Type" options={TYPES} />
-      <TextField name="vgm.imdg_class" label="IMDG class" />
-    </CardContent>
-  </Card>
+      <ChoiceField
+        name="vgm.verified_gross_mass"
+        label="How the weight was worked out"
+        options={METHODS}
+      />
+      <ChoiceField name="vgm.unit_of_measurement" label="Weights are in" options={UNITS} />
+      <DateField name="vgm.dt_weighing" label="Date weighed" pattern="dd.MM.yyyy" />
+      <TextField name="vgm.weighing_slip_no" label="Weighing slip number" />
+      <ChoiceField name="vgm.type" label="Cargo type" options={TYPES} />
+      <TextField
+        name="vgm.imdg_class"
+        label="IMDG class"
+        help="Only for hazardous cargo. Leave empty otherwise."
+      />
+    </FieldGrid>
+  </SectionCard>
 )
 
 const VgmContainerTable = (): JSX.Element => {
@@ -102,7 +137,7 @@ const VgmContainerTable = (): JSX.Element => {
   const containers = useWatch({ control, name: BASE })
   const packingContainers = useWatch({ control, name: 'invoice.products.containers' })
 
-  // Total VGM is tare plus gross, computed rather than typed.
+  // Total VGM is tare plus cargo, computed rather than typed.
   useEffect(() => {
     containers.forEach((container, index) => {
       const total = sum([container.tare_weight, container.gross_weight])
@@ -112,8 +147,15 @@ const VgmContainerTable = (): JSX.Element => {
     })
   }, [containers, setValue])
 
-  /** Saves retyping the container numbers already entered on step 2. */
-  const copyFromPackingList = (): void => {
+  /**
+   * Brings the containers over from step 2 automatically the first time this
+   * page is opened. It used to be a button labelled "Copy from packaging list"
+   * that most people never pressed, and the alternative was retyping every
+   * container number that had already been entered once. Only ever fills an
+   * empty table, so nothing typed here is overwritten.
+   */
+  useEffect(() => {
+    if (containers.length > 0 || packingContainers.length === 0) return
     setValue(
       BASE,
       packingContainers.map((container) => ({
@@ -126,105 +168,103 @@ const VgmContainerTable = (): JSX.Element => {
       })),
       { shouldDirty: true }
     )
-  }
+  }, [containers.length, packingContainers, setValue])
 
   return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base">VGM containers</CardTitle>
-        <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={packingContainers.length === 0}
-            onClick={copyFromPackingList}
-          >
-            Copy from packaging list
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() =>
-              append({
-                id: crypto.randomUUID(),
-                booking_no: '',
-                container_no: '',
-                tare_weight: '',
-                gross_weight: '',
-                total_vgm: ''
-              })
-            }
-          >
-            <Plus className="h-4 w-4" />
-            Add container
-          </Button>
-        </div>
-      </CardHeader>
-
-      <CardContent>
-        <div className="rounded-md border overflow-x-auto">
-          <Table>
-            <TableHeader>
+    <SectionCard
+      title="Containers"
+      description="Brought over from the packing list. Add the tare weight from the container door for each one."
+      action={
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            append({
+              id: crypto.randomUUID(),
+              booking_no: '',
+              container_no: '',
+              tare_weight: '',
+              gross_weight: '',
+              total_vgm: ''
+            })
+          }
+        >
+          <Plus />
+          Add container
+        </Button>
+      }
+    >
+      <div className="overflow-x-auto rounded-lg border" data-field={BASE}>
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gray-50/80">
+              <TableHead className="w-10 text-center text-gray-500">#</TableHead>
+              <TableHead className="min-w-40">Booking number</TableHead>
+              <TableHead className="min-w-44">Container number</TableHead>
+              <TableHead className="w-32 text-right">Tare weight</TableHead>
+              <TableHead className="w-32 text-right">Cargo weight</TableHead>
+              <TableHead className="w-32 text-right">Total VGM</TableHead>
+              <TableHead className="w-16" />
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {fields.length === 0 && (
               <TableRow>
-                <TableHead className="min-w-36">Booking no.</TableHead>
-                <TableHead className="min-w-40">Container no.</TableHead>
-                <TableHead className="w-32">Tare weight</TableHead>
-                <TableHead className="w-32">Cargo weight</TableHead>
-                <TableHead className="w-32">Total VGM</TableHead>
-                <TableHead className="w-12" />
+                <TableCell colSpan={7} className="py-10 text-center text-sm text-gray-500">
+                  Add containers on the packing list and they appear here automatically.
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {fields.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center text-sm text-gray-500 py-6">
-                    No containers yet.
-                  </TableCell>
-                </TableRow>
-              )}
+            )}
 
-              {fields.map((field, index) => (
-                <TableRow key={field.id}>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.booking_no`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.container_no`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.tare_weight`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.gross_weight`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input
-                      className="h-9 bg-gray-50"
-                      value={containers[index]?.total_vgm ?? ''}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-700"
-                      aria-label={`Remove VGM container ${index + 1}`}
-                      onClick={() => remove(index)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </CardContent>
-    </Card>
+            {fields.map((field, index) => (
+              <TableRow key={field.id} data-field={`${BASE}.${index}`}>
+                <TableCell className="text-center text-xs text-gray-400">{index + 1}</TableCell>
+                <TableCell data-field={`${BASE}.${index}.booking_no`}>
+                  <Input className="h-10" {...register(`${BASE}.${index}.booking_no`)} />
+                </TableCell>
+                <TableCell data-field={`${BASE}.${index}.container_no`}>
+                  <Input
+                    className="h-10 font-mono uppercase"
+                    {...register(`${BASE}.${index}.container_no`)}
+                  />
+                </TableCell>
+                <TableCell data-field={`${BASE}.${index}.tare_weight`}>
+                  <NumericCell {...register(`${BASE}.${index}.tare_weight`)} />
+                </TableCell>
+                <TableCell data-field={`${BASE}.${index}.gross_weight`}>
+                  <NumericCell {...register(`${BASE}.${index}.gross_weight`)} />
+                </TableCell>
+                <TableCell>
+                  <div className="flex h-10 items-center justify-end rounded-md border border-dashed bg-gray-50 px-3 text-sm tabular-nums text-gray-700">
+                    {containers[index]?.total_vgm || '—'}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 text-red-500 hover:bg-red-50 hover:text-red-700"
+                    aria-label={`Remove container ${index + 1}`}
+                    onClick={() => remove(index)}
+                  >
+                    <Trash />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+    </SectionCard>
   )
 }
+
+/** See the note in ProductTable: dropping register()'s ref unregisters the input. */
+const NumericCell = forwardRef<HTMLInputElement, ComponentPropsWithoutRef<typeof Input>>(
+  (props, ref) => (
+    <Input ref={ref} className="h-10 text-right tabular-nums" inputMode="decimal" {...props} />
+  )
+)
+NumericCell.displayName = 'NumericCell'

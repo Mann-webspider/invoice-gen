@@ -1,12 +1,10 @@
-import { useEffect } from 'react'
+import { forwardRef, useEffect, type ComponentPropsWithoutRef } from 'react'
 import { useFieldArray, useFormContext, useWatch } from 'react-hook-form'
-import { Plus, Trash } from 'lucide-react'
+import { Copy, Plus, Trash } from 'lucide-react'
 
 import { Step2Schema, type WizardData } from '@shared/contracts'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Table,
   TableBody,
@@ -16,8 +14,9 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { WizardShell } from '@/components/wizard/WizardShell'
-import { TextField } from '@/components/wizard/fields'
-import { sum } from '@/lib/money'
+import { FieldGrid, SectionCard } from '@/components/wizard/SectionCard'
+import { DerivedField, NumberField } from '@/components/wizard/fields'
+import { sum, toDecimalString } from '@/lib/money'
 
 const BASE = 'invoice.products.containers' as const
 
@@ -32,8 +31,8 @@ const BASE = 'invoice.products.containers' as const
  */
 export const PackagingStep = (): JSX.Element => (
   <WizardShell
-    title="Packaging List"
-    description="Step 2 of 4 — containers, marks and pallets"
+    title="Packing list"
+    description="Step 2 of 4 — one row per container, with what it holds and what it weighs."
     schema={Step2Schema}
   >
     <ContainerTable />
@@ -59,111 +58,147 @@ const ContainerTable = (): JSX.Element => {
     setValue('annexure.gross_weight', totalGross, { shouldDirty: false })
   }, [totalNet, totalGross, setValue])
 
-  return (
-    <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base">Containers</CardTitle>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() =>
-            append({
-              id: crypto.randomUUID(),
-              container_no: '',
-              line_seal_no: '',
-              rfid_seal: '',
-              design_no: '',
-              quantity: '',
-              net_weight: '',
-              gross_weight: ''
-            })
-          }
-        >
-          <Plus className="h-4 w-4" />
-          Add container
-        </Button>
-      </CardHeader>
+  const blankRow = (): WizardData['invoice']['products']['containers'][number] => ({
+    id: crypto.randomUUID(),
+    container_no: '',
+    line_seal_no: '',
+    rfid_seal: '',
+    design_no: '',
+    quantity: '',
+    net_weight: '',
+    gross_weight: ''
+  })
 
-      <CardContent className="space-y-4">
-        <div className="rounded-md border overflow-x-auto">
+  /** Containers on one shipment usually differ only in their numbers. */
+  const duplicate = (index: number): void => {
+    const source = containers[index]
+    if (!source) return
+    append({ ...source, id: crypto.randomUUID(), container_no: '' })
+  }
+
+  return (
+    <div className="space-y-6">
+      <SectionCard
+        title="Containers"
+        description="Add one row for each container in this shipment. Weights are added up for you."
+        action={
+          fields.length > 0 ? (
+            <Button type="button" variant="outline" size="sm" onClick={() => append(blankRow())}>
+              <Plus />
+              Add container
+            </Button>
+          ) : undefined
+        }
+      >
+        <div className="overflow-x-auto rounded-lg border" data-field={BASE}>
           <Table>
             <TableHeader>
-              <TableRow>
-                <TableHead className="min-w-40">Container no.</TableHead>
-                <TableHead className="min-w-36">Line seal no.</TableHead>
-                <TableHead className="min-w-36">RFID seal</TableHead>
-                <TableHead className="min-w-32">Design no.</TableHead>
-                <TableHead className="w-28">Quantity</TableHead>
-                <TableHead className="w-28">Net weight</TableHead>
-                <TableHead className="w-28">Gross weight</TableHead>
-                <TableHead className="w-12" />
+              <TableRow className="bg-gray-50/80">
+                <TableHead className="w-10 text-center text-gray-500">#</TableHead>
+                <TableHead className="min-w-44">Container number</TableHead>
+                <TableHead className="min-w-40">Line seal number</TableHead>
+                <TableHead className="min-w-40">RFID seal</TableHead>
+                <TableHead className="min-w-36">Design number</TableHead>
+                <TableHead className="w-28 text-right">Boxes</TableHead>
+                <TableHead className="w-32 text-right">Net kg</TableHead>
+                <TableHead className="w-32 text-right">Gross kg</TableHead>
+                <TableHead className="w-24" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {fields.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-sm text-gray-500 py-6">
-                    No containers yet. Add one to continue.
+                  <TableCell colSpan={9} className="py-10 text-center">
+                    <p className="text-sm text-gray-500">No containers added yet.</p>
+                    <Button type="button" className="mt-3" onClick={() => append(blankRow())}>
+                      <Plus />
+                      Add the first container
+                    </Button>
                   </TableCell>
                 </TableRow>
               )}
 
               {fields.map((field, index) => (
-                <TableRow key={field.id}>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.container_no`)} />
+                <TableRow key={field.id} data-field={`${BASE}.${index}`}>
+                  <TableCell className="text-center text-xs text-gray-400">{index + 1}</TableCell>
+                  <TableCell data-field={`${BASE}.${index}.container_no`}>
+                    <Input
+                      className="h-10 font-mono uppercase"
+                      placeholder="ABCD1234567"
+                      {...register(`${BASE}.${index}.container_no`)}
+                    />
+                  </TableCell>
+                  <TableCell data-field={`${BASE}.${index}.line_seal_no`}>
+                    <Input className="h-10" {...register(`${BASE}.${index}.line_seal_no`)} />
+                  </TableCell>
+                  <TableCell data-field={`${BASE}.${index}.rfid_seal`}>
+                    <Input className="h-10" {...register(`${BASE}.${index}.rfid_seal`)} />
+                  </TableCell>
+                  <TableCell data-field={`${BASE}.${index}.design_no`}>
+                    <Input className="h-10" {...register(`${BASE}.${index}.design_no`)} />
+                  </TableCell>
+                  <TableCell data-field={`${BASE}.${index}.quantity`}>
+                    <NumericCell {...register(`${BASE}.${index}.quantity`)} />
+                  </TableCell>
+                  <TableCell data-field={`${BASE}.${index}.net_weight`}>
+                    <NumericCell {...register(`${BASE}.${index}.net_weight`)} />
+                  </TableCell>
+                  <TableCell data-field={`${BASE}.${index}.gross_weight`}>
+                    <NumericCell {...register(`${BASE}.${index}.gross_weight`)} />
                   </TableCell>
                   <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.line_seal_no`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.rfid_seal`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.design_no`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.quantity`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.net_weight`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Input className="h-9" {...register(`${BASE}.${index}.gross_weight`)} />
-                  </TableCell>
-                  <TableCell>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 text-red-500 hover:text-red-700"
-                      aria-label={`Remove container ${index + 1}`}
-                      onClick={() => remove(index)}
-                    >
-                      <Trash className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10"
+                        aria-label={`Copy container ${index + 1}`}
+                        title="Copy this row without its number"
+                        onClick={() => duplicate(index)}
+                      >
+                        <Copy />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-10 w-10 text-red-500 hover:bg-red-50 hover:text-red-700"
+                        aria-label={`Remove container ${index + 1}`}
+                        title="Remove this row"
+                        onClick={() => remove(index)}
+                      >
+                        <Trash />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </div>
+      </SectionCard>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <TextField name="invoice.products.total_pallet_count" label="Total pallet count" />
-          <ReadOnly label="Total quantity" value={totalQuantity} />
-          <ReadOnly label="Total net weight" value={totalNet} />
-          <ReadOnly label="Total gross weight" value={totalGross} />
-        </div>
-      </CardContent>
-    </Card>
+      <SectionCard title="Totals" description="Worked out from the rows above and printed on the packing list.">
+        <FieldGrid columns={4}>
+          <NumberField
+            name="invoice.products.total_pallet_count"
+            label="Total pallets"
+            help="Leave empty if the goods are not palletised."
+          />
+          <DerivedField label="Total boxes" value={toDecimalString(totalQuantity)} />
+          <DerivedField label="Total net weight (kg)" value={toDecimalString(totalNet)} />
+          <DerivedField label="Total gross weight (kg)" value={toDecimalString(totalGross)} />
+        </FieldGrid>
+      </SectionCard>
+    </div>
   )
 }
 
-const ReadOnly = ({ label, value }: { label: string; value: string }): JSX.Element => (
-  <div className="space-y-2">
-    <Label>{label}</Label>
-    <Input value={value} readOnly className="bg-gray-50" />
-  </div>
+/** See the note in ProductTable: dropping register()'s ref unregisters the input. */
+const NumericCell = forwardRef<HTMLInputElement, ComponentPropsWithoutRef<typeof Input>>(
+  (props, ref) => (
+    <Input ref={ref} className="h-10 text-right tabular-nums" inputMode="decimal" {...props} />
+  )
 )
+NumericCell.displayName = 'NumericCell'
