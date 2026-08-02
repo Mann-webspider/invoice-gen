@@ -3,15 +3,6 @@ import { Edit2, Loader2, Plus, Trash } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
   Table,
   TableBody,
   TableCell,
@@ -20,6 +11,7 @@ import {
   TableRow
 } from '@/components/ui/table'
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
+import { FieldsDialog } from '@/components/master/FieldsDialog'
 import { applyIpcError } from '@/lib/form'
 
 interface PairField {
@@ -37,88 +29,66 @@ interface PairRow {
  * A two-column master list: description + HSN code, size + SQM, port of
  * discharge + final destination. Identical interaction in all three, so they
  * share one component rather than three near-identical blocks.
+ *
+ * The add and edit form is the same `FieldsDialog` the wizard opens from beside
+ * a picker, so there is one form per record shape rather than one per screen.
  */
 export const PairListCard = ({
   title,
+  addLabel,
   fields,
   rows,
   isPending,
-  isMutating,
   onCreate,
   onUpdate,
   onDelete
 }: {
   title: string
+  /** Wording of the button, e.g. "Add a size". */
+  addLabel: string
   fields: [PairField, PairField]
   rows: PairRow[]
   isPending: boolean
-  isMutating: boolean
   onCreate: (values: Record<string, string>) => Promise<unknown>
   onUpdate: (id: string, values: Record<string, string>) => Promise<unknown>
   onDelete: (id: string) => Promise<unknown>
 }): JSX.Element => {
-  const empty = { [fields[0].key]: '', [fields[1].key]: '' }
-
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [values, setValues] = useState<Record<string, string>>(empty)
+  const [initial, setInitial] = useState<Record<string, string>>({})
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
 
   const openAdd = (): void => {
     setEditingId(null)
-    setValues(empty)
+    setInitial({})
     setDialogOpen(true)
   }
 
   const openEdit = (row: PairRow): void => {
     setEditingId(row.id)
-    setValues({
+    setInitial({
       [fields[0].key]: String(row[fields[0].key] ?? ''),
       [fields[1].key]: String(row[fields[1].key] ?? '')
     })
     setDialogOpen(true)
   }
 
-  const complete = fields.every((field) => values[field.key]?.trim())
-
-  const save = async (): Promise<void> => {
-    if (!complete) return
-    const trimmed = Object.fromEntries(
-      Object.entries(values).map(([key, value]) => [key, value.trim()])
-    )
-    try {
-      if (editingId) await onUpdate(editingId, trimmed)
-      else await onCreate(trimmed)
-      setDialogOpen(false)
-    } catch (error) {
-      applyIpcError(error)
-    }
-  }
-
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <Label className="font-semibold">{title}</Label>
-        <Button type="button" variant="ghost" size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          Add
-        </Button>
-      </div>
-
-      <div className="rounded-md border bg-white">
+    <div className="space-y-3">
+      <div className="rounded-lg border">
         {isPending ? (
-          <div className="p-4 flex justify-center">
+          <div className="flex justify-center p-6">
             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
           </div>
         ) : rows.length === 0 ? (
-          <p className="p-4 text-sm text-gray-500">Nothing added yet.</p>
+          <p className="p-6 text-center text-sm text-gray-500">Nothing added yet.</p>
         ) : (
           <Table>
             <TableHeader>
-              <TableRow>
+              <TableRow className="bg-gray-50/80">
                 <TableHead>{fields[0].label}</TableHead>
                 <TableHead>{fields[1].label}</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="w-36 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -131,18 +101,20 @@ export const PairListCard = ({
                       <Button
                         variant="outline"
                         size="sm"
-                        aria-label="Edit"
+                        aria-label={`Edit ${String(row[fields[0].key])}`}
                         onClick={() => openEdit(row)}
                       >
-                        <Edit2 className="h-4 w-4" />
+                        <Edit2 />
+                        Edit
                       </Button>
                       <Button
-                        variant="outline"
-                        size="sm"
-                        aria-label="Delete"
+                        variant="ghost"
+                        size="icon"
+                        className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-700"
+                        aria-label={`Delete ${String(row[fields[0].key])}`}
                         onClick={() => setPendingDelete(row.id)}
                       >
-                        <Trash className="h-4 w-4" />
+                        <Trash />
                       </Button>
                     </div>
                   </TableCell>
@@ -153,47 +125,29 @@ export const PairListCard = ({
         )}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? 'Edit' : 'Add'} {title}
-            </DialogTitle>
-          </DialogHeader>
+      <Button type="button" variant="outline" size="sm" onClick={openAdd}>
+        <Plus />
+        {addLabel}
+      </Button>
 
-          <div className="space-y-4">
-            {fields.map((field, index) => (
-              <div key={field.key} className="space-y-2">
-                <Label htmlFor={field.key}>{field.label}</Label>
-                <Input
-                  id={field.key}
-                  value={values[field.key] ?? ''}
-                  placeholder={field.placeholder}
-                  autoFocus={index === 0}
-                  onChange={(event) =>
-                    setValues((previous) => ({ ...previous, [field.key]: event.target.value }))
-                  }
-                />
-              </div>
-            ))}
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="button" onClick={() => void save()} disabled={!complete || isMutating}>
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <FieldsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editingId ? `Edit ${title.toLowerCase()}` : addLabel}
+        fields={fields}
+        initial={initial}
+        submitLabel={editingId ? 'Save changes' : 'Add'}
+        onSave={async (values) => {
+          if (editingId) await onUpdate(editingId, values)
+          else await onCreate(values)
+        }}
+      />
 
       <ConfirmDeleteDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
-        title={`Delete this ${title.toLowerCase()} entry?`}
-        description="Invoices already created keep the values they were saved with."
+        title={`Delete this ${title.toLowerCase()}?`}
+        description="It stops being offered on new invoices. Invoices already created keep the values they were saved with."
         onConfirm={() => {
           if (pendingDelete) void onDelete(pendingDelete).catch(applyIpcError)
           setPendingDelete(null)
