@@ -41,7 +41,25 @@ export const generateWorkbooks = async (
     [data.exporter?.signature ?? '__signature']: images.signature
   })
 
-  const ctx = await buildContext(data, images)
+  /**
+   * Every sheet guards its image block with `if (signatureUrl)` and then
+   * destructures the result, so a url that resolves to nothing crashes the
+   * whole generation. The mapper hands over a url for any exporter that has an
+   * id, whether or not a letterhead was ever uploaded — which is every company
+   * added from inside the wizard. Clear the urls we have no image for, so the
+   * guards do what they were written to do.
+   */
+  const withRealImages = {
+    ...data,
+    exporter: data.exporter && {
+      ...data.exporter,
+      header: images.header ? data.exporter.header : null,
+      footer: images.footer ? data.exporter.footer : null,
+      signature: images.signature ? data.exporter.signature : null
+    }
+  }
+
+  const ctx = await buildContext(withRealImages, images)
   let state: SheetState = initialSheetState()
   // Sheets built so far. The worksheet copy reads cells straight off the custom
   // invoice's sheet, so the objects have to travel with the state.
