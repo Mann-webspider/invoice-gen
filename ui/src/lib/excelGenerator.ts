@@ -53,14 +53,14 @@ function extractInitialsOnly(input: string): string {
     return input
         .split(/\r?\n+/)
         .map(line => line.trim())
-        .filter(line => line && /^[A-Za-z\s]+$/.test(line)) // only keep pure text (names)
+        .filter(line => line && /^[A-Za-z-.\s]+$/.test(line)) // ✅ allows letters, spaces, and dots
         .map(name =>
             name
                 .split(/\s+/)
                 .map(word => word.charAt(0).toUpperCase() + ".")
                 .join(" ")
         )
-        .join("\n");
+        .join("\n ");
 }
 
 
@@ -164,6 +164,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     let notifyParty = data.buyer.notify_party || "";
     let formattedNotifyParty = extractInitialsOnly(notifyParty);
+    notifyParty = notifyParty.replace(/\n/g, '\n ');
 
     let preCarriage = data.shipping.pre_carriage === "-" ? "" : data.shipping.pre_carriage;
     let vassalFlightNo = data.shipping.vessel_flight_no === "-" ? "" : data.shipping.vessel_flight_no;
@@ -237,11 +238,18 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     //   ['Shadow Brown', '600X600', 1000, 'BOX', 1.44, 1440, 10.0, 14400.0, 32522.00, 65465.00],
     // ];
 
-    let isRemarks = data?.is_remark === 1? true: false || false;
+    let isRemarks = data?.is_remark === 1 ? true : false || false;
     let remarks = data?.remarks || "";
 
     let epcg = data?.epcg || "";
     let epcgDate = data?.epcg_date || "";
+    let [year, month, day] = ["", "", ""];
+
+
+    if (epcgDate && epcgDate !== "-" && epcgDate.trim() !== "") {
+        [year, month, day] = epcgDate.split('-');
+        epcgDate = `${day}/${month}/${year}`;
+    }
 
     let packageInfo = data.package.number_of_package || "";
     let [totalPackages, unitOfIt] = packageInfo.split(' ');
@@ -276,7 +284,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             const numericGstin = supplier.gstin_number;
 
             // Format date from 'yyyy-mm-dd' to 'dd.mm.yyyy'
-            let [year, month, day] = supplier.date.split('-');
+            [year, month, day] = supplier.date.split('-');
             let formattedDate = `${day}/${month}/${year}`;
 
             return [
@@ -316,6 +324,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             containerSize, // Static value for container size
             additionalData[idx]?.booking_no || '', // Booking number from additional data
             additionalData[idx]?.tare_weight || 0, // Tare weight from additional data
+            item.pallet,
         ]);
     };
 
@@ -672,11 +681,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     // ✅ Notify Party
     worksheet.mergeCells('O13:AA13');
-    worksheet.getCell('O13').value = "Notify Party # :";
+    worksheet.getCell('O13').value = " Notify Party # :";
     worksheet.getCell('O13').font = { bold: true };
 
     worksheet.mergeCells('O14:AA19');
-    worksheet.getCell('O14').value = `${formattedNotifyParty}\n${formattedConsignee}`;
+    worksheet.getCell('O14').value = ` ${formattedConsignee}\n ${formattedNotifyParty}`;
     worksheet.getCell('O14').font = { bold: true };
     worksheet.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('O13:AA19', worksheet, 'medium'); // Removalble
@@ -1313,12 +1322,20 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         }
     }
 
-    let lineCount = remarks.split(/\r?\n/).length;
+    // let lineCount = remarks.split(/\r?\n/).length;
+    const lines = remarks.split(/\r?\n/);
+
+    let lineCount = 0;
+
+    for (const line of lines) {
+        // If line is longer than max, count how many wrapped lines it takes
+        lineCount += Math.ceil(line.length / 60) || 1;
+    }
     if (lineCount < 1) { lineCount = 1; }
 
     if (type !== "tiles") {
         for (let i = 0; i < skipRow; i++) {
-            if (i == skipRow - 1 && isRemarks) {
+            if (i == skipRow && isRemarks) {
 
                 worksheet.getCell('R' + row).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
@@ -1404,14 +1421,18 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         if (isRemarks) {
             worksheet.mergeCells('E' + (row - 2) + ':Q' + (row - 2));
             worksheet.getCell('E' + (row - 2)).value = remarks;
-            // worksheet.getCell('E' + (row - 1)).font = { bold: true };
-            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'middle', wrapText: true };
+            worksheet.getCell('E' + (row - 2)).font = { bold: true };
+            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true, indent: 1 };
 
             // Adjust height automatically
-            // worksheet.getRow(row - 2).height = 15 * lineCount;
+            worksheet.getRow(row - 2).height = 16 * lineCount;
 
             worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-            worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+            if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
+                worksheet.getCell('E' + (row - 1)).value = "";
+            } else {
+                worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+            }
             worksheet.getCell('E' + (row - 1)).font = { bold: true };
             worksheet.getCell('E' + (row - 1)).alignment = { horizontal: 'center', wrapText: true };
 
@@ -1437,33 +1458,33 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     }
     else {
         for (let i = 0; i < skipRow; i++) {
-            if (i == skipRow - 1 && isRemarks) {
+            if (i == skipRow && isRemarks) {
                 worksheet.mergeCells('R' + (row - 1) + ':S' + (row - 1));
-                worksheet.getCell('R' + row).border = {
+                worksheet.getCell('R' + (row - 1)).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
                 worksheet.mergeCells('T' + (row - 1) + ':U' + (row - 1));
-                worksheet.getCell('T' + row).border = {
+                worksheet.getCell('T' + (row - 1)).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
                 worksheet.mergeCells('V' + (row - 1) + ':X' + (row - 1));
-                worksheet.getCell('V' + row).border = {
+                worksheet.getCell('V' + (row - 1)).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
                 worksheet.mergeCells('Y' + (row - 1) + ':AA' + (row - 1));
-                worksheet.getCell('Y' + row).border = {
+                worksheet.getCell('Y' + (row - 1)).border = {
                     top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                     left: { style: 'thin', color: { argb: 'FF000000' } },
-                    bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                    // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                     right: { style: 'thin', color: { argb: 'FF000000' } },
                 };
             } else {
@@ -1479,14 +1500,18 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         if (isRemarks) {
             worksheet.mergeCells('E' + (row - 2) + ':Q' + (row - 2));
             worksheet.getCell('E' + (row - 2)).value = remarks;
-            // worksheet.getCell('E' + (row - 2)).font = { bold: true };
-            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'middle', wrapText: true };
+            worksheet.getCell('E' + (row - 2)).font = { bold: true };
+            worksheet.getCell('E' + (row - 2)).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true, indent: 1 };
 
             // Adjust height automatically
-            // worksheet.getRow(row - 2).height = 15 * lineCount;
+            worksheet.getRow(row - 2).height = 16 * lineCount;
 
             worksheet.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-            worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+            if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
+                worksheet.getCell('E' + (row - 1)).value = "";
+            } else {
+                worksheet.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+            }
             worksheet.getCell('E' + (row - 1)).font = { bold: true };
             worksheet.getCell('E' + (row - 1)).alignment = { horizontal: 'center', wrapText: true };
 
@@ -2556,11 +2581,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
         // ✅ Notify Party
         worksheetCopy.mergeCells('O13:AA13');
-        worksheetCopy.getCell('O13').value = "Notify Party # :";
+        worksheetCopy.getCell('O13').value = " Notify Party # :";
         worksheetCopy.getCell('O13').font = { bold: true };
 
         worksheetCopy.mergeCells('O14:AA19');
-        worksheetCopy.getCell('O14').value = `${formattedNotifyParty}\n${formattedConsignee}`;
+        worksheetCopy.getCell('O14').value = ` ${formattedConsignee}\n ${formattedNotifyParty}`;
         worksheetCopy.getCell('O14').font = { bold: true };
         worksheetCopy.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
         setOuterBorder('O13:AA19', worksheetCopy, 'medium'); // Removalble
@@ -2975,14 +3000,26 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                         console.log("products[i][7]:" + products[i][7]);
                         if (products[i][1] === "-") {
                             if (products[i][5] === "" || products[i][5] === 0) {
-                                price = Number(products[i][6]) + round3(y / Number(products[i][2]));
+                                if (termsOfDeliveryMain === "CIF -> FOB") {
+                                    price = Number(products[i][6]) - round3(y / Number(products[i][2]));
+                                } else {
+                                    price = Number(products[i][6]) + round3(y / Number(products[i][2]));
+                                }
                                 console.log("Right one Y");
                             } else {
-                                price = Number(products[i][6]) + round3(y / Number(products[i][5]));
+                                if (termsOfDeliveryMain === "CIF -> FOB") {
+                                    price = Number(products[i][6]) - round3(y / Number(products[i][5]));
+                                } else {
+                                    price = Number(products[i][6]) + round3(y / Number(products[i][5]));
+                                }
                                 console.log("Wrong one Y");
                             }
                         } else {
-                            price = Number(products[i][6]) + round3(y / Number(products[i][5]));
+                            if (termsOfDeliveryMain === "CIF -> FOB") {
+                                price = Number(products[i][6]) - round3(y / Number(products[i][5]));
+                            } else {
+                                price = Number(products[i][6]) + round3(y / Number(products[i][5]));
+                            }
                             console.log("very Wrong one Y");
                         }
                         // console.log("price:"+price)
@@ -2994,12 +3031,24 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                     } else {
                         if (products[i][1] === "-") {
                             if (products[i][5] === "" || products[i][5] === 0) {
-                                price = Number(products[i][6]) + round3(x / Number(products[i][2]));
+                                if (termsOfDeliveryMain === "CIF -> FOB") {
+                                    price = Number(products[i][6]) - round3(x / Number(products[i][2]));
+                                } else {
+                                    price = Number(products[i][6]) + round3(x / Number(products[i][2]));
+                                }
+                            } else {
+                                if (termsOfDeliveryMain === "CIF -> FOB") {
+                                    price = Number(products[i][6]) - round3(x / Number(products[i][5]));
+                                } else {
+                                    price = Number(products[i][6]) + round3(x / Number(products[i][5]));
+                                }
+                            }
+                        } else {
+                            if (termsOfDeliveryMain === "CIF -> FOB") {
+                                price = Number(products[i][6]) - round3(x / Number(products[i][5]));
                             } else {
                                 price = Number(products[i][6]) + round3(x / Number(products[i][5]));
                             }
-                        } else {
-                            price = Number(products[i][6]) + round3(x / Number(products[i][5]));
                         }
                     }
                     console.log("price:" + price);
@@ -3194,7 +3243,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                     if (srNoCopy == srNo && products.length > 2) {
                         let y = totalFOBEuro - ttPrice - Number(products[i][7]);
                         console.log("y:" + y);
+                        // if (termsOfDeliveryMain === "CIF -> FOB") {
+                        //     price = Number(products[i][6]) - round3(y / Number(products[i][2]));
+                        // } else {
                         price = Number(products[i][6]) + round3(y / Number(products[i][2]));
+                        // }
                         // console.log("price:"+price)
                         // } else if ((srNoCopy - 1) == srNo) {
                         //   let y = totalFOBEuro - ttPrice - Number(products[i][7]) - Number(products[i + 1][7]);
@@ -3202,7 +3255,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
                         //   console.log("y:" + y + " x:" + x);
                         //   price = Number(products[i][6]) + round3(y / Number(products[i][5]));
                     } else {
-                        price = Number(products[i][6]) + round3(x / Number(products[i][2]));
+                        if (termsOfDeliveryMain === "CIF -> FOB") {
+                            price = Number(products[i][6]) - round3(x / Number(products[i][2]));
+                        } else {
+                            price = Number(products[i][6]) + round3(x / Number(products[i][2]));
+                        }
                     }
 
                     worksheetCopy.getCell('A' + row).value = srNo;
@@ -3378,14 +3435,18 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             if (isRemarks) {
                 worksheetCopy.mergeCells('E' + (row - 2) + ':Q' + (row - 2));
                 worksheetCopy.getCell('E' + (row - 2)).value = remarks;
-                // worksheet.getCell('E' + (row - 2)).font = { bold: true };
-                worksheetCopy.getCell('E' + (row - 2)).alignment = { vertical: 'middle', wrapText: true };
+                worksheetCopy.getCell('E' + (row - 2)).font = { bold: true };
+                worksheetCopy.getCell('E' + (row - 2)).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true, indent: 1 };
 
                 // Adjust height automatically
-                // worksheetCopy.getRow(row - 2).height = 15 * lineCount;
+                worksheetCopy.getRow(row - 2).height = 16 * lineCount;
 
                 worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-                worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+                if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
+                    worksheetCopy.getCell('E' + (row - 1)).value = "";
+                } else {
+                    worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+                }
                 worksheetCopy.getCell('E' + (row - 1)).font = { bold: true };
                 worksheetCopy.getCell('E' + (row - 1)).alignment = { horizontal: 'center', wrapText: true };
 
@@ -3411,33 +3472,33 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         }
         else {
             for (let i = 0; i < skipRow; i++) {
-                if (i == skipRow - 1 && isRemarks) {
+                if (i == skipRow && isRemarks) {
                     worksheetCopy.mergeCells('R' + (row - 1) + ':S' + (row - 1));
-                    worksheetCopy.getCell('R' + row).border = {
+                    worksheetCopy.getCell('R' + (row - 1)).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
                     worksheetCopy.mergeCells('T' + (row - 1) + ':U' + (row - 1));
-                    worksheetCopy.getCell('T' + row).border = {
+                    worksheetCopy.getCell('T' + (row - 1)).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
                     worksheetCopy.mergeCells('V' + (row - 1) + ':X' + (row - 1));
-                    worksheetCopy.getCell('V' + row).border = {
+                    worksheetCopy.getCell('V' + (row - 1)).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
                     worksheetCopy.mergeCells('Y' + (row - 1) + ':AA' + (row - 1));
-                    worksheetCopy.getCell('Y' + row).border = {
+                    worksheetCopy.getCell('Y' + (row - 1)).border = {
                         top: { style: 'thin', color: { argb: 'FF000000' } },     // black
                         left: { style: 'thin', color: { argb: 'FF000000' } },
-                        bottom: { style: 'thin', color: { argb: 'FF000000' } },
+                        // bottom: { style: 'thin', color: { argb: 'FF000000' } },
                         right: { style: 'thin', color: { argb: 'FF000000' } },
                     };
                 } else {
@@ -3451,16 +3512,20 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
             }
 
             if (isRemarks) {
-                worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-                worksheetCopy.getCell('E' + (row - 1)).value = remarks;
-                // worksheet.getCell('R' + (row - 1)).font = { bold: true };
-                worksheetCopy.getCell('E' + (row - 1)).alignment = { vertical: 'middle', wrapText: true };
+                worksheetCopy.mergeCells('E' + (row - 2) + ':Q' + (row - 2));
+                worksheetCopy.getCell('E' + (row - 2)).value = remarks;
+                worksheetCopy.getCell('R' + (row - 2)).font = { bold: true };
+                worksheetCopy.getCell('E' + (row - 2)).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true, indent: 1 };
 
                 // Adjust height automatically
-                // worksheetCopy.getRow(row - 2).height = 15 * lineCount;
+                worksheetCopy.getRow(row - 2).height = 16 * lineCount;
 
                 worksheetCopy.mergeCells('E' + (row - 1) + ':Q' + (row - 1));
-                worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+                if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
+                    worksheetCopy.getCell('E' + (row - 1)).value = "";
+                } else {
+                    worksheetCopy.getCell('E' + (row - 1)).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+                }
                 worksheetCopy.getCell('E' + (row - 1)).font = { bold: true };
                 worksheetCopy.getCell('E' + (row - 1)).alignment = { horizontal: 'center', wrapText: true };
 
@@ -4493,11 +4558,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     // ✅ Notify Party
     packingList.mergeCells('N12:AA12');
-    packingList.getCell('N12').value = "Notify Party # :";
+    packingList.getCell('N12').value = " Notify Party # :";
     packingList.getCell('N12').font = { bold: true };
 
     packingList.mergeCells('N13:AA18');
-    packingList.getCell('N13').value = `${formattedNotifyParty}\n${formattedConsignee}`;
+    packingList.getCell('N13').value = ` ${formattedConsignee}\n ${formattedNotifyParty}`;
     packingList.getCell('N13').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('N12:AA18', packingList);
 
@@ -4778,17 +4843,17 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     row++;
     if (isRemarks) {
-        packingList.mergeCells('A' + row + ':D' + (row + 6));
-        setOuterBorder('A' + row + ':D' + (row + 6), packingList);
+        packingList.mergeCells('A' + row + ':D' + (row + 7));
+        setOuterBorder('A' + row + ':D' + (row + 7), packingList);
 
-        packingList.mergeCells('Q' + row + ':U' + (row + 7));
-        setOuterBorder('Q' + row + ':U' + (row + 7), packingList);
+        packingList.mergeCells('Q' + row + ':U' + (row + 8));
+        setOuterBorder('Q' + row + ':U' + (row + 8), packingList);
 
-        packingList.mergeCells('V' + row + ':X' + (row + 7));
-        setOuterBorder('V' + row + ':AA' + (row + 7), packingList);
+        packingList.mergeCells('V' + row + ':X' + (row + 8));
+        setOuterBorder('V' + row + ':AA' + (row + 8), packingList);
 
-        packingList.mergeCells('Y' + row + ':AA' + (row + 7));
-        setOuterBorder('Y' + row + ':AA' + (row + 7), packingList);
+        packingList.mergeCells('Y' + row + ':AA' + (row + 8));
+        setOuterBorder('Y' + row + ':AA' + (row + 8), packingList);
 
     } else {
         packingList.mergeCells('A' + row + ':D' + (row + 4));
@@ -4806,19 +4871,36 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     }
 
     if (isRemarks) {
+
         packingList.mergeCells('E' + row + ':P' + row);
-        packingList.getCell('E' + row).value = remarks;
-        // packingList.getCell('E' + row).font = { bold: true };
-        packingList.getCell('E' + row).alignment = { vertical: 'middle', wrapText: true };
+        setOuterBorder('E' + row + ':P' + row, packingList);
         row++;
 
-        // Adjust height automatically
-        // packingList.getRow(row).height = 15 * lineCount;
+        lineCount = 0;
+
+        for (const line of lines) {
+            lineCount += Math.ceil(line.length / 50) || 1;
+        }
 
         packingList.mergeCells('E' + row + ':P' + row);
-        packingList.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+        packingList.getCell('E' + row).value = remarks;
+        packingList.getCell('E' + row).font = { bold: true };
+        packingList.getCell('E' + row).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true, indent: 1 };
+        setOuterBorder('E' + row + ':P' + row, packingList);
+
+        // Adjust height automatically
+        packingList.getRow(row).height = 16 * lineCount;
+        row++;
+
+        packingList.mergeCells('E' + row + ':P' + row);
+        if (epcg == "" || epcgDate == "" || epcg == "-" || epcgDate == "-" || epcg == null || epcgDate == null || epcg == " " || epcgDate == " " || epcgDate == undefined) {
+            packingList.getCell('E' + row).value = "";
+        } else {
+            packingList.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
+        }
         packingList.getCell('E' + row).font = { bold: true };
         packingList.getCell('E' + row).alignment = { horizontal: 'center', wrapText: true };
+        setOuterBorder('E' + row + ':P' + row, packingList);
         row++;
     }
 
@@ -6518,11 +6600,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     // ✅ Notify Party
     customerInvoice.mergeCells('O13:AA13');
-    customerInvoice.getCell('O13').value = "Notify Party # :";
+    customerInvoice.getCell('O13').value = " Notify Party # :";
     customerInvoice.getCell('O13').font = { bold: true };
 
     customerInvoice.mergeCells('O14:AA19');
-    customerInvoice.getCell('O14').value = `${notifyParty}`;
+    customerInvoice.getCell('O14').value = ` ${notifyParty}`;
     customerInvoice.getCell('O14').font = { bold: true };
     customerInvoice.getCell('O14').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('O13:AA19', customerInvoice, 'medium'); // Removalble
@@ -7132,8 +7214,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     row++;
     if (isRemarks) {
-        customerInvoice.mergeCells('A' + row + ':D' + (row + 5));
-        setOuterBorder('A' + row + ':D' + (row + 5), customerInvoice);
+        customerInvoice.mergeCells('A' + row + ':D' + (row + 4));
+        setOuterBorder('A' + row + ':D' + (row + 4), customerInvoice);
     } else {
         customerInvoice.mergeCells('A' + row + ':D' + (row + 3));
         setOuterBorder('A' + row + ':D' + (row + 3), customerInvoice);
@@ -7143,7 +7225,13 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     skipRow = 2;
     addSkipRow = 3;
     if (isRemarks) {
-        addSkipRow = 5;
+        addSkipRow = 4;
+    }
+
+    lineCount = 0;
+
+    for (const line of lines) {
+        lineCount += Math.ceil(line.length / 70) || 1;
     }
 
     if (type !== "tiles") {
@@ -7246,17 +7334,10 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     if (isRemarks) {
         customerInvoice.mergeCells('E' + row + ':Q' + row);
         customerInvoice.getCell('E' + row).value = remarks;
-        // customerInvoice.getCell('E' + row).font = { bold: true };
-        customerInvoice.getCell('E' + row).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true };
-        setOuterBorder('E' + row + ':Q' + row, customerInvoice);
-        // customerInvoice.getRow(row ).height = 15 * lineCount;
-        row++;
-
-        customerInvoice.mergeCells('E' + row + ':Q' + row);
-        customerInvoice.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
         customerInvoice.getCell('E' + row).font = { bold: true };
-        customerInvoice.getCell('E' + row).alignment = { horizontal: 'center' };
+        customerInvoice.getCell('E' + row).alignment = { vertical: 'middle', horizontal: 'left', wrapText: true, indent: 1 };
         setOuterBorder('E' + row + ':Q' + row, customerInvoice);
+        customerInvoice.getRow(row).height = 16 * lineCount;
         row++;
     }
 
@@ -7667,11 +7748,13 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     row++;
 
-    customerInvoice.mergeCells('A' + row + ':AA' + row);
+    customerInvoice.mergeCells('A' + row + ':Q' + row);
     customerInvoice.getCell('A' + row).value = "CERTIFIED THAT GOODS ARE OF INDIAN ORIGIN";
     customerInvoice.getCell('A' + row).font = { bold: true };
     customerInvoice.getCell('A' + row).alignment = { horizontal: 'left' };
     setOuterBorder('A' + row + ':AA' + row, customerInvoice);
+
+    customerInvoice.mergeCells('R' + row + ':AA' + row);
     row++;
 
     // customerInvoice.mergeCells('A' + row + ':AA' + (row + 1));
@@ -7699,13 +7782,13 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         customerInvoice.mergeCells('A' + row + ':M' + (row + 6));
         customerInvoice.getCell('A' + row).value = "Exporter Bank Details:\nBENEFICIARY NAME: ZERIC CERAMICA\nBANK NAME: HDFC BANK\nACCOUNT NUMBER: 50200052577831\nSWIFT CODE: HDFCINBBXXX\nIFSC CODE: HDFC0002499\nTAX ID: 24AACFZ6694H1ZP";
         customerInvoice.getCell('A' + row).font = { bold: true };
-        customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left' };
+        customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
         setOuterBorder('A' + row + ':M' + (row + 6), customerInvoice);
     } else {
         customerInvoice.mergeCells('A' + row + ':Q' + (row + 6));
         customerInvoice.getCell('A' + row).value = "Exporter Bank Details:\nBENEFICIARY NAME: ZERIC CERAMICA\nBANK NAME: HDFC BANK\nACCOUNT NUMBER: 50200052577831\nSWIFT CODE: HDFCINBBXXX\nIFSC CODE: HDFC0002499\nTAX ID: 24AACFZ6694H1ZP";
         customerInvoice.getCell('A' + row).font = { bold: true };
-        customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left' };
+        customerInvoice.getCell('A' + row).alignment = { wrapText: true, horizontal: 'left', vertical: 'top' };
         setOuterBorder('A' + row + ':Q' + (row + 6), customerInvoice);
     }
     // }
@@ -7971,11 +8054,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     // ✅ Notify Party
     pl.mergeCells('N12:AA12');
-    pl.getCell('N12').value = "Notify Party # :";
+    pl.getCell('N12').value = " Notify Party # :";
     pl.getCell('N12').font = { bold: true };
 
     pl.mergeCells('N13:AA18');
-    pl.getCell('N13').value = `${notifyParty}`;
+    pl.getCell('N13').value = ` ${notifyParty}`;
     pl.getCell('N13').alignment = { wrapText: true, vertical: 'top' };
     setOuterBorder('N12:AA18', pl);
 
@@ -8258,8 +8341,8 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     pl.mergeCells('A' + row + ':D' + (row + 4));
     setOuterBorder('A' + row + ':D' + (row + 4), pl);
 
-    pl.mergeCells('Q' + row + ':U' + (row + 5));
-    setOuterBorder('Q' + row + ':U' + (row + 5), pl);
+    pl.mergeCells('Q' + row + ':U' + (row + 4));
+    setOuterBorder('Q' + row + ':U' + (row + 4), pl);
 
     pl.mergeCells('V' + row + ':X' + (row + 5));
     setOuterBorder('V' + row + ':AA' + (row + 5), pl);
@@ -8268,22 +8351,27 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     setOuterBorder('Y' + row + ':AA' + (row + 5), pl);
 
     if (isRemarks) {
-        row++;
+        pl.mergeCells('E' + row + ':P' + (row + 1));
+        setOuterBorder('E' + row + ':P' + (row + 1), pl);
+        row += 2;
+
+        lineCount = 0;
+
+        for (const line of lines) {
+            lineCount += Math.ceil(line.length / 50) || 1;
+        }
 
         pl.mergeCells('E' + row + ':P' + row);
         pl.getCell('E' + row).value = remarks;
-        // pl.getCell('E' + row).font = { bold: true };
-        pl.getCell('E' + row).alignment = { wrapText: true, vertical: 'middle', horizontal: 'left' };
+        pl.getCell('E' + row).font = { bold: true };
+        pl.getCell('E' + row).alignment = { wrapText: true, vertical: 'middle', horizontal: 'left', indent: 1 };
         setOuterBorder('E' + row + ':P' + row, pl);
-        // pl.getRow(row).height = 15 * lineCount;
+
+        pl.getRow(row).height = 16 * lineCount;
         row++;
 
-        pl.mergeCells('E' + row + ':P' + row);
-        pl.getCell('E' + row).value = `EPCG: ${epcg} DATE: ${epcgDate}`;
-        pl.getCell('E' + row).font = { bold: true };
-        pl.getCell('E' + row).alignment = { horizontal: 'center' };
-        setOuterBorder('E' + row + ':P' + row, pl);
-        row += 3;
+        pl.mergeCells('E' + row + ':P' + (row + 1));
+        row += 2;
     } else {
         pl.mergeCells('E' + row + ':P' + (row + 4));
         setOuterBorder('E' + row + ':P' + (row + 4), pl);
@@ -8347,77 +8435,207 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     pl.getCell('M' + row).alignment = { horizontal: 'center' };
     setOuterBorder('M' + row + ':P' + row, pl);
 
+    if (totalPallet > 0) {
+        pl.mergeCells('Q' + row + ':S' + row);
+        pl.getCell('Q' + row).value = "QUANTITY";
+        pl.getCell('Q' + row).font = { bold: true };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Q' + row + ':S' + row, pl);
+
+        pl.mergeCells('T' + row + ':U' + row);
+        pl.getCell('T' + row).value = "Pallets";
+        pl.getCell('T' + row).font = { bold: true };
+        pl.getCell('T' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('T' + row + ':U' + row, pl);
+    } else {
+        pl.mergeCells('Q' + row + ':U' + row);
+        pl.getCell('Q' + row).value = "QUANTITY";
+        pl.getCell('Q' + row).font = { bold: true };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Q' + row + ':U' + row, pl);
+    }
+
+    // pl.mergeCells('V' + row + ':X' + row);
+    // pl.getCell('V' + row).value = "Net Weight";
+    // pl.getCell('V' + row).font = { bold: true };
+    // pl.getCell('V' + row).alignment = { horizontal: 'center' };
+    // setOuterBorder('V' + row + ':X' + row, pl);
+
+    // pl.mergeCells('Y' + row + ':AA' + row);
+    // pl.getCell('Y' + row).value = "Gross Weight";
+    // pl.getCell('Y' + row).font = { bold: true };
+    // pl.getCell('Y' + row).alignment = { horizontal: 'center' };
+    // setOuterBorder('Y' + row + ':AA' + row, pl);
+
     row++;
 
-    for (let i = 0; i < containerDetails.length; i++) {
+    let lastContainerNo = '';
+let lastContainerNoRow = row;
+let net_weight = 0;
+let gross_weight = 0;
+let groupStartIndex = 0; // Track the start index of current group
 
-        pl.getRow(row).height = 36;  // fix height here
-
+for (let i = 0; i < containerDetails.length; i++) {
+    const currentContainerNo = containerDetails[i][0];
+    const isNewContainer = i > 0 && currentContainerNo !== lastContainerNo;
+    
+    pl.getRow(row).height = 36;
+    
+    // When container changes (and we have pallets), merge the PREVIOUS group
+    if (totalPallet > 0 && isNewContainer) {
+        // Merge previous container group cells (columns A-D, E-H, I-L, V-X, Y-AA)
+        if (lastContainerNoRow < row) {
+            pl.mergeCells('A' + lastContainerNoRow + ':D' + (row - 1));
+            pl.getCell('A' + lastContainerNoRow).value = lastContainerNo;
+            pl.getCell('A' + lastContainerNoRow).font = { size: 11 };
+            pl.getCell('A' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('A' + lastContainerNoRow + ':D' + (row - 1), pl);
+            
+            pl.mergeCells('E' + lastContainerNoRow + ':H' + (row - 1));
+            pl.getCell('E' + lastContainerNoRow).value = containerDetails[groupStartIndex][1];
+            pl.getCell('E' + lastContainerNoRow).font = { size: 11 };
+            pl.getCell('E' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('E' + lastContainerNoRow + ':H' + (row - 1), pl);
+            
+            pl.mergeCells('I' + lastContainerNoRow + ':L' + (row - 1));
+            pl.getCell('I' + lastContainerNoRow).value = containerDetails[groupStartIndex][2];
+            pl.getCell('I' + lastContainerNoRow).font = { size: 11 };
+            pl.getCell('I' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('I' + lastContainerNoRow + ':L' + (row - 1), pl);
+            
+            pl.mergeCells('V' + lastContainerNoRow + ':X' + (row - 1));
+            pl.getCell('V' + lastContainerNoRow).value = net_weight;
+            pl.getCell('V' + lastContainerNoRow).numFmt = '0.00';
+            pl.getCell('V' + lastContainerNoRow).font = { size: 11 };
+            pl.getCell('V' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('V' + lastContainerNoRow + ':X' + (row - 1), pl);
+            
+            pl.mergeCells('Y' + lastContainerNoRow + ':AA' + (row - 1));
+            pl.getCell('Y' + lastContainerNoRow).value = gross_weight;
+            pl.getCell('Y' + lastContainerNoRow).numFmt = '0.00';
+            pl.getCell('Y' + lastContainerNoRow).font = { size: 11 };
+            pl.getCell('Y' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+            setOuterBorder('Y' + lastContainerNoRow + ':AA' + (row - 1), pl);
+        }
+        
+        // Reset for new container group
+        lastContainerNoRow = row;
+        groupStartIndex = i;
+        net_weight = 0;
+        gross_weight = 0;
+    }
+    
+    // Accumulate weights
+    if (totalPallet > 0) {
+        net_weight += Number(containerDetails[i][5]);
+        gross_weight += Number(containerDetails[i][6]);
+    }
+    
+    // Handle non-pallet case (each row is independent)
+    if (totalPallet === 0) {
         pl.mergeCells('A' + row + ':D' + row);
-        pl.getCell('A' + row).value = containerDetails[i][0];
+        pl.getCell('A' + row).value = currentContainerNo;
         pl.getCell('A' + row).font = { size: 11 };
-        // pl.getCell('A' + row).fill = {
-        //     type: 'pattern',
-        //     pattern: 'solid',
-        //     fgColor: { argb: 'FFD9EAF7' },
-        // };
         pl.getCell('A' + row).alignment = { horizontal: 'center', vertical: 'middle' };
         setOuterBorder('A' + row + ':D' + row, pl);
-
+        
         pl.mergeCells('E' + row + ':H' + row);
         pl.getCell('E' + row).value = containerDetails[i][1];
         pl.getCell('E' + row).font = { size: 11 };
-        // pl.getCell('E' + row).fill = {
-        //     type: 'pattern',
-        //     pattern: 'solid',
-        //     fgColor: { argb: 'FFFFFF00' },
-        // };
         pl.getCell('E' + row).alignment = { horizontal: 'center', vertical: 'middle' };
         setOuterBorder('E' + row + ':H' + row, pl);
-
+        
         pl.mergeCells('I' + row + ':L' + row);
         pl.getCell('I' + row).value = containerDetails[i][2];
         pl.getCell('I' + row).font = { size: 11 };
-        // pl.getCell('I' + row).fill = {
-        //     type: 'pattern',
-        //     pattern: 'solid',
-        //     fgColor: { argb: 'FFFFFF00' },
-        // };
         pl.getCell('I' + row).alignment = { horizontal: 'center', vertical: 'middle' };
         setOuterBorder('I' + row + ':L' + row, pl);
+        
+        pl.mergeCells('V' + row + ':X' + row);
+        pl.getCell('V' + row).value = containerDetails[i][5];
+        pl.getCell('V' + row).numFmt = '0.00';
+        pl.getCell('V' + row).font = { size: 11 };
+        pl.getCell('V' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('V' + row + ':X' + row, pl);
+        
+        pl.mergeCells('Y' + row + ':AA' + row);
+        pl.getCell('Y' + row).value = containerDetails[i][6];
+        pl.getCell('Y' + row).numFmt = '0.00';
+        pl.getCell('Y' + row).font = { size: 11 };
+        pl.getCell('Y' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Y' + row + ':AA' + row, pl);
+    }
 
-        pl.mergeCells('M' + row + ':P' + row);
-        pl.getCell('M' + row).value = containerDetails[i][3];
-        pl.getCell('M' + row).font = { size: 11 };
-        pl.getCell('M' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
-        setOuterBorder('M' + row + ':P' + row, pl);
-        if (String(containerDetails[i][3]).length > 17) {
-            pl.getRow(row).height = 36;
-        }
+    // Columns that are NEVER grouped (M-P for Design no, Q-S for Quantity, T-U for Pallets)
+    pl.mergeCells('M' + row + ':P' + row);
+    pl.getCell('M' + row).value = containerDetails[i][3];
+    pl.getCell('M' + row).font = { size: 11 };
+    pl.getCell('M' + row).alignment = { wrapText: true, horizontal: 'center', vertical: 'middle' };
+    setOuterBorder('M' + row + ':P' + row, pl);
+    if (String(containerDetails[i][3]).length > 17) {
+        pl.getRow(row).height = 36;
+    }
 
+    if (totalPallet > 0) {
+        pl.mergeCells('Q' + row + ':S' + row);
+        pl.getCell('Q' + row).value = containerDetails[i][4];
+        pl.getCell('Q' + row).font = { size: 11 };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Q' + row + ':S' + row, pl);
+        
+        pl.mergeCells('T' + row + ':U' + row);
+        pl.getCell('T' + row).value = containerDetails[i][10];
+        pl.getCell('T' + row).font = { size: 11 };
+        pl.getCell('T' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('T' + row + ':U' + row, pl);
+    } else {
         pl.mergeCells('Q' + row + ':U' + row);
         pl.getCell('Q' + row).value = containerDetails[i][4];
         pl.getCell('Q' + row).font = { size: 11 };
         pl.getCell('Q' + row).alignment = { horizontal: 'center', vertical: 'middle' };
-        setOuterBorder('Q' + row + ':U' + row, pl);
-
-        pl.mergeCells('V' + row + ':X' + row);
-        pl.getCell('V' + row).value = containerDetails[i][5];
-        pl.getCell('V' + row).numFmt = '0.00'
-        pl.getCell('V' + row).font = { size: 11 };
-        pl.getCell('V' + row).alignment = { horizontal: 'center', vertical: 'middle' };
-        setOuterBorder('V' + row + ':X' + row, pl);
-
-        pl.mergeCells('Y' + row + ':AA' + row);
-        pl.getCell('Y' + row).value = containerDetails[i][6];
-        pl.getCell('Y' + row).numFmt = '0.00'
-        pl.getCell('Y' + row).font = { size: 11 };
-        pl.getCell('Y' + row).alignment = { horizontal: 'center', vertical: 'middle' };
-        setOuterBorder('Y' + row + ':AA' + row, pl);
-
-        row++;
-
+        setOuterBorder('Q' + row + ':U' + row, pl); 
     }
+
+    lastContainerNo = currentContainerNo;
+    row++;
+}
+
+// Merge the LAST group after loop ends (for pallet case)
+if (totalPallet > 0 && containerDetails.length > 0) {
+    if (lastContainerNoRow < row) {
+        pl.mergeCells('A' + lastContainerNoRow + ':D' + (row - 1));
+        pl.getCell('A' + lastContainerNoRow).value = lastContainerNo;
+        pl.getCell('A' + lastContainerNoRow).font = { size: 11 };
+        pl.getCell('A' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('A' + lastContainerNoRow + ':D' + (row - 1), pl);
+        
+        pl.mergeCells('E' + lastContainerNoRow + ':H' + (row - 1));
+        pl.getCell('E' + lastContainerNoRow).value = containerDetails[groupStartIndex][1];
+        pl.getCell('E' + lastContainerNoRow).font = { size: 11 };
+        pl.getCell('E' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('E' + lastContainerNoRow + ':H' + (row - 1), pl);
+        
+        pl.mergeCells('I' + lastContainerNoRow + ':L' + (row - 1));
+        pl.getCell('I' + lastContainerNoRow).value = containerDetails[groupStartIndex][2];
+        pl.getCell('I' + lastContainerNoRow).font = { size: 11 };
+        pl.getCell('I' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('I' + lastContainerNoRow + ':L' + (row - 1), pl);
+        
+        pl.mergeCells('V' + lastContainerNoRow + ':X' + (row - 1));
+        pl.getCell('V' + lastContainerNoRow).value = net_weight;
+        pl.getCell('V' + lastContainerNoRow).numFmt = '0.00';
+        pl.getCell('V' + lastContainerNoRow).font = { size: 11 };
+        pl.getCell('V' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('V' + lastContainerNoRow + ':X' + (row - 1), pl);
+        
+        pl.mergeCells('Y' + lastContainerNoRow + ':AA' + (row - 1));
+        pl.getCell('Y' + lastContainerNoRow).value = gross_weight;
+        pl.getCell('Y' + lastContainerNoRow).numFmt = '0.00';
+        pl.getCell('Y' + lastContainerNoRow).font = { size: 11 };
+        pl.getCell('Y' + lastContainerNoRow).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Y' + lastContainerNoRow + ':AA' + (row - 1), pl);
+    }
+}
 
     pl.mergeCells('A' + row + ':D' + (row + 1));
     // pl.getCell('A' + row).value = `Nos. of Kind Packages ${packegingType}`;
@@ -8441,7 +8659,11 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         setOuterBorder('E' + row + ':H' + (row + 1), pl);
 
         pl.mergeCells('I' + row + ':P' + (row + 1));
-        pl.getCell('I' + row).value = `TOTAL PALLET - ${totalPallet} NOS`;
+        // pl.getCell('I' + row).value = `TOTAL PALLET - ${totalPallet} NOS`;
+        pl.getCell('I' + row).value = {
+            formula: `"TOTAL PALLET - " & SUM(T${row - containerDetails.length}:T${row - 1}) & " NOS"`,
+            result: null
+        };
         pl.getCell('I' + row).font = { name: 'Arial', bold: true };
         pl.getCell('I' + row).alignment = { horizontal: 'center', vertical: 'middle' };
         setOuterBorder('I' + row + ':P' + (row + 1), pl);
@@ -8453,11 +8675,25 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
         setOuterBorder('E' + row + ':P' + (row + 1), pl);
     }
 
-    pl.mergeCells('Q' + row + ':U' + (row + 1));
-    pl.getCell('Q' + row).value = { formula: `SUM(Q${row - containerDetails.length}:Q${row - 1})`, result: 0 };
-    pl.getCell('Q' + row).font = { bold: true };
-    pl.getCell('Q' + row).alignment = { horizontal: 'center', vertical: 'middle' };
-    setOuterBorder('Q' + row + ':U' + (row + 1), pl);
+    if (totalPallet > 0) {
+        pl.mergeCells('Q' + row + ':S' + (row + 1));
+        pl.getCell('Q' + row).value = { formula: `SUM(Q${row - containerDetails.length}:Q${row - 1})`, result: 0 };
+        pl.getCell('Q' + row).font = { bold: true };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Q' + row + ':S' + (row + 1), pl);
+
+        pl.mergeCells('T' + row + ':U' + (row + 1));
+        pl.getCell('T' + row).value = { formula: `SUM(T${row - containerDetails.length}:T${row - 1})`, result: 0 };
+        pl.getCell('T' + row).font = { bold: true };
+        pl.getCell('T' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('T' + row + ':U' + (row + 1), pl);
+    } else {
+        pl.mergeCells('Q' + row + ':U' + (row + 1));
+        pl.getCell('Q' + row).value = { formula: `SUM(Q${row - containerDetails.length}:Q${row - 1})`, result: 0 };
+        pl.getCell('Q' + row).font = { bold: true };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center', vertical: 'middle' };
+        setOuterBorder('Q' + row + ':U' + (row + 1), pl);
+    }
 
     pl.mergeCells('V' + row + ':X' + (row + 1));
     pl.getCell('V' + row).value = { formula: `SUM(V${row - containerDetails.length}:V${row - 1})`, result: 0 };
@@ -8478,11 +8714,25 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
     pl.mergeCells('A' + row + ':P' + row);
     setOuterBorder('A' + row + ':P' + row, pl);
 
-    pl.mergeCells('Q' + row + ':U' + row);
-    pl.getCell('Q' + row).value = packegingType;
-    pl.getCell('Q' + row).font = { bold: true };
-    pl.getCell('Q' + row).alignment = { horizontal: 'center' };
-    setOuterBorder('Q' + row + ':U' + row, pl);
+    if ( totalPallet > 0) {
+        pl.mergeCells('Q' + row + ':S' + row);
+        pl.getCell('Q' + row).value = packegingType;
+        pl.getCell('Q' + row).font = { bold: true };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Q' + row + ':S' + row, pl);
+
+        pl.mergeCells('T' + row + ':U' + row);
+        pl.getCell('T' + row).value = "NOS";
+        pl.getCell('T' + row).font = { bold: true };
+        pl.getCell('T' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('T' + row + ':U' + row, pl);
+    } else {
+        pl.mergeCells('Q' + row + ':U' + row);
+        pl.getCell('Q' + row).value = packegingType;
+        pl.getCell('Q' + row).font = { bold: true };
+        pl.getCell('Q' + row).alignment = { horizontal: 'center' };
+        setOuterBorder('Q' + row + ':U' + row, pl);
+    }
 
     pl.mergeCells('V' + row + ':X' + row);
     pl.getCell('V' + row).value = "KGS";
@@ -8557,6 +8807,7 @@ export const generateInvoiceExcel = async (data): Promise<any> => {
 
     setGlobalFontSize(pl);
     pl.getColumn(1).width = pixelToExcelWidth(50);
+    pl.getColumn(21).width = pixelToExcelWidth(45);
     pl.getColumn(24).width = pixelToExcelWidth(45);
     pl.getColumn(25).width = pixelToExcelWidth(45);
 

@@ -84,6 +84,7 @@ const watchedContainers = useWatch({
 const containerTotals = useMemo(() => {
    if (!watchedContainers) return {
     totalQuantity: 0,
+    totalPallets: 0,
     totalNetWeight: '0.00',
     totalGrossWeight: '0.00'
   };
@@ -91,6 +92,9 @@ const containerTotals = useMemo(() => {
   return {
     totalQuantity: watchedContainers.reduce((sum, c) => 
       sum + (parseInt(c?.quantity) || 0), 0
+    ),
+    totalPallets: watchedContainers.reduce((sum, c) =>
+      sum + parseInt(c?.palletcount || 0), 0
     ),
     totalNetWeight: watchedContainers.reduce((sum, c) => 
       sum + (parseFloat(c?.net_weight) || 0), 0
@@ -559,6 +563,7 @@ const [formData, setFormData] = useState(null);
     rfidSeal: string;
     designNo: string;
     quantity: number;
+    palletCount: number;
     netWeight: string;
     grossWeight: string;
   }
@@ -929,22 +934,26 @@ const [formData, setFormData] = useState(null);
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-6">
-                    <div className="space-y-2">
+                   <div className="space-y-2">
                       <Label>Consignee</Label>
-                      <Input
+                      <textarea
+                        className="w-full p-2 rounded-md border bg-gray-50"
                         value={buyer?.consignee}
                         readOnly
-                        className="bg-gray-50"
+                        rows={3}
                       />
                     </div>
+
                     <div className="space-y-2">
                       <Label>Notify Party</Label>
-                      <Input
+                      <textarea
+                        className="w-full p-2 rounded-md border bg-gray-50"
                         value={buyer?.notify_party}
                         readOnly
-                        className="bg-gray-50"
+                        rows={3}
                       />
                     </div>
+
                   </div>
                 </div>
               </div>
@@ -1427,6 +1436,9 @@ const [formData, setFormData] = useState(null);
                       <TableHead className="border font-bold text-center w-[10%]">
                         QUANTITY BOX
                       </TableHead>
+                      <TableHead className="border font-bold text-center w-15">
+                        NO. OF PALLETS
+                      </TableHead>
                       <TableHead className="border font-bold text-center w-[15%]">
                         NET.WT. IN KGS.
                       </TableHead>
@@ -1513,6 +1525,16 @@ const [formData, setFormData] = useState(null);
                           />
                         </TableCell>
                         <TableCell className="border p-0">
+                            <Input
+                              type="number"
+                              defaultValue={row.palletCount}
+                              {...register(`invoice.products.containers.${index}.palletcount`, { required: true })}
+                              className="h-10 border-0 text-center bg-white w-full placeholder:Enter pallet count"
+                              placeholder="Enter pallet count"
+                            />
+                          </TableCell>
+
+                        <TableCell className="border p-0">
                           <TableCell className="border p-0">
   <Controller
     control={control}
@@ -1570,46 +1592,29 @@ const [formData, setFormData] = useState(null);
                     ))}
 
                     {/* Summary Row */}
-                    <TableRow>
-                      <TableCell className="text-[16px] text-center font-bold">
-                        Nos. of Kind Packages
-                      </TableCell>
-                      <TableCell className="text-[16px] text-center font-bold">
-                        Total &nbsp;&nbsp;&nbsp;
-                        &gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;&gt;
-                      </TableCell>
-                      <TableCell
-                        colSpan={2}
-                        className="border p-4 text-center bg-gray-50 text-lg"
-                      >
-                        <div className="flex items-center justify-center space-x-1">
-                          <span className="text-[16px] text-center font-bold">
-                            TOTAL PALLET -
-                          </span>
-                          <Input
-                            defaultValue={totalPalletCount}
-                            {...register("invoice.products.total_pallet_count", {
-                              required: false,
-                            })}
-                            
-                            className="h-8 border-0 text-center bg-gray-300 font-bold w-14 p-0 mx-1"
-                          />
-                          <span className="text-[16px] text-center font-bold">
-                            NOS
-                          </span>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-[16px] text-center font-bold">
-                        {containerTotals.totalQuantity}
-                      </TableCell>
-                      <TableCell className="text-[16px] text-center font-bold">
-                         {containerTotals.totalNetWeight}
-                      </TableCell>
-                      <TableCell className="text-[16px] text-center font-bold">
-                       {containerTotals.totalGrossWeight}
-                      </TableCell>
-                      <TableCell className="border bg-gray-50"></TableCell>
-                    </TableRow>
+                      <TableRow>
+                        <TableCell className="text-16px text-center font-bold">Nos. of Kind Packages</TableCell>
+                        <TableCell className="text-16px text-center font-bold">
+                          Total&nbsp;&nbsp;&nbsp; {">>>>>>>>>>"}
+                        </TableCell>
+                        <TableCell colSpan={2} className="border p-4 text-center bg-gray-50 text-lg">
+                          <div className="flex items-center justify-center space-x-1">
+                            <span className="text-16px text-center font-bold">TOTAL PALLET - </span>
+                            <Input
+                              defaultValue={totalPalletCount}
+                              {...register("invoice.products.totalpalletcount", { required: false })}
+                              className="h-8 border-0 text-center bg-gray-300 font-bold w-14 p-0 mx-1"
+                            />
+                            <span className="text-16px text-center font-bold">NOS</span>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-16px text-center font-bold">{containerTotals.totalQuantity}</TableCell>
+                        {/* ADD THIS CELL FOR TOTAL PALLETS */}
+                        <TableCell className="text-16px text-center font-bold">{containerTotals.totalPallets}</TableCell>
+                        <TableCell className="text-16px text-center font-bold">{containerTotals.totalNetWeight}</TableCell>
+                        <TableCell className="text-16px text-center font-bold">{containerTotals.totalGrossWeight}</TableCell>
+                        <TableCell className="border bg-gray-50"></TableCell>
+                      </TableRow>
 
                     {/* Unit Row */}
                     <TableRow>
@@ -1619,6 +1624,9 @@ const [formData, setFormData] = useState(null);
                       ></TableCell>
                       <TableCell className="border p-2 text-center font-medium bg-gray-100">
                         BOX
+                      </TableCell>
+                      <TableCell className="border p-2 text-center font-medium bg-gray-100">
+                        NOS
                       </TableCell>
                       <TableCell className="border p-2 text-center font-medium bg-gray-100">
                         KGS

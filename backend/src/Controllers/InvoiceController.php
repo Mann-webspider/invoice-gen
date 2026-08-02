@@ -104,6 +104,7 @@ class InvoiceController
                     'container_number' => $container['container_no']?? "-",
                     'line_seal_number' => $container['line_seal_no']?? "-",
                     'rfid_number' => $container['rfid_seal']?? "-",
+                    'pallet' => $container['palletcount']?? "-",
                     'design_no' => $container['design_no']?? "-",
                     'quantity_box' => $container['quantity']?? "-",
                     'net_weight' => $container['net_weight']?? "-",
@@ -117,7 +118,7 @@ class InvoiceController
                 'marks' => $data['products']['marks']?? "-",
                 'nos' => $data['products']['nos']?? "-",
                 'freight' => $data['products']['freight']?? "0",
-                'total_pallet_count' => $data['products']['total_pallet_count']?? "-",
+                'total_pallet_count' => $data['products']['totalpalletcount']?? "-",
                 'insurance' => $data['products']['insurance']?? "0",
                 'total_price' => $data['products']['total_price']?? "-",
                 'product_ids' => json_encode($productIds),
@@ -407,9 +408,9 @@ class InvoiceController
 
 
             if ($limit) {
-                $invoiceQuery->limit($limit)->orderBy("invoice_date", 'desc');
+                $invoiceQuery->limit($limit)->orderBy("updated_at", 'desc');
             }
-            $invoices = $invoiceQuery->get();
+            $invoices = $invoiceQuery->orderBy("updated_at", 'desc')->get();
             $invoicesWithProducts = $invoices->map(function ($invoice) {
                 $invoice->status = 'completed';
 

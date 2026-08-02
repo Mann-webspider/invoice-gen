@@ -143,5 +143,10 @@ return function (App $app) {
     $app->delete('/api/draft/all', [$draftController, 'deleteAllDrafts']);
     $app->delete('/api/draft/{id}', [$draftController, 'deleteDraft']);
 
+    $app->get('/health', function ($request, $response, $args) {
+        $response->getBody()->write(json_encode(['status' => 'ok']));
+        return $response->withHeader('Content-Type', 'application/json');
+    });
+
 
 };

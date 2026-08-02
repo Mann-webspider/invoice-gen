@@ -6,142 +6,196 @@ class CreateInvoiceSchema
 {
     public function up(PDO $pdo)
     {
-        $pdo->exec("CREATE TABLE IF NOT EXISTS exporter_details (
-            id TEXT PRIMARY KEY ,
-            company_name TEXT ,
-            company_address TEXT ,
-            contact_number TEXT ,
-            email TEXT ,
-            tax_id TEXT ,
-            ie_code TEXT ,
-            pan_number TEXT ,
-            gstin_number TEXT ,
-            state_code TEXT ,
-            authorized_name TEXT ,
-            authorized_designation TEXT 
-        )");
+        // Wrap all operations in a transaction for data integrity
+        $pdo->beginTransaction();
+        
+        try {
+            // Create exporter_details table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS exporter_details (
+                id TEXT PRIMARY KEY,
+                company_name TEXT,
+                company_address TEXT,
+                contact_number TEXT,
+                email TEXT,
+                tax_id TEXT,
+                ie_code TEXT,
+                pan_number TEXT,
+                gstin_number TEXT,
+                state_code TEXT,
+                authorized_name TEXT,
+                authorized_designation TEXT
+            )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS buyer_details (
-            id TEXT PRIMARY KEY,
-            order_number TEXT,
-            order_date DATE,
-            po_number TEXT,
-            consignee TEXT,
-            notify_party TEXT
-        )");
+            // Create buyer_details table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS buyer_details (
+                id TEXT PRIMARY KEY,
+                order_number TEXT,
+                order_date DATE,
+                po_number TEXT,
+                consignee TEXT,
+                notify_party TEXT
+            )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS shipping_details (
-            id TEXT PRIMARY KEY,
-            pre_carriage TEXT,
-            place_of_receipt TEXT,
-            shipping_number TEXT,
-            port_of_loading TEXT,
-            port_of_discharge TEXT,
-            final_destination TEXT,
-            country_of_origin TEXT,
-            origin_details TEXT,
-            country_of_final_destination TEXT,
-            terms_of_delivery TEXT,
-            payment TEXT,
-            vessel_flight_no TEXT,
-            shipping_method TEXT
-        )");
+            // Create shipping_details table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS shipping_details (
+                id TEXT PRIMARY KEY,
+                pre_carriage TEXT,
+                place_of_receipt TEXT,
+                shipping_number TEXT,
+                port_of_loading TEXT,
+                port_of_discharge TEXT,
+                final_destination TEXT,
+                country_of_origin TEXT,
+                origin_details TEXT,
+                country_of_final_destination TEXT,
+                terms_of_delivery TEXT,
+                payment TEXT,
+                vessel_flight_no TEXT,
+                shipping_method TEXT
+            )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS supplier_details (
-            id TEXT PRIMARY KEY,
-            supplier_name TEXT,
-            supplier_address TEXT,
-            gstin_number TEXT,
-            tax_invoice_no TEXT,
-            date DATE
-        )");
+            // Create supplier_details table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS supplier_details (
+                id TEXT PRIMARY KEY,
+                supplier_name TEXT,
+                supplier_address TEXT,
+                gstin_number TEXT,
+                tax_invoice_no TEXT,
+                date DATE
+            )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS product_details (
-            id TEXT PRIMARY KEY,
-            marks INT,
-            nos INT,
-            freight INT,
-            insurance INT,
-            total_price INT,
-            total_pallet_count INT,
-            product_ids BLOB,
-            container_ids BLOB
-        )");
-        $pdo->exec("CREATE TABLE IF NOT EXISTS product_lists (
-            id TEXT PRIMARY KEY,
-            category_id TEXT,
-            product_name TEXT,
-            size TEXT,
-            unit TEXT,
-            quantity INT,
-            sqm INT,
-            total_sqm INT,
-            price INT,
-            total_price INT,
-            net_weight INT,
-            gross_weight INT
-        )");
+            // Create product_details table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS product_details (
+                id TEXT PRIMARY KEY,
+                marks INT,
+                nos INT,
+                freight INT,
+                insurance INT,
+                total_price INT,
+                total_pallet_count INT,
+                product_ids BLOB,
+                container_ids BLOB
+            )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS container_information (
-            id TEXT PRIMARY KEY,
-            container_number TEXT,
-            line_seal_number TEXT,
-            rfid_number TEXT,
-            design_no TEXT,
-            quantity_box INT,
-            net_weight INT,
-            gross_weight INT
-        )");
+            // Create product_lists table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS product_lists (
+                id TEXT PRIMARY KEY,
+                category_id TEXT,
+                product_name TEXT,
+                size TEXT,
+                unit TEXT,
+                quantity INT,
+                sqm INT,
+                total_sqm INT,
+                price INT,
+                total_price INT,
+                net_weight INT,
+                gross_weight INT
+            )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS package_information (
-            id TEXT PRIMARY KEY,
-            number_of_package INT,
-            total_gross_weight INT,
-            total_net_weight INT,
-            gst_circular TEXT,
-            app_ref_number TEXT,
-            lut_date DATE,
-            total_amount INT,
-            total_sqm INT,
-            taxable_value INT,
-            gst_amount INT,
-            amount_in_words TEXT
-        )");
+            // Create container_information table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS container_information (
+                id TEXT PRIMARY KEY,
+                container_number TEXT,
+                line_seal_number TEXT,
+                rfid_number TEXT,
+                design_no TEXT,
+                quantity_box INT,
+                pallet INT,
+                net_weight INT,
+                gross_weight INT
+            )");
 
-        $pdo->exec("CREATE TABLE IF NOT EXISTS invoice (
-            id TEXT PRIMARY KEY,
-            invoice_number TEXT,
-            invoice_date TEXT,
-            integrated_tax TEXT,
-            payment_term TEXT,
-            product_type TEXT,
-            currancy_type TEXT,
-            currancy_rate INT,
-            is_remark BOOLEAN,
-            remarks TEXT,
-            epcg TEXT,
-            epcg_date TEXT,
-            has_epcg BOOLEAN,
-            exporter_id TEXT,
-            buyer_id TEXT,
-            product_id TEXT,
-            supplier_ids BLOB,
-            shipping_id TEXT,
-            package_id TEXT,
-            annexure_id TEXT,
-            vgm_id TEXT,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NOT NULL
-        )");
-     
-        $pdo->exec("CREATE TABLE IF NOT EXISTS invoice_numbers (
-            id TEXT PRIMARY KEY,
-            exporter_id TEXT NOT NULL,
-            invoice_number TEXT NOT NULL,
-            year TEXT NOT NULL,
-            created_at DATETIME NOT NULL,
-            updated_at DATETIME NOT NULL
-        )");
+            // Create package_information table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS package_information (
+                id TEXT PRIMARY KEY,
+                number_of_package INT,
+                total_gross_weight INT,
+                total_net_weight INT,
+                gst_circular TEXT,
+                app_ref_number TEXT,
+                lut_date DATE,
+                total_amount INT,
+                total_sqm INT,
+                taxable_value INT,
+                gst_amount INT,
+                amount_in_words TEXT
+            )");
+
+            // Create invoice table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS invoice (
+                id TEXT PRIMARY KEY,
+                invoice_number TEXT,
+                invoice_date TEXT,
+                integrated_tax TEXT,
+                payment_term TEXT,
+                product_type TEXT,
+                currancy_type TEXT,
+                currancy_rate INT,
+                is_remark BOOLEAN,
+                remarks TEXT,
+                epcg TEXT,
+                epcg_date TEXT,
+                has_epcg BOOLEAN,
+                exporter_id TEXT,
+                buyer_id TEXT,
+                product_id TEXT,
+                supplier_ids BLOB,
+                shipping_id TEXT,
+                package_id TEXT,
+                annexure_id TEXT,
+                vgm_id TEXT,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL
+            )");
+
+            // Create invoice_numbers table
+            $pdo->exec("CREATE TABLE IF NOT EXISTS invoice_numbers (
+                id TEXT PRIMARY KEY,
+                exporter_id TEXT NOT NULL,
+                invoice_number TEXT NOT NULL,
+                year TEXT NOT NULL,
+                created_at DATETIME NOT NULL,
+                updated_at DATETIME NOT NULL
+            )");
+
+            // Add new columns if they don't exist (safe for existing tables)
+            $this->addColumnIfNotExists($pdo, 'container_information', 'pallet', 'INT NULL');
+            // Example: Add new columns
+            // $this->addColumnIfNotExists($pdo, 'exporter_details', 'bank_name', 'TEXT NULL');
+            // $this->addColumnIfNotExists($pdo, 'exporter_details', 'account_number', 'TEXT NULL');
+            // $this->addColumnIfNotExists($pdo, 'invoice', 'status', 'TEXT NULL');
+            // Add more columns as needed following the same pattern
+            
+            $pdo->commit();
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+    }
+
+    /**
+     * Helper method to safely add columns without losing data
+     */
+    private function addColumnIfNotExists(PDO $pdo, string $table, string $column, string $definition)
+    {
+        try {
+            // Check if column exists
+            $stmt = $pdo->query("PRAGMA table_info($table)");
+            $columns = $stmt->fetchAll(PDO::FETCH_COLUMN, 1);
+            
+            if (!in_array($column, $columns)) {
+                $pdo->exec("ALTER TABLE $table ADD COLUMN $column $definition");
+                echo "Added column '$column' to table '$table'.\n";
+            } else {
+                echo "Column '$column' already exists in table '$table'.\n";
+            }
+        } catch (PDOException $e) {
+            // Silently ignore if column already exists
+            if (strpos($e->getMessage(), 'duplicate column name') === false) {
+                throw $e;
+            }
+        }
     }
 
     public function down(PDO $pdo)
@@ -154,9 +208,8 @@ class CreateInvoiceSchema
             "product_details",
             "supplier_details",
             "shipping_details",
-            "buyer_information",
-            "exporter_details",
             "buyer_details",
+            "exporter_details",
             "invoice_numbers",
         ];
 
@@ -173,7 +226,6 @@ if (realpath(__FILE__) === realpath($_SERVER['SCRIPT_FILENAME'])) {
         $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $migration = new CreateInvoiceSchema();
-        $migration->down($pdo);
         $migration->up($pdo);
         echo "Migration completed successfully.\n";
     } catch (PDOException $e) {
