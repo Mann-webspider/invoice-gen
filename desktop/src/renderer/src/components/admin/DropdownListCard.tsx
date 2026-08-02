@@ -2,17 +2,8 @@ import { useState } from 'react'
 import { ChevronDown, ChevronUp, Edit2, Loader2, Plus, Trash } from 'lucide-react'
 
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { ConfirmDeleteDialog } from './ConfirmDeleteDialog'
+import { FieldsDialog } from '@/components/master/FieldsDialog'
 import { useMasterList, useMasterMutations } from '@/hooks/useMaster'
 import { applyIpcError } from '@/lib/form'
 
@@ -43,36 +34,8 @@ export const DropdownListCard = ({
   })
 
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [value, setValue] = useState('')
+  const [editing, setEditing] = useState<{ id: string; value: string } | null>(null)
   const [pendingDelete, setPendingDelete] = useState<string | null>(null)
-
-  const openAdd = (): void => {
-    setEditingId(null)
-    setValue('')
-    setDialogOpen(true)
-  }
-
-  const openEdit = (id: string, current: string): void => {
-    setEditingId(id)
-    setValue(current)
-    setDialogOpen(true)
-  }
-
-  const save = async (): Promise<void> => {
-    const trimmed = value.trim()
-    if (!trimmed) return
-    try {
-      if (editingId) {
-        await mutations.update(editingId, { category, value: trimmed, isActive: true })
-      } else {
-        await mutations.create({ category, value: trimmed, isActive: true })
-      }
-      setDialogOpen(false)
-    } catch (error) {
-      applyIpcError(error)
-    }
-  }
 
   const move = async (index: number, direction: -1 | 1): Promise<void> => {
     const next = [...options]
@@ -88,18 +51,14 @@ export const DropdownListCard = ({
 
   return (
     <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <Label className="font-semibold">{title}</Label>
-        <Button type="button" variant="ghost" size="sm" onClick={openAdd}>
-          <Plus className="h-4 w-4" />
-          Add
-        </Button>
+      <div>
+        <h4 className="text-sm font-semibold text-gray-900">{title}</h4>
+        {description && <p className="mt-0.5 text-xs text-gray-500">{description}</p>}
       </div>
-      {description && <p className="text-xs text-gray-500">{description}</p>}
 
-      <div className="rounded-md border bg-white divide-y">
+      <div className="divide-y rounded-lg border">
         {isPending && (
-          <div className="p-4 flex justify-center">
+          <div className="flex justify-center p-4">
             <Loader2 className="h-4 w-4 animate-spin text-gray-400" />
           </div>
         )}
@@ -109,8 +68,8 @@ export const DropdownListCard = ({
         )}
 
         {options.map((option, index) => (
-          <div key={option.id} className="flex items-center gap-2 px-3 py-2">
-            <span className="flex-1 text-sm">{option.value}</span>
+          <div key={option.id} className="flex items-center gap-1 px-3 py-1.5">
+            <span className="flex-1 truncate text-sm">{option.value}</span>
             <Button
               type="button"
               variant="ghost"
@@ -120,7 +79,7 @@ export const DropdownListCard = ({
               aria-label={`Move ${option.value} up`}
               onClick={() => void move(index, -1)}
             >
-              <ChevronUp className="h-4 w-4" />
+              <ChevronUp />
             </Button>
             <Button
               type="button"
@@ -131,75 +90,70 @@ export const DropdownListCard = ({
               aria-label={`Move ${option.value} down`}
               onClick={() => void move(index, 1)}
             >
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown />
             </Button>
             <Button
               type="button"
               variant="ghost"
               size="icon"
               className="h-7 w-7"
-              aria-label={`Edit ${option.value}`}
-              onClick={() => openEdit(option.id, option.value)}
+              aria-label={`Rename ${option.value}`}
+              onClick={() => {
+                setEditing({ id: option.id, value: option.value })
+                setDialogOpen(true)
+              }}
             >
-              <Edit2 className="h-4 w-4" />
+              <Edit2 />
             </Button>
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-7 w-7 text-red-500 hover:text-red-700"
+              className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-700"
               aria-label={`Delete ${option.value}`}
               onClick={() => setPendingDelete(option.id)}
             >
-              <Trash className="h-4 w-4" />
+              <Trash />
             </Button>
           </div>
         ))}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>
-              {editingId ? 'Edit' : 'Add'} {title}
-            </DialogTitle>
-            <DialogDescription>This value appears in the invoice wizard.</DialogDescription>
-          </DialogHeader>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={() => {
+          setEditing(null)
+          setDialogOpen(true)
+        }}
+      >
+        <Plus />
+        Add
+      </Button>
 
-          <div className="space-y-2">
-            <Label htmlFor={`${category}-value`}>Value</Label>
-            <Input
-              id={`${category}-value`}
-              value={value}
-              placeholder={placeholder}
-              autoFocus
-              onChange={(event) => setValue(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') void save()
-              }}
-            />
-          </div>
-
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              onClick={() => void save()}
-              disabled={!value.trim() || mutations.isPending}
-            >
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <FieldsDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        title={editing ? `Rename ${title.toLowerCase()}` : `Add ${title.toLowerCase()}`}
+        description="This is offered in the invoice form."
+        fields={[{ key: 'value', label: title, placeholder }]}
+        initial={editing ? { value: editing.value } : undefined}
+        submitLabel={editing ? 'Save changes' : 'Add'}
+        onSave={async (values) => {
+          if (editing) {
+            await mutations.update(editing.id, { category, value: values.value, isActive: true })
+          } else {
+            await mutations.create({ category, value: values.value, isActive: true })
+          }
+        }}
+      />
 
       <ConfirmDeleteDialog
         open={pendingDelete !== null}
         onOpenChange={(open) => !open && setPendingDelete(null)}
         title={`Delete this ${title.toLowerCase()}?`}
-        description="Invoices already created keep the value they were saved with."
+        description="It stops being offered on new invoices. Invoices already created keep the value they were saved with."
         onConfirm={() => {
           if (pendingDelete) void mutations.remove(pendingDelete).catch(applyIpcError)
           setPendingDelete(null)

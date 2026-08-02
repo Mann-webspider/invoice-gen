@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Download, HardDriveDownload, Loader2, Plus, RotateCcw, Trash } from 'lucide-react'
 
 import type { BackupFile } from '@shared/contracts'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -89,25 +88,24 @@ export const Backup = (): JSX.Element => {
   )
 
   return (
-    <div className="container mx-auto space-y-6">
-      <PageHeader
-        title="Backup & Restore"
-        description="Copies of this machine's database, stored alongside it"
-        action={
-          <Button disabled={create.isPending} onClick={() => create.mutate()}>
-            {create.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Plus className="h-4 w-4" />
-            )}
-            Create backup
-          </Button>
-        }
-      />
+    <div className="mx-auto max-w-6xl space-y-6">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div className="max-w-2xl">
+          <h1 className="text-2xl font-bold text-gray-900">Backup</h1>
+          <p className="mt-1 text-sm text-gray-500">
+            A backup is a complete copy of every invoice, draft and setting on this computer, taken
+            at one moment. Make one before any large change.
+          </p>
+        </div>
+        <Button size="lg" disabled={create.isPending} onClick={() => create.mutate()}>
+          {create.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
+          Back up now
+        </Button>
+      </div>
 
       <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
-          <CardTitle className="text-base">Saved backups</CardTitle>
+          <CardTitle className="text-base">Backups on this computer</CardTitle>
           <Input
             value={search}
             placeholder="Search"
@@ -123,8 +121,8 @@ export const Backup = (): JSX.Element => {
           ) : visible.length === 0 ? (
             <p className="p-4 text-sm text-gray-500">
               {backups.data?.length === 0
-                ? 'No backups yet. Create one before making bulk changes.'
-                : 'No backups match that search.'}
+                ? 'No backups yet. Press “Back up now” to make the first one.'
+                : 'Nothing matches that search.'}
             </p>
           ) : (
             <Table>
@@ -149,29 +147,35 @@ export const Backup = (): JSX.Element => {
                         <Button
                           variant="outline"
                           size="sm"
-                          aria-label={`Save a copy of ${file.name}`}
+                          title="Save a copy somewhere else, such as a USB drive"
                           onClick={() => exportCopy.mutate(file.path)}
                         >
-                          <Download className="h-4 w-4" />
+                          <Download />
+                          Save a copy
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           disabled={!isAdmin}
-                          title={isAdmin ? 'Restore' : 'Administrators only'}
-                          aria-label={`Restore ${file.name}`}
+                          title={
+                            isAdmin
+                              ? 'Replace everything on this computer with this backup'
+                              : 'Only an administrator can restore'
+                          }
                           onClick={() => setPendingRestore(file)}
                         >
-                          <RotateCcw className="h-4 w-4" />
+                          <RotateCcw />
+                          Restore
                         </Button>
                         <Button
-                          variant="outline"
-                          size="sm"
+                          variant="ghost"
+                          size="icon"
+                          className="h-9 w-9 text-red-500 hover:bg-red-50 hover:text-red-700"
                           disabled={!isAdmin}
                           aria-label={`Delete ${file.name}`}
                           onClick={() => setPendingDelete(file)}
                         >
-                          <Trash className="h-4 w-4" />
+                          <Trash />
                         </Button>
                       </div>
                     </TableCell>
